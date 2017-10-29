@@ -482,7 +482,7 @@ macro_rules! enum_set_type {
 /// ```
 #[macro_export]
 macro_rules! enum_set {
-    ($enum_name:ty, $($value:path)|+ $(|)*) => {
+    ($enum_name:ty, $($value:path)|* $(|)*) => {
         $crate::EnumSet::<$enum_name>(
             <$enum_name as $crate::EnumSetType>::ZERO
             $(| (<$enum_name as $crate::EnumSetType>::ONE << ($value as u8)))*
@@ -554,11 +554,13 @@ mod test {
                 use super::*;
 
                 const CONST_SET: EnumSet<$e> = enum_set!($e, $e::A | $e::Y);
+                const EMPTY_SET: EnumSet<$e> = enum_set!($e, );
                 #[test]
                 fn const_set() {
                     assert_eq!(CONST_SET.len(), 2);
                     assert!(CONST_SET.contains($e::A));
                     assert!(CONST_SET.contains($e::Y));
+                    assert!(EMPTY_SET.is_empty());
                 }
 
                 #[test]
