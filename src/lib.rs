@@ -7,7 +7,7 @@
 //!
 //! # Defining enums for use with EnumSet
 //!
-//! Enums to be used with `EnumSet` should be defined through the `enum_set_type!` macro:
+//! Enums to be used with [`EnumSet`] should be defined through the [`enum_set_type!`] macro:
 //!
 //! ```rust
 //! # #[macro_use] extern crate enumset;
@@ -24,8 +24,8 @@
 //!
 //! # Working with EnumSets
 //!
-//! EnumSets can be constructed via `EnumSet::new()` like a normal set. In addition,
-//! `enum_set_type!` creates operator overloads that allow you to create EnumSets like so:
+//! EnumSets can be constructed via [`EnumSet::new()`] like a normal set. In addition,
+//! [`enum_set_type!`] creates operator overloads that allow you to create EnumSets like so:
 //!
 //! ```rust
 //! # #[macro_use] extern crate enumset;
@@ -41,7 +41,7 @@
 //! # }
 //! ```
 //!
-//! The `enum_set!` macro also allows you to create constant EnumSets:
+//! The [`enum_set!`] macro also allows you to create constant EnumSets:
 //!
 //! ```rust
 //! # #[macro_use] extern crate enumset;
@@ -55,7 +55,7 @@
 //! # }
 //! ```
 //!
-//! Mutable operations on the HashSet otherwise work basically as expected:
+//! Mutable operations on the [`EnumSet`] otherwise work basically as expected:
 //!
 //! ```rust
 //! # #[macro_use] extern crate enumset;
@@ -74,6 +74,11 @@
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
 //! # }
 //! ```
+//!
+//! [`EnumSet`]: ./struct.EnumSet.html
+//! [`EnumSet::new()`]: ./struct.EnumSet.html#method.new
+//! [`enum_set!`]: ./macro.enum_set.html
+//! [`enum_set_type!`]: ./macro.enum_set_type.html
 
 use std::fmt;
 use std::fmt::{Debug, Formatter};
@@ -95,7 +100,8 @@ pub trait EnumSetType : Copy {
     fn from_u8(val: u8) -> Self;
 }
 
-/// An efficient set type for enums created with the `enum_set_type!` macro.
+/// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
+/// macro.
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct EnumSet<T : EnumSetType>(#[doc(hidden)] pub T::Repr);
 impl <T : EnumSetType> EnumSet<T> {
@@ -238,7 +244,7 @@ impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
     }
 }
 
-/// An iterator for enums created with the `enum_set_type!` macro.
+/// An iterator for enums created with the [`enum_set_type!`](./macro.enum_set_type.html) macro.
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
 pub struct EnumSetIter<T : EnumSetType>(EnumSet<T>, u8);
 impl <T : EnumSetType> Iterator for EnumSetIter<T> {
