@@ -14,6 +14,7 @@
 //! # use enumset::*;
 //! enum_set_type! {
 //!     /// Documentation for the enum
+//!     #[derive(Debug)]
 //!     pub enum Enum {
 //!         A, B, C, D, E, F, G,
 //!         #[doc(hidden)] __NonExhaustive,
@@ -31,9 +32,10 @@
 //! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
 //! # enum_set_type! {
-//! #      pub enum Enum {
-//! #        A, B, C, D, E, F, G,
-//! #    }
+//! #     #[derive(Debug)]
+//! #     pub enum Enum {
+//! #         A, B, C, D, E, F, G,
+//! #     }
 //! # }
 //! # fn main() {
 //! let new_set = Enum::A | Enum::C | Enum::G;
@@ -47,7 +49,10 @@
 //! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
 //! # enum_set_type! {
-//! #     enum Enum { A, B, C }
+//! #    #[derive(Debug)]
+//! #    pub enum Enum {
+//! #        A, B, C, D, E, F, G,
+//! #    }
 //! # }
 //! # fn main() {
 //! const CONST_SET: EnumSet<Enum> = enum_set!(Enum, Enum::A | Enum::B);
@@ -61,7 +66,8 @@
 //! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
 //! # enum_set_type! {
-//! #      pub enum Enum {
+//! #    #[derive(Debug)]
+//! #    pub enum Enum {
 //! #        A, B, C, D, E, F, G,
 //! #    }
 //! # }
@@ -80,9 +86,10 @@
 //! [`enum_set!`]: ./macro.enum_set.html
 //! [`enum_set_type!`]: ./macro.enum_set_type.html
 
+use std::cmp::*;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-use std::hash::Hash;
+use std::hash::*;
 use std::ops::*;
 
 #[doc(hidden)]
@@ -102,7 +109,7 @@ pub trait EnumSetType : Copy {
 
 /// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
 /// macro.
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone)]
 pub struct EnumSet<T : EnumSetType>(#[doc(hidden)] pub T::Repr);
 impl <T : EnumSetType> EnumSet<T> {
     fn mask(bit: u8) -> T::Repr {
@@ -227,6 +234,28 @@ impl <T : EnumSetType> BitOr<T> for EnumSet<T> {
     type Output = Self;
     fn bitor(self, other: T) -> Self::Output {
         EnumSet(self.0 | Self::mask(other.into_u8()))
+    }
+}
+
+impl <T : EnumSetType> PartialOrd for EnumSet<T> {
+    fn partial_cmp(&self, other: &EnumSet<T>) -> Option<Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+impl <T : EnumSetType> Ord for EnumSet<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+impl <T : EnumSetType> PartialEq for EnumSet<T> {
+    fn eq(&self, other: &EnumSet<T>) -> bool {
+        self.0.eq(&other.0)
+    }
+}
+impl <T : EnumSetType> Eq for EnumSet<T> { }
+impl <T : EnumSetType> Hash for EnumSet<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
     }
 }
 
@@ -389,7 +418,7 @@ macro_rules! enum_set_type_internal {
         $($(#[$attr:meta])* $variant:ident,)*
     }) => {
         $(#[$enum_attr])* #[repr(u8)]
-        #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+        #[derive(Copy, Clone)]
         $($vis)* enum $enum_name {
             $($(#[$attr])* $variant,)*
         }
@@ -422,6 +451,9 @@ macro_rules! enum_set_type_internal {
 ///
 /// While attributes and documentation can be attached to the enums, the variants may not
 /// contain data.
+///
+/// `Copy` and `Clone` are automatically derived for the enums. Other traits must be manually
+/// derived or implemented.
 ///
 /// # Examples
 ///
@@ -473,6 +505,7 @@ macro_rules! enum_set_type {
 /// # #[macro_use] extern crate enumset;
 /// # use enumset::*;
 /// # enum_set_type! {
+/// #     #[derive(Debug)]
 /// #     enum Enum { A, B, C }
 /// # }
 /// # fn main() {
@@ -496,6 +529,7 @@ mod test {
     use super::*;
 
     enum_set_type! {
+        #[derive(Debug)]
         enum Enum {
             A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
         }
@@ -506,6 +540,7 @@ mod test {
 
     #[cfg(feature = "i128")]
     enum_set_type! {
+        #[derive(Debug)]
         enum LargeEnum {
             _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
             _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
