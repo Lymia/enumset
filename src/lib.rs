@@ -244,7 +244,7 @@ impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
     }
 }
 
-/// An iterator for enums created with the [`enum_set_type!`](./macro.enum_set_type.html) macro.
+/// The iterator used by [`EnumSet`](./struct.EnumSet.html).
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
 pub struct EnumSetIter<T : EnumSetType>(EnumSet<T>, u8);
 impl <T : EnumSetType> Iterator for EnumSetIter<T> {
@@ -418,8 +418,10 @@ macro_rules! enum_set_type_internal {
     };
 }
 
-/// Defines enums which can be used with EnumSet. While attributes and documentation can be
-/// attached to the enums, the variants may not contain data.
+/// Defines enums which can be used with EnumSet.
+///
+/// While attributes and documentation can be attached to the enums, the variants may not
+/// contain data.
 ///
 /// # Examples
 ///
