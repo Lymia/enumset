@@ -482,7 +482,7 @@ macro_rules! enum_set_type {
 /// ```
 #[macro_export]
 macro_rules! enum_set {
-    ($enum_name:ty, $($value:path)|+) => {
+    ($enum_name:ty, $($value:path)|+ $(|)*) => {
         $crate::EnumSet::<$enum_name>(
             <$enum_name as $crate::EnumSetType>::ZERO
             $(| (<$enum_name as $crate::EnumSetType>::ONE << ($value as u8)))*
