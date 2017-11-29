@@ -1,9 +1,10 @@
-#![cfg_attr(all(test, feature = "i128"), feature(i128, i128_type))]
+#![cfg_attr(all(test, feature = "nightly"), feature(i128, i128_type))]
+#![cfg_attr(all(feature = "nightly"), feature(const_fn))]
 
 //! A library for defining enums that can be used in compact bit sets.
 //!
 //! It supports enums up to 64 variants on stable Rust, and up to 128 variants on nightly Rust with
-//! the `i128` feature enabled.
+//! the `nightly` feature enabled.
 //!
 //! # Defining enums for use with EnumSet
 //!
@@ -114,7 +115,14 @@ impl <T : EnumSetType> EnumSet<T> {
     }
 
     /// Returns an empty set.
+    #[cfg(not(feature = "nightly"))]
     pub fn new() -> Self {
+        EnumSet(T::ZERO)
+    }
+
+    /// Returns an empty set.
+    #[cfg(feature = "nightly")]
+    pub const fn new() -> Self {
         EnumSet(T::ZERO)
     }
 
@@ -268,7 +276,7 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
 
 #[macro_export]
 #[doc(hidden)]
-#[cfg(feature = "i128")]
+#[cfg(feature = "nightly")]
 macro_rules! enum_set_type_internal_count_variants {
     ($next:ident ($($args:tt)*)
         $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
@@ -333,7 +341,7 @@ macro_rules! enum_set_type_internal_count_variants {
 
 #[macro_export]
 #[doc(hidden)]
-#[cfg(not(feature = "i128"))]
+#[cfg(not(feature = "nightly"))]
 macro_rules! enum_set_type_internal_count_variants {
     ($next:ident ($($args:tt)*)
         $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
@@ -504,7 +512,7 @@ mod test {
         }
     }
 
-    #[cfg(feature = "i128")]
+    #[cfg(feature = "nightly")]
     enum_set_type! {
         enum LargeEnum {
             _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
@@ -535,7 +543,7 @@ mod test {
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
 
-    #[cfg(feature = "i128")]
+    #[cfg(feature = "nightly")]
     test_variants! { LargeEnum large_enum_variant_range_test
         _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
         _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
@@ -630,6 +638,6 @@ mod test {
     }
 
     test_enum!(Enum, small_enum);
-    #[cfg(feature = "i128")]
+    #[cfg(feature = "nightly")]
     test_enum!(LargeEnum, large_enum);
 }

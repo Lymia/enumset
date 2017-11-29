@@ -1,6 +1,6 @@
 A library for defining enums that can be used in compact bit sets.
 
-It supports enums up to 64 variants on stable Rust, and up to 128 variants on nightly Rust with the `i128` feature enabled, and has a macro to use these sets in constants.
+It supports enums up to 64 variants on stable Rust, and up to 128 variants on nightly Rust with the `nightly` feature enabled, and has a macro to use these sets in constants.
 
 [See the documentation for more information.](https://docs.rs/enumset)
 
