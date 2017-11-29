@@ -400,13 +400,11 @@ macro_rules! enum_set_type_nightly_impl {
 macro_rules! enum_set_type_nightly_impl {
     ($enum_name:ident $repr:ident) => {
         impl $enum_name {
-            #[cfg(feature = "nightly")]
             #[doc(hidden)]
             pub const fn __enumset_construct(self, data: $repr) -> $crate::EnumSet<Self> {
                 $crate::EnumSet { __enumset_underlying: data }
             }
 
-            #[cfg(feature = "nightly")]
             #[doc(hidden)]
             pub const fn __enumset_type_check(self, other: Self) -> Self {
                 other
@@ -414,9 +412,6 @@ macro_rules! enum_set_type_nightly_impl {
         }
     }
 }
-
-
-
 
 #[macro_export]
 #[doc(hidden)]
