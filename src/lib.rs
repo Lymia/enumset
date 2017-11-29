@@ -1,5 +1,6 @@
 #![cfg_attr(all(test, feature = "nightly"), feature(i128, i128_type))]
 #![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable))]
+#![forbid(missing_docs)]
 
 //! A library for defining enums that can be used in compact bit sets.
 //!
@@ -196,6 +197,7 @@ impl <T : EnumSetType> EnumSet<T> {
         self.__enumset_underlying &= !other.__enumset_underlying
     }
 
+    /// Creates an iterator over the values in this set.
     pub fn iter(&self) -> EnumSetIter<T> {
         EnumSetIter(*self, 0)
     }
