@@ -564,7 +564,7 @@ macro_rules! enum_set {
 macro_rules! enum_set {
     () => { EnumSet::new() };
     ($value:path $(|)*) => {
-        $first_value.__enumset_construct(1 << ($first_value as u8))
+        $value.__enumset_construct(1 << ($value as u8))
     };
     ($first_value:path | $($value:path)|* $(|)*) => {
         $first_value.__enumset_construct(
