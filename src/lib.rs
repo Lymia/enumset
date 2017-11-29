@@ -1,5 +1,5 @@
 #![cfg_attr(all(test, feature = "nightly"), feature(i128, i128_type))]
-#![cfg_attr(all(feature = "nightly"), feature(const_fn))]
+#![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable))]
 
 //! A library for defining enums that can be used in compact bit sets.
 //!
@@ -104,48 +104,49 @@ pub trait EnumSetType : Copy {
 /// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
 /// macro.
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
-pub struct EnumSet<T : EnumSetType>(#[doc(hidden)] pub T::Repr);
+pub struct EnumSet<T : EnumSetType> { 
+    #[doc(hidden)] pub __enumset_underlying: T::Repr
+}
 impl <T : EnumSetType> EnumSet<T> {
     fn mask(bit: u8) -> T::Repr {
         T::ONE << bit
     }
     fn has_bit(&self, bit: u8) -> bool {
         let mask = Self::mask(bit);
-        self.0 & mask == mask
+        self.__enumset_underlying & mask == mask
     }
 
     /// Returns an empty set.
     #[cfg(not(feature = "nightly"))]
     pub fn new() -> Self {
-        EnumSet(T::ZERO)
+        EnumSet { __enumset_underlying: T::ZERO }
     }
-
     /// Returns an empty set.
     #[cfg(feature = "nightly")]
     pub const fn new() -> Self {
-        EnumSet(T::ZERO)
+        EnumSet { __enumset_underlying: T::ZERO }
     }
 
     /// Returns the number of values in this set.
     pub fn len(&self) -> usize {
-        T::count_ones(self.0)
+        T::count_ones(self.__enumset_underlying)
     }
     /// Checks if the set is empty.
     pub fn is_empty(&self) -> bool {
-        self.0 == T::ZERO
+        self.__enumset_underlying == T::ZERO
     }
     /// Removes all elements from the set.
     pub fn clear(&mut self) {
-        self.0 = T::ZERO
+        self.__enumset_underlying = T::ZERO
     }
 
     /// Checks if this set shares no elements with another.
     pub fn is_disjoint(&self, other: Self) -> bool {
-        self.0 & other.0 == T::ZERO
+        self.__enumset_underlying & other.__enumset_underlying == T::ZERO
     }
     /// Checks if all elements in another set are in this set.
     pub fn is_superset(&self, other: Self) -> bool {
-        other.0 & self.0 == other.0
+        other.__enumset_underlying & self.__enumset_underlying == other.__enumset_underlying
     }
     /// Checks if all elements of this set are in another set.
     pub fn is_subset(&self, other: Self) -> bool {
@@ -154,19 +155,19 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Returns a set containing the union of all elements in both sets.
     pub fn union(&self, other: Self) -> Self {
-        EnumSet(self.0 | other.0)
+        EnumSet { __enumset_underlying: self.__enumset_underlying | other.__enumset_underlying }
     }
     /// Returns a set containing all elements in common with another set.
     pub fn intersection(&self, other: Self) -> Self {
-        EnumSet(self.0 & other.0)
+        EnumSet { __enumset_underlying: self.__enumset_underlying & other.__enumset_underlying }
     }
     /// Returns a set with all elements of the other set removed.
     pub fn difference(&self, other: Self) -> Self {
-        EnumSet(self.0 & !other.0)
+        EnumSet { __enumset_underlying: self.__enumset_underlying & !other.__enumset_underlying }
     }
     /// Returns a set with all elements not contained in both sets.
     pub fn symmetrical_difference(&self, other: Self) -> Self {
-        EnumSet(self.0 ^ other.0)
+        EnumSet { __enumset_underlying: self.__enumset_underlying ^ other.__enumset_underlying }
     }
 
     /// Checks whether this set contains a value.
@@ -176,23 +177,23 @@ impl <T : EnumSetType> EnumSet<T> {
     /// Adds a value to this set.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = self.contains(value);
-        self.0 |= Self::mask(value.into_u8());
+        self.__enumset_underlying |= Self::mask(value.into_u8());
         contains
     }
     /// Removes a value from this set.
     pub fn remove(&mut self, value: T) -> bool {
         let contains = self.contains(value);
-        self.0 &= !Self::mask(value.into_u8());
+        self.__enumset_underlying &= !Self::mask(value.into_u8());
         contains
     }
 
     /// Adds all elements in another set to this one.
     pub fn insert_all(&mut self, other: Self) {
-        self.0 |= other.0
+        self.__enumset_underlying |= other.__enumset_underlying
     }
     /// Removes all values in another set from this one.
     pub fn remove_all(&mut self, other: Self) {
-        self.0 &= !other.0
+        self.__enumset_underlying &= !other.__enumset_underlying
     }
 
     pub fn iter(&self) -> EnumSetIter<T> {
@@ -234,7 +235,7 @@ impl <T : EnumSetType> BitXor<EnumSet<T>> for EnumSet<T> {
 impl <T : EnumSetType> BitOr<T> for EnumSet<T> {
     type Output = Self;
     fn bitor(self, other: T) -> Self::Output {
-        EnumSet(self.0 | Self::mask(other.into_u8()))
+        EnumSet { __enumset_underlying: self.__enumset_underlying | Self::mask(other.into_u8()) }
     }
 }
 
@@ -269,7 +270,7 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
         None
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let left = T::count_ones((self.0).0 & !((T::ONE << self.1) - T::ONE));
+        let left = T::count_ones((self.0).__enumset_underlying & !((T::ONE << self.1) - T::ONE));
         (left, Some(left))
     }
 }
@@ -385,6 +386,38 @@ macro_rules! enum_set_type_internal_count_variants {
 
 #[macro_export]
 #[doc(hidden)]
+#[cfg(not(feature = "nightly"))]
+macro_rules! enum_set_type_nightly_impl {
+    ($enum_name:ident $repr:ident) => { }
+}
+
+#[macro_export]
+#[doc(hidden)]
+#[cfg(feature = "nightly")]
+#[allow_internal_unstable]
+macro_rules! enum_set_type_nightly_impl {
+    ($enum_name:ident $repr:ident) => {
+        impl $enum_name {
+            #[cfg(feature = "nightly")]
+            #[doc(hidden)]
+            pub const fn __enumset_construct(self, data: $repr) -> $crate::EnumSet<Self> {
+                $crate::EnumSet { __enumset_underlying: data }
+            }
+
+            #[cfg(feature = "nightly")]
+            #[doc(hidden)]
+            pub const fn __enumset_type_check(self, other: Self) -> Self {
+                other
+            }
+        }
+    }
+}
+
+
+
+
+#[macro_export]
+#[doc(hidden)]
 macro_rules! enum_set_type_internal {
     // Counting functions
     (@ident ($($random:tt)*) $value:expr) => { $value };
@@ -417,6 +450,7 @@ macro_rules! enum_set_type_internal {
                 unsafe { ::std::mem::transmute(val) }
             }
         }
+        enum_set_type_nightly_impl!($enum_name $repr);
         impl ::std::ops::BitOr<$enum_name> for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
             fn bitor(self, other: $enum_name) -> Self::Output {
@@ -472,8 +506,9 @@ macro_rules! enum_set_type {
 
 /// Creates a EnumSet literal, which can be used in const contexts.
 ///
-/// The format is `enum_set_type!(Type, Type::A | Type::B | Type::C)`, where `Type` is the type
-/// the enum will contain, and the rest is the variants that the set will contain.
+/// The format used is `enum_set!(Type, Type::A | Type::B | Type::C)`, where `Type` is the type of
+/// the variants that are expected to follow. When the `nightly` feature is enabled, that parameter
+/// can be omitted.
 ///
 /// # Examples
 ///
@@ -489,12 +524,56 @@ macro_rules! enum_set_type {
 /// # }
 /// ```
 #[macro_export]
+#[cfg(not(feature = "nightly"))]
 macro_rules! enum_set {
+    () => { EnumSet { __enumset_underlying: 0 } };
     ($enum_name:ty, $($value:path)|* $(|)*) => {
-        $crate::EnumSet::<$enum_name>(
-            <$enum_name as $crate::EnumSetType>::ZERO
-            $(| (<$enum_name as $crate::EnumSetType>::ONE << ($value as u8)))*
+        $crate::EnumSet::<$enum_name> {
+            __enumset_underlying: 0 $(| (1 << ($value as $enum_name as u8)))*
+        }
+    }
+}
+
+/// Creates a EnumSet literal, which can be used in const contexts. The format used is
+/// `enum_set!(Type::A | Type::B | Type::C)`
+///
+/// You may also explicitly state the type of the variants that follow, as in
+/// `enum_set!(Type, Type::A | Type::B | Type::C)`. This is the only form of this macro that
+/// is supported when the `nightly` feature is disabled.
+///
+/// # Examples
+///
+/// ```rust
+/// # #[macro_use] extern crate enumset;
+/// # use enumset::*;
+/// # enum_set_type! {
+/// #     enum Enum { A, B, C }
+/// # }
+/// # fn main() {
+/// const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
+/// assert_eq!(CONST_SET, Enum::A | Enum::B);
+///
+/// const EXPLICIT_CONST_SET: EnumSet<Enum> = enum_set!(Enum, Enum::A | Enum::B);
+/// assert_eq!(EXPLICIT_CONST_SET, Enum::A | Enum::B);
+/// # }
+/// ```
+#[macro_export]
+#[cfg(feature = "nightly")]
+macro_rules! enum_set {
+    () => { EnumSet::new() };
+    ($value:path $(|)*) => {
+        $first_value.__enumset_construct(1 << ($first_value as u8))
+    };
+    ($first_value:path | $($value:path)|* $(|)*) => {
+        $first_value.__enumset_construct(
+            (1 << ($first_value as u8))
+            $(| (1 << ($first_value.__enumset_type_check($value) as u8)))*
         )
+    };
+    ($enum_name:ty, $($value:path)|* $(|)*) => {
+        $crate::EnumSet::<$enum_name> {
+            __enumset_underlying: 0 $(| (1 << ($value as $enum_name as u8)))*
+        }
     }
 }
 
