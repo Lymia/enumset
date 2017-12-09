@@ -1,5 +1,5 @@
 #![cfg_attr(all(test, feature = "nightly"), feature(i128, i128_type))]
-#![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable))]
+#![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable, macro_vis_matcher))]
 #![forbid(missing_docs)]
 
 //! A library for defining enums that can be used in compact bit sets.
@@ -481,6 +481,7 @@ macro_rules! enum_set_type_internal {
 /// # fn main() { }
 /// ```
 #[macro_export]
+#[cfg(not(feature = "nightly"))]
 macro_rules! enum_set_type {
     ($(#[$enum_attr:meta])* pub enum $enum_name:ident {
         $($(#[$attr:meta])* $variant:ident),* $(,)*
@@ -494,6 +495,44 @@ macro_rules! enum_set_type {
         $($(#[$attr:meta])* $variant:ident),* $(,)*
     } $($rest:tt)*) => {
         enum_set_type_internal_count_variants!(body (($(#[$enum_attr])*) () $enum_name {
+            $($(#[$attr])* $variant,)*
+        }) $($variant)*);
+        enum_set_type!($($rest)*);
+    };
+    () => { };
+}
+
+/// Defines enums which can be used with EnumSet.
+///
+/// While attributes and documentation can be attached to the enums, the variants may not
+/// contain data.
+///
+/// # Examples
+///
+/// ```rust
+/// # #[macro_use] extern crate enumset;
+/// # use enumset::*;
+/// enum_set_type! {
+///     enum Enum {
+///         A, B, C, D, E, F, G
+///     }
+///
+///     /// Documentation
+///     pub enum Enum2 {
+///         A, B, C, D, E, F, G,
+///         #[doc(hidden)] __NonExhaustive,
+///     }
+/// }
+/// # fn main() { }
+/// ```
+#[macro_export]
+#[cfg(feature = "nightly")]
+#[allow_internal_unstable]
+macro_rules! enum_set_type {
+    ($(#[$enum_attr:meta])* $vis:vis enum $enum_name:ident {
+        $($(#[$attr:meta])* $variant:ident),* $(,)*
+    } $($rest:tt)*) => {
+        enum_set_type_internal_count_variants!(body (($(#[$enum_attr])*) ($vis) $enum_name {
             $($(#[$attr])* $variant,)*
         }) $($variant)*);
         enum_set_type!($($rest)*);
