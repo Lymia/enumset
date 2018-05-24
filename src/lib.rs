@@ -1,4 +1,3 @@
-#![cfg_attr(all(test, feature = "nightly"), feature(i128, i128_type))]
 #![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable, macro_vis_matcher))]
 #![forbid(missing_docs)]
 
@@ -279,7 +278,6 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
 
 #[macro_export]
 #[doc(hidden)]
-#[cfg(feature = "nightly")]
 macro_rules! enum_set_type_internal_count_variants {
     ($next:ident ($($args:tt)*)
         $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
@@ -314,50 +312,6 @@ macro_rules! enum_set_type_internal_count_variants {
         $($rest:ident)+
     ) => {
         enum_set_type_internal! { @$next u128 $($args)* }
-    };
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $_10:ident $_11:ident $_12:ident $_13:ident $_14:ident $_15:ident $_16:ident $_17:ident
-        $_20:ident $_21:ident $_22:ident $_23:ident $_24:ident $_25:ident $_26:ident $_27:ident
-        $_30:ident $_31:ident $_32:ident $_33:ident $_34:ident $_35:ident $_36:ident $_37:ident
-        $($rest:ident)+
-    ) => {
-        enum_set_type_internal! { @$next u64 $($args)* }
-    };
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $_10:ident $_11:ident $_12:ident $_13:ident $_14:ident $_15:ident $_16:ident $_17:ident
-        $($rest:ident)+
-    ) => {
-        enum_set_type_internal! { @$next u32 $($args)* }
-    };
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $($rest:ident)+
-    ) => {
-        enum_set_type_internal! { @$next u16 $($args)* }
-    };
-    ($next:ident ($($args:tt)*) $($rest:ident)*) => {
-        enum_set_type_internal! { @$next u8 $($args)* }
-    };
-}
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(feature = "nightly"))]
-macro_rules! enum_set_type_internal_count_variants {
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $_10:ident $_11:ident $_12:ident $_13:ident $_14:ident $_15:ident $_16:ident $_17:ident
-        $_20:ident $_21:ident $_22:ident $_23:ident $_24:ident $_25:ident $_26:ident $_27:ident
-        $_30:ident $_31:ident $_32:ident $_33:ident $_34:ident $_35:ident $_36:ident $_37:ident
-        $_40:ident $_41:ident $_42:ident $_43:ident $_44:ident $_45:ident $_46:ident $_47:ident
-        $_50:ident $_51:ident $_52:ident $_53:ident $_54:ident $_55:ident $_56:ident $_57:ident
-        $_60:ident $_61:ident $_62:ident $_63:ident $_64:ident $_65:ident $_66:ident $_67:ident
-        $_70:ident $_71:ident $_72:ident $_73:ident $_74:ident $_75:ident $_76:ident $_77:ident
-        $($rest:ident)+
-    ) => {
-        ENUM_SET___TOO_MANY_ENUM_VARIANTS___MAX_IS_64
     };
     ($next:ident ($($args:tt)*)
         $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
