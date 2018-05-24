@@ -7,7 +7,7 @@ description = "A library for creating compact sets of enums."
 keywords = ["enum", "bitset"]
 categories = ["data-structures"]
 
-documentation = "https://docs.rs/enumset"
+documentation = "https://lymia.moe/doc/enumset/enumset/"
 repository = "https://github.com/Lymia/enumset"
 readme = "README.md"
 
