@@ -50,7 +50,7 @@
 //! #     enum Enum { A, B, C }
 //! # }
 //! # fn main() {
-//! const CONST_SET: EnumSet<Enum> = enum_set!(Enum, Enum::A | Enum::B);
+//! const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
 //! assert_eq!(CONST_SET, Enum::A | Enum::B);
 //! # }
 //! ```
@@ -104,6 +104,12 @@ pub trait EnumSetType : Copy {
 
     fn repr_to_u128(bits: Self::Repr) -> u128;
     fn repr_from_u128(bits: u128) -> Self::Repr;
+}
+
+#[doc(hidden)]
+pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
+    pub unified: &'a [T],
+    pub enum_set: EnumSet<T>,
 }
 
 /// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
@@ -362,33 +368,6 @@ macro_rules! enum_set_type_internal_count_variants {
 
 #[macro_export]
 #[doc(hidden)]
-#[cfg(not(feature = "nightly"))]
-macro_rules! enum_set_type_nightly_impl {
-    ($enum_name:ident $repr:ident) => { }
-}
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(feature = "nightly")]
-#[allow_internal_unstable]
-macro_rules! enum_set_type_nightly_impl {
-    ($enum_name:ident $repr:ident) => {
-        impl $enum_name {
-            #[doc(hidden)]
-            pub const fn __enumset_construct(self, data: $repr) -> $crate::EnumSet<Self> {
-                $crate::EnumSet { __enumset_underlying: data }
-            }
-
-            #[doc(hidden)]
-            pub const fn __enumset_type_check(self, other: Self) -> Self {
-                other
-            }
-        }
-    }
-}
-
-#[macro_export]
-#[doc(hidden)]
 macro_rules! enum_set_type_internal {
     // Counting functions
     (@ident ($($random:tt)*) $value:expr) => { $value };
@@ -428,7 +407,6 @@ macro_rules! enum_set_type_internal {
                 bits as $repr
             }
         }
-        enum_set_type_nightly_impl!($enum_name $repr);
         impl ::std::ops::BitOr<$enum_name> for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
             fn bitor(self, other: $enum_name) -> Self::Output {
@@ -521,42 +499,12 @@ macro_rules! enum_set_type {
     () => { };
 }
 
-/// Creates a EnumSet literal, which can be used in const contexts.
-///
-/// The format used is `enum_set!(Type, Type::A | Type::B | Type::C)`, where `Type` is the type of
-/// the variants that are expected to follow. When the `nightly` feature is enabled, that parameter
-/// can be omitted.
-///
-/// # Examples
-///
-/// ```rust
-/// # #[macro_use] extern crate enumset;
-/// # use enumset::*;
-/// # enum_set_type! {
-/// #     enum Enum { A, B, C }
-/// # }
-/// # fn main() {
-/// const CONST_SET: EnumSet<Enum> = enum_set!(Enum, Enum::A | Enum::B);
-/// assert_eq!(CONST_SET, Enum::A | Enum::B);
-/// # }
-/// ```
-#[macro_export]
-#[cfg(not(feature = "nightly"))]
-macro_rules! enum_set {
-    () => { EnumSet { __enumset_underlying: 0 } };
-    ($enum_name:ty, $($value:path)|* $(|)*) => {
-        $crate::EnumSet::<$enum_name> {
-            __enumset_underlying: 0 $(| (1 << ($value as $enum_name as u8)))*
-        }
-    }
-}
-
 /// Creates a EnumSet literal, which can be used in const contexts. The format used is
-/// `enum_set!(Type::A | Type::B | Type::C)`
+/// `enum_set!(Type::A | Type::B | Type::C)` Each variant must be of the same type, or
+/// a error will occur at compile-time.
 ///
 /// You may also explicitly state the type of the variants that follow, as in
-/// `enum_set!(Type, Type::A | Type::B | Type::C)`. This is the only form of this macro that
-/// is supported when the `nightly` feature is disabled.
+/// `enum_set!(Type, Type::A | Type::B | Type::C)`.
 ///
 /// # Examples
 ///
@@ -574,18 +522,30 @@ macro_rules! enum_set {
 /// assert_eq!(EXPLICIT_CONST_SET, Enum::A | Enum::B);
 /// # }
 /// ```
+///
+/// This macro is strongly typed. For example, the following will not compile:
+///
+/// ```compile_fail
+/// # #[macro_use] extern crate enumset;
+/// # use enumset::*;
+/// # enum_set_type! {
+/// #     enum Enum { A, B, C }
+/// #     enum Enum2 { A, B, C }
+/// # }
+/// # fn main() {
+/// let type_error = enum_set!(Enum::A | Enum2::B);
+/// # }
+/// ```
 #[macro_export]
-#[cfg(feature = "nightly")]
 macro_rules! enum_set {
     () => { EnumSet::new() };
-    ($value:path $(|)*) => {
-        $value.__enumset_construct(1 << ($value as u8))
-    };
-    ($first_value:path | $($value:path)|* $(|)*) => {
-        $first_value.__enumset_construct(
-            (1 << ($first_value as u8))
-            $(| (1 << ($first_value.__enumset_type_check($value) as u8)))*
-        )
+    ($($value:path)|* $(|)*) => {
+        $crate::EnumSetSameTypeHack {
+            unified: &[$($value,)*],
+            enum_set: $crate::EnumSet {
+                __enumset_underlying: 0 $(| (1 << ($value as u8)))*
+            },
+        }.enum_set
     };
     ($enum_name:ty, $($value:path)|* $(|)*) => {
         $crate::EnumSet::<$enum_name> {
@@ -608,7 +568,6 @@ mod test {
         }
     }
 
-    #[cfg(feature = "nightly")]
     enum_set_type! {
         enum LargeEnum {
             _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
@@ -639,7 +598,6 @@ mod test {
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
 
-    #[cfg(feature = "nightly")]
     test_variants! { LargeEnum large_enum_variant_range_test
         _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
         _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
@@ -734,6 +692,5 @@ mod test {
     }
 
     test_enum!(Enum, small_enum);
-    #[cfg(feature = "nightly")]
     test_enum!(LargeEnum, large_enum);
 }
