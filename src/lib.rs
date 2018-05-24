@@ -148,8 +148,14 @@ impl <T : EnumSetType> EnumSet<T> {
     pub fn to_bits(&self) -> u128 {
         T::repr_to_u128(self.__enumset_underlying)
     }
-    /// Constructs a bitset from raw bits
+
+    /// Constructs a bitset from raw bits.
+    ///
+    /// # Panics
+    /// If bits not in the enum are set.
     pub fn from_bits(bits: u128) -> Self {
+        assert!(bits & !((1 << T::VARIANT_COUNT) - 1) == 0,
+                "Excessive bits set.");
         EnumSet { __enumset_underlying: T::repr_from_u128(bits) }
     }
 
@@ -686,6 +692,18 @@ mod test {
                 #[test]
                 fn debug_impl() {
                     assert_eq!(format!("{:?}", $e::A | $e::B | $e::W), "EnumSet(A | B | W)");
+                }
+
+                #[test]
+                fn to_from_bits() {
+                    let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
+                    assert_eq!(EnumSet::from_bits(value.to_bits()), value);
+                }
+
+                #[test]
+                #[should_panic]
+                fn too_many_bits() {
+                    EnumSet::<$e>::from_bits(!0);
                 }
             }
         }
