@@ -1,10 +1,8 @@
 #![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable, macro_vis_matcher))]
 #![forbid(missing_docs)]
 
-//! A library for defining enums that can be used in compact bit sets.
-//!
-//! It supports enums up to 64 variants on stable Rust, and up to 128 variants on nightly Rust with
-//! the `nightly` feature enabled.
+//! A library for defining enums that can be used in compact bit sets. It supports enums up to 128
+//! variants, and has a macro to use these sets in constants.
 //!
 //! # Defining enums for use with EnumSet
 //!
