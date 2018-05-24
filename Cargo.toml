@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "0.3.5"
+version = "0.3.6"
 authors = ["Lymia Aluysia <lymia@lymiahugs.com>"]
 
 description = "A library for creating compact sets of enums."
