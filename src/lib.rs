@@ -298,7 +298,7 @@ macro_rules! enum_set_type_internal_count_variants {
         $_f0:ident $_f1:ident $_f2:ident $_f3:ident $_f4:ident $_f5:ident $_f6:ident $_f7:ident
         $($rest:ident)+
     ) => {
-        ENUM_SET___TOO_MANY_ENUM_VARIANTS___MAX_IS_128
+        compile_error!("enum_set_type! can only accept up to 128 variants.")
     };
     ($next:ident ($($args:tt)*)
         $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
