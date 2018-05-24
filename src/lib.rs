@@ -99,6 +99,9 @@ pub trait EnumSetType : Copy {
     fn count_ones(val: Self::Repr) -> usize;
     fn into_u8(self) -> u8;
     fn from_u8(val: u8) -> Self;
+
+    fn repr_to_u128(bits: Self::Repr) -> u128;
+    fn repr_from_u128(bits: u128) -> Self::Repr;
 }
 
 /// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
@@ -125,6 +128,21 @@ impl <T : EnumSetType> EnumSet<T> {
     #[cfg(feature = "nightly")]
     pub const fn new() -> Self {
         EnumSet { __enumset_underlying: T::ZERO }
+    }
+
+    /// Total number of bits this enumset uses. Note that the actual amount of space used is
+    /// rounded up to the next highest integer type (`u8`, `u16`, `u32`, `u64`, or `u128`).
+    pub fn bit_width() -> u8 {
+        T::VARIANT_COUNT as u8
+    }
+
+    /// Returns the raw bits of this set
+    pub fn to_bits(&self) -> u128 {
+        T::repr_to_u128(self.__enumset_underlying)
+    }
+    /// Constructs a bitset from raw bits
+    pub fn from_bits(bits: u128) -> Self {
+        EnumSet { __enumset_underlying: T::repr_from_u128(bits) }
     }
 
     /// Returns the number of values in this set.
@@ -399,6 +417,13 @@ macro_rules! enum_set_type_internal {
             }
             fn from_u8(val: u8) -> Self {
                 unsafe { ::std::mem::transmute(val) }
+            }
+
+            fn repr_to_u128(bits: Self::Repr) -> u128 {
+                bits as u128
+            }
+            fn repr_from_u128(bits: u128) -> Self::Repr {
+                bits as $repr
             }
         }
         enum_set_type_nightly_impl!($enum_name $repr);
