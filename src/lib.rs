@@ -1,3 +1,4 @@
+#![cfg_attr(not(test), no_std)]
 #![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable, macro_vis_matcher))]
 #![forbid(missing_docs)]
 
@@ -79,10 +80,13 @@
 //! [`enum_set!`]: ./macro.enum_set.html
 //! [`enum_set_type!`]: ./macro.enum_set_type.html
 
-use std::fmt;
-use std::fmt::{Debug, Formatter};
-use std::hash::Hash;
-use std::ops::*;
+#[cfg(test)]
+extern crate core;
+
+use core::fmt;
+use core::fmt::{Debug, Formatter};
+use core::hash::Hash;
+use core::ops::*;
 
 #[doc(hidden)]
 pub trait EnumSetType : Copy {
