@@ -457,31 +457,31 @@ macro_rules! enum_set_type_internal {
         impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::Sub<O> for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
             fn sub(self, other: O) -> Self::Output {
-                EnumSet::only(self) - other.into()
+                $crate::EnumSet::only(self) - other.into()
             }
         }
         impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitAnd<O> for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
             fn bitand(self, other: O) -> Self::Output {
-                EnumSet::only(self) & other.into()
+                $crate::EnumSet::only(self) & other.into()
             }
         }
         impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitOr<O> for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
             fn bitor(self, other: O) -> Self::Output {
-                EnumSet::only(self) | other.into()
+                $crate::EnumSet::only(self) | other.into()
             }
         }
         impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitXor<O> for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
             fn bitxor(self, other: O) -> Self::Output {
-                EnumSet::only(self) ^ other.into()
+                $crate::EnumSet::only(self) ^ other.into()
             }
         }
         impl ::std::ops::Not for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
             fn not(self) -> Self::Output {
-                !EnumSet::only(self)
+                !$crate::EnumSet::only(self)
             }
         }
         impl ::std::cmp::PartialEq<$crate::EnumSet<$enum_name>> for $enum_name {
@@ -648,28 +648,31 @@ macro_rules! enum_set {
 mod test {
     use super::*;
 
-    enum_set_type! {
-        enum Enum {
-            A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    mod enums {
+        enum_set_type! {
+            pub enum Enum {
+                A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+            }
+            pub enum Enum2 {
+                A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+            }
         }
-        enum Enum2 {
-            A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-        }
-    }
 
-    enum_set_type! {
-        enum LargeEnum {
-            _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
-            _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
-            _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
-            _30,  _31,  _32,  _33,  _34,  _35,  _36,  _37,
-            _40,  _41,  _42,  _43,  _44,  _45,  _46,  _47,
-            _50,  _51,  _52,  _53,  _54,  _55,  _56,  _57,
-            _60,  _61,  _62,  _63,  _64,  _65,  _66,  _67,
-            _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
-            A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+        enum_set_type! {
+            pub enum LargeEnum {
+                _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
+                _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
+                _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
+                _30,  _31,  _32,  _33,  _34,  _35,  _36,  _37,
+                _40,  _41,  _42,  _43,  _44,  _45,  _46,  _47,
+                _50,  _51,  _52,  _53,  _54,  _55,  _56,  _57,
+                _60,  _61,  _62,  _63,  _64,  _65,  _66,  _67,
+                _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
+                A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+            }
         }
     }
+    use self::enums::*;
 
     macro_rules! test_variants {
         ($enum_name:ident $variant_range:ident $all_empty_test:ident $($variant:ident,)*) => {
