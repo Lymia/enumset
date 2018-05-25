@@ -650,7 +650,9 @@ macro_rules! enum_set_type {
 /// ```
 #[macro_export]
 macro_rules! enum_set {
-    () => { EnumSet::new() };
+    () => {
+        $crate::EnumSet { __enumset_underlying: 0 }
+    };
     ($($value:path)|* $(|)*) => {
         $crate::EnumSetSameTypeHack {
             unified: &[$($value,)*],
@@ -742,7 +744,7 @@ mod test {
                 use super::*;
 
                 const CONST_SET: EnumSet<$e> = enum_set!($e, $e::A | $e::Y);
-                const EMPTY_SET: EnumSet<$e> = enum_set!($e, );
+                const EMPTY_SET: EnumSet<$e> = enum_set!();
                 #[test]
                 fn const_set() {
                     assert_eq!(CONST_SET.len(), 2);
