@@ -271,6 +271,7 @@ impl <T : EnumSetType> IntoIterator for EnumSet<T> {
         self.iter()
     }
 }
+
 impl <T : EnumSetType, O: Into<EnumSet<T>>> Sub<O> for EnumSet<T> {
     type Output = Self;
     fn sub(self, other: O) -> Self::Output {
@@ -295,6 +296,28 @@ impl <T : EnumSetType, O: Into<EnumSet<T>>> BitXor<O> for EnumSet<T> {
         self.symmetrical_difference(other.into())
     }
 }
+
+impl <T : EnumSetType, O: Into<EnumSet<T>>> SubAssign<O> for EnumSet<T> {
+    fn sub_assign(&mut self, rhs: O) {
+        *self = *self - rhs;
+    }
+}
+impl <T : EnumSetType, O: Into<EnumSet<T>>> BitAndAssign<O> for EnumSet<T> {
+    fn bitand_assign(&mut self, rhs: O) {
+        *self = *self & rhs;
+    }
+}
+impl <T : EnumSetType, O: Into<EnumSet<T>>> BitOrAssign<O> for EnumSet<T> {
+    fn bitor_assign(&mut self, rhs: O) {
+        *self = *self | rhs;
+    }
+}
+impl <T : EnumSetType, O: Into<EnumSet<T>>> BitXorAssign<O> for EnumSet<T> {
+    fn bitxor_assign(&mut self, rhs: O) {
+        *self = *self ^ rhs;
+    }
+}
+
 impl <T : EnumSetType> Not for EnumSet<T> {
     type Output = Self;
     fn not(self) -> Self::Output {
