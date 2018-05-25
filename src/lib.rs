@@ -220,7 +220,7 @@ impl <T : EnumSetType> EnumSet<T> {
     }
     /// Returns a set with all elements of the other set removed.
     pub fn difference(&self, other: Self) -> Self {
-        *self & !other
+        EnumSet { __enumset_underlying: self.__enumset_underlying & !other.__enumset_underlying }
     }
     /// Returns a set with all elements not contained in both sets.
     pub fn symmetrical_difference(&self, other: Self) -> Self {
