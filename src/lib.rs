@@ -1,5 +1,5 @@
 #![cfg_attr(not(test), no_std)]
-#![cfg_attr(all(feature = "nightly"), feature(const_fn, allow_internal_unstable, macro_vis_matcher))]
+#![cfg_attr(all(feature = "nightly"), feature(allow_internal_unstable, macro_vis_matcher))]
 #![forbid(missing_docs)]
 
 //! A library for defining enums that can be used in compact bit sets. It supports enums up to 128
@@ -15,8 +15,8 @@
 //! enum_set_type! {
 //!     /// Documentation for the enum
 //!     pub enum Enum {
-//!         A, B, C, D, E, F, G,
-//!         #[doc(hidden)] __NonExhaustive,
+//!         A, B, C, D, E, F,
+//!         #[doc(hidden)] G,
 //!     }
 //! }
 //! # fn main() { }
@@ -35,13 +35,37 @@
 //! #        A, B, C, D, E, F, G,
 //! #    }
 //! # }
-//! # fn main() {
 //! let new_set = Enum::A | Enum::C | Enum::G;
 //! assert_eq!(new_set.len(), 3);
-//! # }
 //! ```
 //!
-//! The [`enum_set!`] macro also allows you to create constant EnumSets:
+//! All bitwise operations you would expect to work on bitsets also work on both EnumSets and
+//! enums wrapped with [`enum_set_type!`]:
+//! ```
+//! # #[macro_use] extern crate enumset;
+//! # use enumset::*;
+//! # enum_set_type! {
+//! #      pub enum Enum {
+//! #        A, B, C, D, E, F, G,
+//! #    }
+//! # }
+//! // Intersection of sets
+//! assert_eq!((Enum::A | Enum::B) & Enum::C, EnumSet::empty());
+//! assert_eq!((Enum::A | Enum::B) & Enum::A, Enum::A);
+//! assert_eq!(Enum::A & Enum::B, EnumSet::empty());
+//!
+//! // Symmetric difference of sets
+//! assert_eq!((Enum::A | Enum::B) ^ (Enum::B | Enum::C), Enum::A | Enum::C);
+//! assert_eq!(Enum::A ^ Enum::C, Enum::A | Enum::C);
+//!
+//! // Difference of sets
+//! assert_eq!((Enum::A | Enum::B | Enum::C) - Enum::B, Enum::A | Enum::C);
+//!
+//! // Complement of sets
+//! assert_eq!(!(Enum::E | Enum::G), Enum::A | Enum::B | Enum::C | Enum::D | Enum::F);
+//! ```
+//!
+//! The [`enum_set!`] macro allows you to create EnumSets in constant contexts:
 //!
 //! ```rust
 //! # #[macro_use] extern crate enumset;
@@ -49,10 +73,8 @@
 //! # enum_set_type! {
 //! #     enum Enum { A, B, C }
 //! # }
-//! # fn main() {
 //! const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
 //! assert_eq!(CONST_SET, Enum::A | Enum::B);
-//! # }
 //! ```
 //!
 //! Mutable operations on the [`EnumSet`] otherwise work basically as expected:
@@ -65,20 +87,13 @@
 //! #        A, B, C, D, E, F, G,
 //! #    }
 //! # }
-//! # fn main() {
 //! let mut set = EnumSet::new();
 //! set.insert(Enum::A);
 //! set.insert_all(Enum::E | Enum::G);
 //! assert!(set.contains(Enum::A));
 //! assert!(!set.contains(Enum::B));
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
-//! # }
 //! ```
-//!
-//! [`EnumSet`]: ./struct.EnumSet.html
-//! [`EnumSet::new()`]: ./struct.EnumSet.html#method.new
-//! [`enum_set!`]: ./macro.enum_set.html
-//! [`enum_set_type!`]: ./macro.enum_set_type.html
 
 #[cfg(test)]
 extern crate core;
@@ -89,7 +104,7 @@ use core::hash::Hash;
 use core::ops::*;
 
 #[doc(hidden)]
-pub trait EnumSetType : Copy {
+pub trait EnumSetType : Copy + Ord + Eq + Hash {
     type Repr: Shl<u8, Output = Self::Repr> + Eq + Not<Output = Self::Repr> +
                Sub<Output = Self::Repr> + BitOr<Output = Self::Repr> +
                BitAnd<Output = Self::Repr> + BitXor<Output = Self::Repr> +
@@ -126,16 +141,27 @@ impl <T : EnumSetType> EnumSet<T> {
         let mask = Self::mask(bit);
         self.__enumset_underlying & mask == mask
     }
+    fn all_bits() -> T::Repr {
+        (T::ONE << T::VARIANT_COUNT) - T::ONE
+    }
 
     /// Returns an empty set.
-    #[cfg(not(feature = "nightly"))]
     pub fn new() -> Self {
         EnumSet { __enumset_underlying: T::ZERO }
     }
+
+    /// Returns a set containing a single value.
+    pub fn only(t: T) -> Self {
+        EnumSet { __enumset_underlying: Self::mask(t.into_u8()) }
+    }
+
     /// Returns an empty set.
-    #[cfg(feature = "nightly")]
-    pub const fn new() -> Self {
-        EnumSet { __enumset_underlying: T::ZERO }
+    pub fn empty() -> Self {
+        Self::new()
+    }
+    /// Returns a set with all bits set.
+    pub fn all() -> Self {
+        EnumSet { __enumset_underlying: Self::all_bits() }
     }
 
     /// Total number of bits this enumset uses. Note that the actual amount of space used is
@@ -154,8 +180,7 @@ impl <T : EnumSetType> EnumSet<T> {
     /// # Panics
     /// If bits not in the enum are set.
     pub fn from_bits(bits: u128) -> Self {
-        assert!(bits & !((1 << T::VARIANT_COUNT) - 1) == 0,
-                "Excessive bits set.");
+        assert!(bits & !T::repr_to_u128(Self::all_bits()) == 0, "Excessive bits set.");
         EnumSet { __enumset_underlying: T::repr_from_u128(bits) }
     }
 
@@ -174,11 +199,11 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Checks if this set shares no elements with another.
     pub fn is_disjoint(&self, other: Self) -> bool {
-        self.__enumset_underlying & other.__enumset_underlying == T::ZERO
+        (*self & other).is_empty()
     }
     /// Checks if all elements in another set are in this set.
     pub fn is_superset(&self, other: Self) -> bool {
-        other.__enumset_underlying & self.__enumset_underlying == other.__enumset_underlying
+        *self & other == other
     }
     /// Checks if all elements of this set are in another set.
     pub fn is_subset(&self, other: Self) -> bool {
@@ -195,17 +220,22 @@ impl <T : EnumSetType> EnumSet<T> {
     }
     /// Returns a set with all elements of the other set removed.
     pub fn difference(&self, other: Self) -> Self {
-        EnumSet { __enumset_underlying: self.__enumset_underlying & !other.__enumset_underlying }
+        *self & !other
     }
     /// Returns a set with all elements not contained in both sets.
     pub fn symmetrical_difference(&self, other: Self) -> Self {
         EnumSet { __enumset_underlying: self.__enumset_underlying ^ other.__enumset_underlying }
+    }
+    /// Returns a set containing all elements not in this set.
+    pub fn complement(&self) -> Self {
+        EnumSet { __enumset_underlying: !self.__enumset_underlying & Self::all_bits() }
     }
 
     /// Checks whether this set contains a value.
     pub fn contains(&self, value: T) -> bool {
         self.has_bit(value.into_u8())
     }
+
     /// Adds a value to this set.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = self.contains(value);
@@ -241,37 +271,48 @@ impl <T : EnumSetType> IntoIterator for EnumSet<T> {
         self.iter()
     }
 }
-impl <T : EnumSetType> Sub<EnumSet<T>> for EnumSet<T> {
+impl <T : EnumSetType, O: Into<EnumSet<T>>> Sub<O> for EnumSet<T> {
     type Output = Self;
-    fn sub(self, other: Self) -> Self::Output {
-        self.difference(other)
+    fn sub(self, other: O) -> Self::Output {
+        self.difference(other.into())
     }
 }
-impl <T : EnumSetType> BitAnd<EnumSet<T>> for EnumSet<T> {
+impl <T : EnumSetType, O: Into<EnumSet<T>>> BitAnd<O> for EnumSet<T> {
     type Output = Self;
-    fn bitand(self, other: Self) -> Self::Output {
-        self.intersection(other)
+    fn bitand(self, other: O) -> Self::Output {
+        self.intersection(other.into())
     }
 }
-impl <T : EnumSetType> BitOr<EnumSet<T>> for EnumSet<T> {
+impl <T : EnumSetType, O: Into<EnumSet<T>>> BitOr<O> for EnumSet<T> {
     type Output = Self;
-    fn bitor(self, other: Self) -> Self::Output {
-        self.union(other)
+    fn bitor(self, other: O) -> Self::Output {
+        self.union(other.into())
     }
 }
-impl <T : EnumSetType> BitXor<EnumSet<T>> for EnumSet<T> {
+impl <T : EnumSetType, O: Into<EnumSet<T>>> BitXor<O> for EnumSet<T> {
     type Output = Self;
-    fn bitxor(self, other: Self) -> Self::Output {
-        self.symmetrical_difference(other)
+    fn bitxor(self, other: O) -> Self::Output {
+        self.symmetrical_difference(other.into())
     }
 }
-impl <T : EnumSetType> BitOr<T> for EnumSet<T> {
+impl <T : EnumSetType> Not for EnumSet<T> {
     type Output = Self;
-    fn bitor(self, other: T) -> Self::Output {
-        EnumSet { __enumset_underlying: self.__enumset_underlying | Self::mask(other.into_u8()) }
+    fn not(self) -> Self::Output {
+        self.complement()
     }
 }
 
+impl <T : EnumSetType> From<T> for EnumSet<T> {
+    fn from(t: T) -> Self {
+        EnumSet::only(t)
+    }
+}
+
+impl <T : EnumSetType> PartialEq<T> for EnumSet<T> {
+    fn eq(&self, other: &T) -> bool {
+        *self == EnumSet::only(*other)
+    }
+}
 impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let mut is_first = true;
@@ -413,10 +454,39 @@ macro_rules! enum_set_type_internal {
                 bits as $repr
             }
         }
-        impl ::std::ops::BitOr<$enum_name> for $enum_name {
+        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::Sub<O> for $enum_name {
             type Output = $crate::EnumSet<$enum_name>;
-            fn bitor(self, other: $enum_name) -> Self::Output {
-                enum_set!($enum_name, self | other)
+            fn sub(self, other: O) -> Self::Output {
+                EnumSet::only(self) - other.into()
+            }
+        }
+        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitAnd<O> for $enum_name {
+            type Output = $crate::EnumSet<$enum_name>;
+            fn bitand(self, other: O) -> Self::Output {
+                EnumSet::only(self) & other.into()
+            }
+        }
+        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitOr<O> for $enum_name {
+            type Output = $crate::EnumSet<$enum_name>;
+            fn bitor(self, other: O) -> Self::Output {
+                EnumSet::only(self) | other.into()
+            }
+        }
+        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitXor<O> for $enum_name {
+            type Output = $crate::EnumSet<$enum_name>;
+            fn bitxor(self, other: O) -> Self::Output {
+                EnumSet::only(self) ^ other.into()
+            }
+        }
+        impl ::std::ops::Not for $enum_name {
+            type Output = $crate::EnumSet<$enum_name>;
+            fn not(self) -> Self::Output {
+                !EnumSet::only(self)
+            }
+        }
+        impl ::std::cmp::PartialEq<$crate::EnumSet<$enum_name>> for $enum_name {
+            fn eq(&self, other: &$crate::EnumSet<$enum_name>) -> bool {
+                $crate::EnumSet::only(*self) == *other
             }
         }
     };
@@ -424,8 +494,14 @@ macro_rules! enum_set_type_internal {
 
 /// Defines enums which can be used with EnumSet.
 ///
-/// While attributes and documentation can be attached to the enums, the variants may not
+/// While attributes and documentation can be attached to the enum variants, the variants may not
 /// contain data.
+///
+/// [`Copy`], [`Clone`], [`PartialOrd`], [`Ord`], [`PartialEq`], [`Eq`], [`Hash`], [`Debug`],
+/// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] are automatically derived for the enum.
+///
+/// These impls, in general, behave as if the enum variant was an [`EnumSet`] with a single value,
+/// as those created by [`EnumSet::only`].
 ///
 /// # Examples
 ///
@@ -469,8 +545,14 @@ macro_rules! enum_set_type {
 
 /// Defines enums which can be used with EnumSet.
 ///
-/// While attributes and documentation can be attached to the enums, the variants may not
+/// While attributes and documentation can be attached to the enum variants, the variants may not
 /// contain data.
+///
+/// [`Copy`], [`Clone`], [`PartialOrd`], [`Ord`], [`PartialEq`], [`Eq`], [`Hash`], [`Debug`],
+/// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] are automatically derived for the enum.
+///
+/// These impls, in general, behave as if the enum variant was an [`EnumSet`] with a single value,
+/// as those created by [`EnumSet::only`].
 ///
 /// # Examples
 ///
@@ -505,9 +587,10 @@ macro_rules! enum_set_type {
     () => { };
 }
 
-/// Creates a EnumSet literal, which can be used in const contexts. The format used is
-/// `enum_set!(Type::A | Type::B | Type::C)` Each variant must be of the same type, or
-/// a error will occur at compile-time.
+/// Creates a EnumSet literal, which can be used in const contexts.
+///
+/// The syntax used is `enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same
+/// type, or a error will occur at compile-time.
 ///
 /// You may also explicitly state the type of the variants that follow, as in
 /// `enum_set!(Type, Type::A | Type::B | Type::C)`.
@@ -589,22 +672,33 @@ mod test {
     }
 
     macro_rules! test_variants {
-        ($enum_name:ident $test_name:ident $($variant:ident,)*) => {
+        ($enum_name:ident $variant_range:ident $all_empty_test:ident $($variant:ident,)*) => {
             #[test]
-            fn $test_name() {
+            fn $variant_range() {
                 let count = enum_set_type_internal!(@count u8 $($variant)*);
                 $(
                     assert!(($enum_name::$variant as u8) < count);
                 )*
             }
+
+            #[test]
+            fn $all_empty_test() {
+                let all = EnumSet::<$enum_name>::all();
+                let empty = EnumSet::<$enum_name>::empty();
+
+                $(
+                    assert!(!empty.contains($enum_name::$variant));
+                    assert!(all.contains($enum_name::$variant));
+                )*
+            }
         }
     }
 
-    test_variants! { Enum enum_variant_range_test
+    test_variants! { Enum enum_variant_range_test enum_all_empty
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
 
-    test_variants! { LargeEnum large_enum_variant_range_test
+    test_variants! { LargeEnum large_enum_variant_range_test large_enum_all_empty
         _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
         _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
         _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
@@ -676,9 +770,9 @@ mod test {
                 #[test]
                 fn basic_ops_test() {
                     assert_eq!(($e::A | $e::B) | ($e::B | $e::C), $e::A | $e::B | $e::C);
-                    assert_eq!(($e::A | $e::B) & ($e::B | $e::C), EnumSet::new() | $e::B);
+                    assert_eq!(($e::A | $e::B) & ($e::B | $e::C), $e::B);
                     assert_eq!(($e::A | $e::B) ^ ($e::B | $e::C), $e::A | $e::C);
-                    assert_eq!(($e::A | $e::B) - ($e::B | $e::C), EnumSet::new() | $e::A);
+                    assert_eq!(($e::A | $e::B) - ($e::B | $e::C), $e::A);
                 }
 
                 #[test]
