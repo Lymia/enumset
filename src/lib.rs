@@ -783,6 +783,16 @@ mod test {
                 }
 
                 #[test]
+                fn empty_is_empty() {
+                    assert_eq!(EnumSet::<$e>::empty().len(), 0)
+                }
+
+                #[test]
+                fn all_len() {
+                    assert_eq!(EnumSet::<$e>::all().len(), EnumSet::<$e>::bit_width() as usize)
+                }
+
+                #[test]
                 fn basic_iter_test() {
                     let mut set = EnumSet::new();
                     set.insert($e::A);
