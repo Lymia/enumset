@@ -97,31 +97,29 @@
 
 #[cfg(test)]
 extern crate core;
+extern crate num_traits;
 
 use core::fmt;
 use core::fmt::{Debug, Formatter};
 use core::hash::Hash;
 use core::ops::*;
 
+use num_traits::*;
+
 #[doc(hidden)]
-pub trait EnumSetType : Copy + Ord + Eq + Hash {
-    type Repr: Shl<u8, Output = Self::Repr> + Eq + Not<Output = Self::Repr> +
-               Sub<Output = Self::Repr> + BitOr<Output = Self::Repr> +
-               BitAnd<Output = Self::Repr> + BitXor<Output = Self::Repr> +
-               BitOrAssign + BitAndAssign + Copy + Debug + Ord + Eq + Hash;
-    const ZERO: Self::Repr;
-    const ONE : Self::Repr;
+/// The trait used to define enum types.
+/// This is **NOT** public API and may change at any time.
+pub unsafe trait EnumSetType : Copy + Ord + Eq + Hash {
+    type Repr: PrimInt + ToPrimitive + FromPrimitive + WrappingSub + CheckedShl + Debug + Hash;
     const VARIANT_COUNT: u8;
 
-    fn count_ones(val: Self::Repr) -> usize;
-    fn into_u8(self) -> u8;
-    fn from_u8(val: u8) -> Self;
-
-    fn repr_to_u128(bits: Self::Repr) -> u128;
-    fn repr_from_u128(bits: u128) -> Self::Repr;
+    fn enum_into_u8(self) -> u8;
+    unsafe fn enum_from_u8(val: u8) -> Self;
 }
 
 #[doc(hidden)]
+/// A struct used to type check [`enum_set!`].
+/// This is **NOT** public API and may change at any time.
 pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
     pub unified: &'a [T],
     pub enum_set: EnumSet<T>,
@@ -131,31 +129,38 @@ pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
 /// macro.
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct EnumSet<T : EnumSetType> { 
-    #[doc(hidden)] pub __enumset_underlying: T::Repr
+    #[doc(hidden)]
+    /// This is public due to the [`enum_set!`] macro.
+    /// This is **NOT** public API and may change at any time.
+    pub __enumset_underlying: T::Repr
 }
 impl <T : EnumSetType> EnumSet<T> {
     fn mask(bit: u8) -> T::Repr {
-        T::ONE << bit
+        T::Repr::one() << bit as usize
     }
     fn has_bit(&self, bit: u8) -> bool {
         let mask = Self::mask(bit);
         self.__enumset_underlying & mask == mask
     }
+    fn partial_bits(bits: u8) -> T::Repr {
+        assert!(bits != 0 && bits <= T::VARIANT_COUNT);
+        T::Repr::one().checked_shl(bits.into())
+            .unwrap_or(T::Repr::zero())
+            .wrapping_sub(&T::Repr::one())
+    }
+    // Returns all bits valid for the enum
     fn all_bits() -> T::Repr {
-        match T::VARIANT_COUNT {
-            128|64|32|16|8 => T::repr_from_u128(0xFFFFFFFFu128),
-            _ => (T::ONE << T::VARIANT_COUNT) - T::ONE
-        }
+        Self::partial_bits(T::VARIANT_COUNT)
     }
 
     /// Returns an empty set.
     pub fn new() -> Self {
-        EnumSet { __enumset_underlying: T::ZERO }
+        EnumSet { __enumset_underlying: T::Repr::zero() }
     }
 
     /// Returns a set containing a single value.
     pub fn only(t: T) -> Self {
-        EnumSet { __enumset_underlying: Self::mask(t.into_u8()) }
+        EnumSet { __enumset_underlying: Self::mask(t.enum_into_u8()) }
     }
 
     /// Returns an empty set.
@@ -175,7 +180,8 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Returns the raw bits of this set
     pub fn to_bits(&self) -> u128 {
-        T::repr_to_u128(self.__enumset_underlying)
+        self.__enumset_underlying.to_u128()
+            .expect("Impossible: Bits cannot be to converted into i128?")
     }
 
     /// Constructs a bitset from raw bits.
@@ -183,21 +189,24 @@ impl <T : EnumSetType> EnumSet<T> {
     /// # Panics
     /// If bits not in the enum are set.
     pub fn from_bits(bits: u128) -> Self {
-        assert!(bits & !T::repr_to_u128(Self::all_bits()) == 0, "Excessive bits set.");
-        EnumSet { __enumset_underlying: T::repr_from_u128(bits) }
+        assert!((bits & !Self::all().to_bits()) == 0, "Bits not valid for the enum were set.");
+        EnumSet {
+            __enumset_underlying: T::Repr::from_u128(bits)
+                .expect("Impossible: Valid bits too large to fit in repr?")
+        }
     }
 
     /// Returns the number of values in this set.
     pub fn len(&self) -> usize {
-        T::count_ones(self.__enumset_underlying)
+        self.__enumset_underlying.count_ones() as usize
     }
     /// Checks if the set is empty.
     pub fn is_empty(&self) -> bool {
-        self.__enumset_underlying == T::ZERO
+        self.__enumset_underlying.is_zero()
     }
     /// Removes all elements from the set.
     pub fn clear(&mut self) {
-        self.__enumset_underlying = T::ZERO
+        self.__enumset_underlying = T::Repr::zero()
     }
 
     /// Checks if this set shares no elements with another.
@@ -236,29 +245,29 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Checks whether this set contains a value.
     pub fn contains(&self, value: T) -> bool {
-        self.has_bit(value.into_u8())
+        self.has_bit(value.enum_into_u8())
     }
 
     /// Adds a value to this set.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = self.contains(value);
-        self.__enumset_underlying |= Self::mask(value.into_u8());
+        self.__enumset_underlying = self.__enumset_underlying | Self::mask(value.enum_into_u8());
         contains
     }
     /// Removes a value from this set.
     pub fn remove(&mut self, value: T) -> bool {
         let contains = self.contains(value);
-        self.__enumset_underlying &= !Self::mask(value.into_u8());
+        self.__enumset_underlying = self.__enumset_underlying & !Self::mask(value.enum_into_u8());
         contains
     }
 
     /// Adds all elements in another set to this one.
     pub fn insert_all(&mut self, other: Self) {
-        self.__enumset_underlying |= other.__enumset_underlying
+        self.__enumset_underlying = self.__enumset_underlying | other.__enumset_underlying
     }
     /// Removes all values in another set from this one.
     pub fn remove_all(&mut self, other: Self) {
-        self.__enumset_underlying &= !other.__enumset_underlying
+        self.__enumset_underlying = self.__enumset_underlying & !other.__enumset_underlying
     }
 
     /// Creates an iterator over the values in this set.
@@ -364,13 +373,14 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
             let bit = self.1;
             self.1 += 1;
             if self.0.has_bit(bit) {
-                return Some(T::from_u8(bit))
+                return unsafe { Some(T::enum_from_u8(bit)) }
             }
         }
         None
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let left = T::count_ones((self.0).__enumset_underlying & !((T::ONE << self.1) - T::ONE));
+        let left_mask = EnumSet::<T>::partial_bits(self.1);
+        let left = (self.0.__enumset_underlying & left_mask).count_ones() as usize;
         (left, Some(left))
     }
 }
@@ -457,27 +467,15 @@ macro_rules! enum_set_type_internal {
         $($vis)* enum $enum_name {
             $($(#[$attr])* $variant,)*
         }
-        impl $crate::EnumSetType for $enum_name {
+        unsafe impl $crate::EnumSetType for $enum_name {
             type Repr = $repr;
-            const ZERO: Self::Repr = 0;
-            const ONE : Self::Repr = 1;
             const VARIANT_COUNT: u8 = enum_set_type_internal!(@count $($variant)*);
 
-            fn count_ones(val: Self::Repr) -> usize {
-                val.count_ones() as usize
-            }
-            fn into_u8(self) -> u8 {
+            fn enum_into_u8(self) -> u8 {
                 self as u8
             }
-            fn from_u8(val: u8) -> Self {
-                unsafe { ::std::mem::transmute(val) }
-            }
-
-            fn repr_to_u128(bits: Self::Repr) -> u128 {
-                bits as u128
-            }
-            fn repr_from_u128(bits: u128) -> Self::Repr {
-                bits as $repr
+            unsafe fn enum_from_u8(val: u8) -> Self {
+                ::std::mem::transmute(val)
             }
         }
         impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::Sub<O> for $enum_name {
@@ -678,10 +676,18 @@ mod test {
 
     mod enums {
         enum_set_type! {
-            pub enum Enum {
+            pub enum SmallEnum {
                 A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
             }
-            pub enum Enum2 {
+            pub enum LargeEnum {
+                _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
+                _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
+                _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
+                _30,  _31,  _32,  _33,  _34,  _35,  _36,  _37,
+                _40,  _41,  _42,  _43,  _44,  _45,  _46,  _47,
+                _50,  _51,  _52,  _53,  _54,  _55,  _56,  _57,
+                _60,  _61,  _62,  _63,  _64,  _65,  _66,  _67,
+                _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
                 A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
             }
             pub enum Enum8 {
@@ -697,20 +703,6 @@ mod test {
                 _96, _97, _98, _99, _100, _101, _102, _103, _104, _105, _106, _107, _108, _109,
                 _110, _111, _112, _113, _114, _115, _116, _117, _118, _119, _120, _121, _122, _123,
                 _124,  _125, _126, _127,
-            }
-        }
-
-        enum_set_type! {
-            pub enum LargeEnum {
-                _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
-                _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
-                _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
-                _30,  _31,  _32,  _33,  _34,  _35,  _36,  _37,
-                _40,  _41,  _42,  _43,  _44,  _45,  _46,  _47,
-                _50,  _51,  _52,  _53,  _54,  _55,  _56,  _57,
-                _60,  _61,  _62,  _63,  _64,  _65,  _66,  _67,
-                _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
-                A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
             }
         }
     }
@@ -739,7 +731,7 @@ mod test {
         }
     }
 
-    test_variants! { Enum enum_variant_range_test enum_all_empty
+    test_variants! { SmallEnum enum_variant_range_test enum_all_empty
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
 
@@ -801,12 +793,14 @@ mod test {
                     let mut set_2 = EnumSet::new();
                     let vec: Vec<$e> = set.iter().collect();
                     for val in vec {
+                        assert!(!set_2.contains(val));
                         set_2.insert(val);
                     }
                     assert_eq!(set, set_2);
 
                     let mut set_3 = EnumSet::new();
                     for val in set {
+                        assert!(!set_3.contains(val));
                         set_3.insert(val);
                     }
                     assert_eq!(set, set_3);
@@ -842,13 +836,16 @@ mod test {
                 #[test]
                 #[should_panic]
                 fn too_many_bits() {
+                    if EnumSet::<$e>::bit_width() == 128 {
+                        panic!("(test skipped)")
+                    }
                     EnumSet::<$e>::from_bits(!0);
                 }
             }
         }
     }
 
-    test_enum!(Enum, small_enum);
+    test_enum!(SmallEnum, small_enum);
     test_enum!(LargeEnum, large_enum);
     test_enum!(Enum8, enum8);
     test_enum!(Enum128, enum128);

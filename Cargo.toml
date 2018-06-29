@@ -15,3 +15,7 @@ license = "MIT/Apache-2.0"
 
 [features]
 nightly = []
+
+[dependencies.num-traits]
+version = "0.2"
+default-features = false
