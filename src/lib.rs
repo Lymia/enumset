@@ -136,7 +136,7 @@ pub struct EnumSet<T : EnumSetType> {
 }
 impl <T : EnumSetType> EnumSet<T> {
     fn mask(bit: u8) -> T::Repr {
-        T::Repr::one() << bit as usize
+        Shl::<usize>::shl(T::Repr::one(), bit as usize)
     }
     fn has_bit(&self, bit: u8) -> bool {
         let mask = Self::mask(bit);
