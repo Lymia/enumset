@@ -1,5 +1,4 @@
 #![cfg_attr(not(test), no_std)]
-#![cfg_attr(all(feature = "nightly"), feature(allow_internal_unstable, macro_vis_matcher))]
 #![forbid(missing_docs)]
 
 //! A library for defining enums that can be used in compact bit sets. It supports enums up to 128
@@ -546,59 +545,6 @@ macro_rules! enum_set_type_internal {
 /// # fn main() { }
 /// ```
 #[macro_export]
-#[cfg(not(feature = "nightly"))]
-macro_rules! enum_set_type {
-    ($(#[$enum_attr:meta])* pub enum $enum_name:ident {
-        $($(#[$attr:meta])* $variant:ident),* $(,)*
-    } $($rest:tt)*) => {
-        enum_set_type_internal_count_variants!(body (($(#[$enum_attr])*) (pub) $enum_name {
-            $($(#[$attr])* $variant,)*
-        }) $($variant)*);
-        enum_set_type!($($rest)*);
-    };
-    ($(#[$enum_attr:meta])* enum $enum_name:ident {
-        $($(#[$attr:meta])* $variant:ident),* $(,)*
-    } $($rest:tt)*) => {
-        enum_set_type_internal_count_variants!(body (($(#[$enum_attr])*) () $enum_name {
-            $($(#[$attr])* $variant,)*
-        }) $($variant)*);
-        enum_set_type!($($rest)*);
-    };
-    () => { };
-}
-
-/// Defines enums which can be used with EnumSet.
-///
-/// While attributes and documentation can be attached to the enum variants, the variants may not
-/// contain data.
-///
-/// [`Copy`], [`Clone`], [`PartialOrd`], [`Ord`], [`PartialEq`], [`Eq`], [`Hash`], [`Debug`],
-/// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] are automatically derived for the enum.
-///
-/// These impls, in general, behave as if the enum variant was an [`EnumSet`] with a single value,
-/// as those created by [`EnumSet::only`].
-///
-/// # Examples
-///
-/// ```rust
-/// # #[macro_use] extern crate enumset;
-/// # use enumset::*;
-/// enum_set_type! {
-///     enum Enum {
-///         A, B, C, D, E, F, G
-///     }
-///
-///     /// Documentation
-///     pub enum Enum2 {
-///         A, B, C, D, E, F, G,
-///         #[doc(hidden)] __NonExhaustive,
-///     }
-/// }
-/// # fn main() { }
-/// ```
-#[macro_export]
-#[cfg(feature = "nightly")]
-#[allow_internal_unstable]
 macro_rules! enum_set_type {
     ($(#[$enum_attr:meta])* $vis:vis enum $enum_name:ident {
         $($(#[$attr:meta])* $variant:ident),* $(,)*

@@ -14,7 +14,7 @@ readme = "README.md"
 license = "MIT/Apache-2.0"
 
 [features]
-nightly = []
+nightly = [] # Not currently used, but retained for compatibility
 
 [dependencies.num-traits]
 version = "0.2"
