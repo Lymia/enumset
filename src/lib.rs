@@ -105,20 +105,59 @@ use core::ops::*;
 
 use num_traits::*;
 
-#[doc(hidden)]
-/// The trait used to define enum types.
-/// This is **NOT** public API and may change at any time.
-pub unsafe trait EnumSetType: Copy {
-    type Repr: PrimInt + FromPrimitive + WrappingSub + CheckedShl + Debug + Hash;
-    const VARIANT_COUNT: u8;
+mod private {
+    use super::*;
+    pub trait EnumSetTypeRepr : PrimInt + FromPrimitive + WrappingSub + CheckedShl + Debug + Hash {
+        const WIDTH: u8;
+    }
+    macro_rules! prim {
+        ($name:ty, $width:expr) => {
+            impl EnumSetTypeRepr for $name {
+                const WIDTH: u8 = $width;
+            }
+        }
+    }
+    prim!(u8  , 8  );
+    prim!(u16 , 16 );
+    prim!(u32 , 32 );
+    prim!(u64 , 64 );
+    prim!(u128, 128);
+}
+use private::EnumSetTypeRepr;
 
+/// The trait used to define enum types that may be used with [`EnumSet`].
+///
+/// In most cases, this trait should be implemented using `#[derive(EnumSetType)]`.
+pub unsafe trait EnumSetType: Copy {
+    /// The underlying integer type used by the bitset contained in `EnumSet`.
+    ///
+    /// This must be one of `u8`, `u16`, `u32`, `u64`, or `u128`.
+    type Repr: EnumSetTypeRepr;
+
+    /// A mask containing all bits valid for this enum.
+    const ALL_BITS: Self::Repr;
+
+    /// Converts an instance of this enum into an `u8` corresponding to a bit of the
+    /// underlying repr, where 0 is the least significant bit.
+    ///
+    /// The value this method returns must correspond to a bit set in `ALL_BITS`. When called on
+    /// a value returned by `enum_from_u8`, this method must return the same value passed to
+    /// that function.
     fn enum_into_u8(self) -> u8;
+
+    /// Converts an `u8` returned by `enum_into_u8` back into an instance of this enum.
+    ///
+    /// The value passed to this function must correspond to a bit set in `ALL_BITS`.
+    ///
+    /// This function must return a distinct value for every bit set in `ALL_BITS`.
+    /// When called on a value returned by `enum_into_u8`, this method must return the same
+    /// value passed to that method.
     unsafe fn enum_from_u8(val: u8) -> Self;
 }
 
 #[doc(hidden)]
 /// A struct used to type check [`enum_set!`].
-/// This is **NOT** public API and may change at any time.
+/// This struct is **NOT** public API and may change at any time.
 pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
     pub unified: &'a [T],
     pub enum_set: EnumSet<T>,
@@ -168,14 +207,14 @@ impl <T : EnumSetType> EnumSet<T> {
         self.__enumset_underlying & mask == mask
     }
     fn partial_bits(bits: u8) -> T::Repr {
-        assert!(bits != 0 && bits <= T::VARIANT_COUNT);
         T::Repr::one().checked_shl(bits.into())
             .unwrap_or(T::Repr::zero())
             .wrapping_sub(&T::Repr::one())
     }
+
     // Returns all bits valid for the enum
     fn all_bits() -> T::Repr {
-        Self::partial_bits(T::VARIANT_COUNT)
+        T::ALL_BITS
     }
 
     /// Returns an empty set.
@@ -200,7 +239,7 @@ impl <T : EnumSetType> EnumSet<T> {
     /// Total number of bits this enumset uses. Note that the actual amount of space used is
     /// rounded up to the next highest integer type (`u8`, `u16`, `u32`, `u64`, or `u128`).
     pub fn bit_width() -> u8 {
-        T::VARIANT_COUNT as u8
+        T::Repr::WIDTH - T::ALL_BITS.leading_zeros() as u8
     }
 
     /// Returns the raw bits of this set
@@ -394,7 +433,7 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.1 < T::VARIANT_COUNT {
+        while self.1 < EnumSet::<T>::bit_width() {
             let bit = self.1;
             self.1 += 1;
             if self.0.has_bit(bit) {
@@ -494,7 +533,7 @@ macro_rules! enum_set_type_internal {
         }
         unsafe impl $crate::EnumSetType for $enum_name {
             type Repr = $repr;
-            const VARIANT_COUNT: u8 = enum_set_type_internal!(@count $($variant)*);
+            const ALL_BITS: Self::Repr = (1 << enum_set_type_internal!(@count $($variant)*)) - 1;
 
             fn enum_into_u8(self) -> u8 {
                 self as u8
