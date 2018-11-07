@@ -109,7 +109,7 @@ use num_traits::*;
 /// The trait used to define enum types.
 /// This is **NOT** public API and may change at any time.
 pub unsafe trait EnumSetType: Copy {
-    type Repr: PrimInt + ToPrimitive + FromPrimitive + WrappingSub + CheckedShl + Debug + Hash;
+    type Repr: PrimInt + FromPrimitive + WrappingSub + CheckedShl + Debug + Hash;
     const VARIANT_COUNT: u8;
 
     fn enum_into_u8(self) -> u8;
