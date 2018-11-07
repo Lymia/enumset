@@ -94,13 +94,13 @@
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
 //! ```
 
-#[cfg(test)]
-extern crate core;
+#[cfg(test)] extern crate core;
 extern crate num_traits;
 
+use core::cmp::Ordering;
 use core::fmt;
 use core::fmt::{Debug, Formatter};
-use core::hash::Hash;
+use core::hash::{Hash, Hasher};
 use core::ops::*;
 
 use num_traits::*;
@@ -108,7 +108,7 @@ use num_traits::*;
 #[doc(hidden)]
 /// The trait used to define enum types.
 /// This is **NOT** public API and may change at any time.
-pub unsafe trait EnumSetType : Copy + Ord + Eq + Hash {
+pub unsafe trait EnumSetType: Copy {
     type Repr: PrimInt + ToPrimitive + FromPrimitive + WrappingSub + CheckedShl + Debug + Hash;
     const VARIANT_COUNT: u8;
 
@@ -126,13 +126,39 @@ pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
 
 /// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
 /// macro.
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
-pub struct EnumSet<T : EnumSetType> { 
+pub struct EnumSet<T : EnumSetType> {
     #[doc(hidden)]
     /// This is public due to the [`enum_set!`] macro.
     /// This is **NOT** public API and may change at any time.
     pub __enumset_underlying: T::Repr
 }
+impl <T : EnumSetType> PartialOrd for EnumSet<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.__enumset_underlying.partial_cmp(&other.__enumset_underlying)
+    }
+}
+impl <T : EnumSetType> Ord for EnumSet<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.__enumset_underlying.cmp(&other.__enumset_underlying)
+    }
+}
+impl <T : EnumSetType> PartialEq for EnumSet<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.__enumset_underlying.eq(&other.__enumset_underlying)
+    }
+}
+impl <T : EnumSetType> Eq for EnumSet<T> { }
+impl <T : EnumSetType> Hash for EnumSet<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.__enumset_underlying.hash(state)
+    }
+}
+impl <T : EnumSetType> Clone for EnumSet<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl <T : EnumSetType> Copy for EnumSet<T> { }
 impl <T : EnumSetType> EnumSet<T> {
     fn mask(bit: u8) -> T::Repr {
         Shl::<usize>::shl(T::Repr::one(), bit as usize)
