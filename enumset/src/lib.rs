@@ -6,48 +6,33 @@
 //!
 //! # Defining enums for use with EnumSet
 //!
-//! Enums to be used with [`EnumSet`] should be defined through the [`enum_set_type!`] macro:
+//! Enums to be used with [`EnumSet`] should be defined using `#[derive(EnumSetType)]`:
 //!
 //! ```rust
-//! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
-//! enum_set_type! {
-//!     /// Documentation for the enum
-//!     pub enum Enum {
-//!         A, B, C, D, E, F,
-//!         #[doc(hidden)] G,
-//!     }
+//! #[derive(EnumSetType, Copy, Clone, Debug)]
+//! pub enum Enum {
+//!    A, B, C, D, E, F, G,
 //! }
-//! # fn main() { }
 //! ```
 //!
 //! # Working with EnumSets
 //!
 //! EnumSets can be constructed via [`EnumSet::new()`] like a normal set. In addition,
-//! [`enum_set_type!`] creates operator overloads that allow you to create EnumSets like so:
+//! `#[derive(EnumSetType)]` creates operator overloads that allow you to create EnumSets like so:
 //!
 //! ```rust
-//! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
-//! # enum_set_type! {
-//! #      pub enum Enum {
-//! #        A, B, C, D, E, F, G,
-//! #    }
-//! # }
+//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! let new_set = Enum::A | Enum::C | Enum::G;
 //! assert_eq!(new_set.len(), 3);
 //! ```
 //!
 //! All bitwise operations you would expect to work on bitsets also work on both EnumSets and
-//! enums wrapped with [`enum_set_type!`]:
+//! enums with `#[derive(EnumSetType)]`:
 //! ```
-//! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
-//! # enum_set_type! {
-//! #      pub enum Enum {
-//! #        A, B, C, D, E, F, G,
-//! #    }
-//! # }
+//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! // Intersection of sets
 //! assert_eq!((Enum::A | Enum::B) & Enum::C, EnumSet::empty());
 //! assert_eq!((Enum::A | Enum::B) & Enum::A, Enum::A);
@@ -67,11 +52,8 @@
 //! The [`enum_set!`] macro allows you to create EnumSets in constant contexts:
 //!
 //! ```rust
-//! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
-//! # enum_set_type! {
-//! #     enum Enum { A, B, C }
-//! # }
+//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
 //! assert_eq!(CONST_SET, Enum::A | Enum::B);
 //! ```
@@ -79,13 +61,8 @@
 //! Mutable operations on the [`EnumSet`] otherwise work basically as expected:
 //!
 //! ```rust
-//! # #[macro_use] extern crate enumset;
 //! # use enumset::*;
-//! # enum_set_type! {
-//! #      pub enum Enum {
-//! #        A, B, C, D, E, F, G,
-//! #    }
-//! # }
+//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! let mut set = EnumSet::new();
 //! set.insert(Enum::A);
 //! set.insert_all(Enum::E | Enum::G);
@@ -148,6 +125,28 @@ use private::EnumSetTypeRepr;
 /// The trait used to define enum types that may be used with [`EnumSet`].
 ///
 /// In most cases, this trait should be implemented using `#[derive(EnumSetType)]`.
+///
+/// # Examples
+///
+/// Deriving a plain EnumSetType:
+///
+/// ```rust
+/// # use enumset::*;
+/// #[derive(EnumSetType, Copy, Clone, Debug)]
+/// pub enum Enum {
+///    A, B, C, D, E, F, G,
+/// }
+/// ```
+///
+/// Deriving a sparse EnumSetType:
+///
+/// ```rust
+/// # use enumset::*;
+/// #[derive(EnumSetType, Copy, Clone, Debug)]
+/// pub enum SparseEnum {
+///    A = 10, B = 20, C = 30,
+/// }
+/// ```
 pub unsafe trait EnumSetType: Copy {
     /// The underlying integer type used by the bitset contained in `EnumSet`.
     ///
@@ -175,8 +174,7 @@ pub unsafe trait EnumSetType: Copy {
     unsafe fn enum_from_u8(val: u8) -> Self;
 }
 
-/// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
-/// macro.
+/// An efficient set type for enums.
 pub struct EnumSet<T : EnumSetType> {
     #[doc(hidden)]
     /// This is public due to the [`enum_set!`] macro.
@@ -250,8 +248,19 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Total number of bits this enumset uses. Note that the actual amount of space used is
     /// rounded up to the next highest integer type (`u8`, `u16`, `u32`, `u64`, or `u128`).
+    ///
+    /// This is the same as [`EnumSet::variant_count`] except in enums with "sparse" variants.
+    /// (e.g. `enum Foo { A = 10, B = 20 }`)
     pub fn bit_width() -> u8 {
         T::Repr::WIDTH - T::ALL_BITS.leading_zeros() as u8
+    }
+
+    /// The number of valid variants in this enumset.
+    ///
+    /// This is the same as [`EnumSet::bit_width`] except in enums with "sparse" variants.
+    /// (e.g. `enum Foo { A = 10, B = 20 }`)
+    pub fn variant_count() -> u8 {
+        T::ALL_BITS.count_ones() as u8
     }
 
     /// Returns the raw bits of this set
@@ -463,34 +472,13 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
 
 /// Defines enums which can be used with EnumSet.
 ///
-/// While attributes and documentation can be attached to the enum variants, the variants may not
-/// contain data.
-///
 /// [`Copy`], [`Clone`], [`PartialOrd`], [`Ord`], [`PartialEq`], [`Eq`], [`Hash`], [`Debug`],
 /// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] are automatically derived for the enum.
 ///
 /// These impls, in general, behave as if the enum variant was an [`EnumSet`] with a single value,
 /// as those created by [`EnumSet::only`].
-///
-/// # Examples
-///
-/// ```rust
-/// # #[macro_use] extern crate enumset;
-/// # use enumset::*;
-/// enum_set_type! {
-///     enum Enum {
-///         A, B, C, D, E, F, G
-///     }
-///
-///     /// Documentation
-///     pub enum Enum2 {
-///         A, B, C, D, E, F, G,
-///         #[doc(hidden)] __NonExhaustive,
-///     }
-/// }
-/// # fn main() { }
-/// ```
 #[macro_export]
+#[deprecated(since = "0.3.13", note = "Use `#[derive(EnumSetType)] instead.")]
 macro_rules! enum_set_type {
     ($(#[$enum_attr:meta])* $vis:vis enum $enum_name:ident {
         $($(#[$attr:meta])* $variant:ident),* $(,)*
@@ -517,32 +505,22 @@ macro_rules! enum_set_type {
 /// # Examples
 ///
 /// ```rust
-/// # #[macro_use] extern crate enumset;
 /// # use enumset::*;
-/// # enum_set_type! {
-/// #     enum Enum { A, B, C }
-/// # }
-/// # fn main() {
+/// # #[derive(EnumSetType, Copy, Clone, Debug)] enum Enum { A, B, C }
 /// const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
 /// assert_eq!(CONST_SET, Enum::A | Enum::B);
 ///
 /// const EXPLICIT_CONST_SET: EnumSet<Enum> = enum_set!(Enum, Enum::A | Enum::B);
 /// assert_eq!(EXPLICIT_CONST_SET, Enum::A | Enum::B);
-/// # }
 /// ```
 ///
 /// This macro is strongly typed. For example, the following will not compile:
 ///
 /// ```compile_fail
-/// # #[macro_use] extern crate enumset;
 /// # use enumset::*;
-/// # enum_set_type! {
-/// #     enum Enum { A, B, C }
-/// #     enum Enum2 { A, B, C }
-/// # }
-/// # fn main() {
+/// # #[derive(EnumSetType, Copy, Clone, Debug)] enum Enum { A, B, C }
+/// # #[derive(EnumSetType, Copy, Clone, Debug)] enum Enum2 { A, B, C }
 /// let type_error = enum_set!(Enum::A | Enum2::B);
-/// # }
 /// ```
 #[macro_export]
 macro_rules! enum_set {
@@ -570,41 +548,47 @@ mod test {
     use super::*;
 
     mod enums {
-        enum_set_type! {
-            pub enum SmallEnum {
-                A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-            }
-            pub enum LargeEnum {
-                _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
-                _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
-                _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
-                _30,  _31,  _32,  _33,  _34,  _35,  _36,  _37,
-                _40,  _41,  _42,  _43,  _44,  _45,  _46,  _47,
-                _50,  _51,  _52,  _53,  _54,  _55,  _56,  _57,
-                _60,  _61,  _62,  _63,  _64,  _65,  _66,  _67,
-                _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
-                A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-            }
-            pub enum Enum8 {
-                A, B, C, D, E, F, G, H,
-            }
-            pub enum Enum128 {
-                A, B, C, D, E, F, G, H, _8, _9, _10, _11, _12, _13, _14, _15,
-                _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31,
-                _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47,
-                _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63,
-                _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79,
-                _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95,
-                _96, _97, _98, _99, _100, _101, _102, _103, _104, _105, _106, _107, _108, _109,
-                _110, _111, _112, _113, _114, _115, _116, _117, _118, _119, _120, _121, _122, _123,
-                _124,  _125, _126, _127,
-            }
+        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        pub enum SmallEnum {
+            A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+        }
+        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        pub enum LargeEnum {
+            _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
+            _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
+            _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
+            _30,  _31,  _32,  _33,  _34,  _35,  _36,  _37,
+            _40,  _41,  _42,  _43,  _44,  _45,  _46,  _47,
+            _50,  _51,  _52,  _53,  _54,  _55,  _56,  _57,
+            _60,  _61,  _62,  _63,  _64,  _65,  _66,  _67,
+            _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
+            A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+        }
+        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        pub enum Enum8 {
+            A, B, C, D, E, F, G, H,
+        }
+        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        pub enum Enum128 {
+            A, B, C, D, E, F, G, H, _8, _9, _10, _11, _12, _13, _14, _15,
+            _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31,
+            _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47,
+            _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63,
+            _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79,
+            _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95,
+            _96, _97, _98, _99, _100, _101, _102, _103, _104, _105, _106, _107, _108, _109,
+            _110, _111, _112, _113, _114, _115, _116, _117, _118, _119, _120, _121, _122,
+            _123, _124,  _125, _126, _127,
+        }
+        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        pub enum SparseEnum {
+            A = 10, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
         }
     }
     use self::enums::*;
 
     macro_rules! test_variants {
-        ($enum_name:ident $variant_range:ident $all_empty_test:ident $($variant:ident,)*) => {
+        ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
             #[test]
             fn $all_empty_test() {
                 let all = EnumSet::<$enum_name>::all();
@@ -617,12 +601,10 @@ mod test {
             }
         }
     }
-
-    test_variants! { SmallEnum enum_variant_range_test enum_all_empty
+    test_variants! { SmallEnum small_enum_all_empty
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
-
-    test_variants! { LargeEnum large_enum_variant_range_test large_enum_all_empty
+    test_variants! { LargeEnum large_enum_all_empty
         _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
         _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
         _20,  _21,  _22,  _23,  _24,  _25,  _26,  _27,
@@ -632,6 +614,9 @@ mod test {
         _60,  _61,  _62,  _63,  _64,  _65,  _66,  _67,
         _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    }
+    test_variants! { SparseEnum sparse_enum_all_empty
+        A, B, C, D, E, F, G,
     }
 
     macro_rules! test_enum {
@@ -676,7 +661,7 @@ mod test {
 
                 #[test]
                 fn all_len() {
-                    assert_eq!(EnumSet::<$e>::all().len(), EnumSet::<$e>::bit_width() as usize)
+                    assert_eq!(EnumSet::<$e>::all().len(), EnumSet::<$e>::variant_count() as usize)
                 }
 
                 #[test]
@@ -733,7 +718,7 @@ mod test {
                 #[test]
                 #[should_panic]
                 fn too_many_bits() {
-                    if EnumSet::<$e>::bit_width() == 128 {
+                    if EnumSet::<$e>::variant_count() == 128 {
                         panic!("(test skipped)")
                     }
                     EnumSet::<$e>::from_bits(!0);
@@ -746,4 +731,5 @@ mod test {
     test_enum!(LargeEnum, large_enum);
     test_enum!(Enum8, enum8);
     test_enum!(Enum128, enum128);
+    test_enum!(SparseEnum, sparse_enum);
 }
