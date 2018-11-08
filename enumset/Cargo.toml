@@ -1,0 +1,21 @@
+[package]
+name = "enumset"
+version = "0.3.12"
+authors = ["Lymia Aluysia <lymia@lymiahugs.com>"]
+
+description = "A library for creating compact sets of enums."
+keywords = ["enum", "bitset"]
+categories = ["data-structures"]
+
+documentation = "https://lymia.moe/doc/enumset/enumset/"
+repository = "https://github.com/Lymia/enumset"
+readme = "../README.md"
+
+license = "MIT/Apache-2.0"
+
+[features]
+nightly = ["enumset_derive/nightly"]
+
+[dependencies]
+enumset_derive = { version = "0.1.0", path = "../enumset_derive" }
+num-traits = { version = "0.2", default-features = false }

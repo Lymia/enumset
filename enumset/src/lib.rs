@@ -95,7 +95,11 @@
 //! ```
 
 #[cfg(test)] extern crate core;
+extern crate enumset_derive;
 extern crate num_traits;
+
+pub use enumset_derive::*;
+mod enumset { pub use super::*; }
 
 use core::cmp::Ordering;
 use core::fmt;
@@ -104,6 +108,22 @@ use core::hash::{Hash, Hasher};
 use core::ops::*;
 
 use num_traits::*;
+
+#[doc(hidden)]
+/// Everything in this module is internal API and may change at any time.
+pub mod internal {
+    use super::*;
+
+    #[doc(hidden)]
+    /// A struct used to type check [`enum_set!`].
+    pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
+        pub unified: &'a [T],
+        pub enum_set: EnumSet<T>,
+    }
+
+    /// A reexport of core to allow our macros to be generic to std vs core.
+    pub extern crate core;
+}
 
 mod private {
     use super::*;
@@ -153,14 +173,6 @@ pub unsafe trait EnumSetType: Copy {
     /// When called on a value returned by `enum_into_u8`, this method must return the same
     /// value passed to that method.
     unsafe fn enum_from_u8(val: u8) -> Self;
-}
-
-#[doc(hidden)]
-/// A struct used to type check [`enum_set!`].
-/// This struct is **NOT** public API and may change at any time.
-pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
-    pub unified: &'a [T],
-    pub enum_set: EnumSet<T>,
 }
 
 /// An efficient set type for enums created with the [`enum_set_type!`](./macro.enum_set_type.html)
@@ -449,137 +461,6 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
     }
 }
 
-#[macro_export]
-#[doc(hidden)]
-macro_rules! enum_set_type_internal_count_variants {
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $_10:ident $_11:ident $_12:ident $_13:ident $_14:ident $_15:ident $_16:ident $_17:ident
-        $_20:ident $_21:ident $_22:ident $_23:ident $_24:ident $_25:ident $_26:ident $_27:ident
-        $_30:ident $_31:ident $_32:ident $_33:ident $_34:ident $_35:ident $_36:ident $_37:ident
-        $_40:ident $_41:ident $_42:ident $_43:ident $_44:ident $_45:ident $_46:ident $_47:ident
-        $_50:ident $_51:ident $_52:ident $_53:ident $_54:ident $_55:ident $_56:ident $_57:ident
-        $_60:ident $_61:ident $_62:ident $_63:ident $_64:ident $_65:ident $_66:ident $_67:ident
-        $_70:ident $_71:ident $_72:ident $_73:ident $_74:ident $_75:ident $_76:ident $_77:ident
-        $_80:ident $_81:ident $_82:ident $_83:ident $_84:ident $_85:ident $_86:ident $_87:ident
-        $_90:ident $_91:ident $_92:ident $_93:ident $_94:ident $_95:ident $_96:ident $_97:ident
-        $_a0:ident $_a1:ident $_a2:ident $_a3:ident $_a4:ident $_a5:ident $_a6:ident $_a7:ident
-        $_b0:ident $_b1:ident $_b2:ident $_b3:ident $_b4:ident $_b5:ident $_b6:ident $_b7:ident
-        $_c0:ident $_c1:ident $_c2:ident $_c3:ident $_c4:ident $_c5:ident $_c6:ident $_c7:ident
-        $_d0:ident $_d1:ident $_d2:ident $_d3:ident $_d4:ident $_d5:ident $_d6:ident $_d7:ident
-        $_e0:ident $_e1:ident $_e2:ident $_e3:ident $_e4:ident $_e5:ident $_e6:ident $_e7:ident
-        $_f0:ident $_f1:ident $_f2:ident $_f3:ident $_f4:ident $_f5:ident $_f6:ident $_f7:ident
-        $($rest:ident)+
-    ) => {
-        compile_error!("enum_set_type! can only accept up to 128 variants.")
-    };
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $_10:ident $_11:ident $_12:ident $_13:ident $_14:ident $_15:ident $_16:ident $_17:ident
-        $_20:ident $_21:ident $_22:ident $_23:ident $_24:ident $_25:ident $_26:ident $_27:ident
-        $_30:ident $_31:ident $_32:ident $_33:ident $_34:ident $_35:ident $_36:ident $_37:ident
-        $_40:ident $_41:ident $_42:ident $_43:ident $_44:ident $_45:ident $_46:ident $_47:ident
-        $_50:ident $_51:ident $_52:ident $_53:ident $_54:ident $_55:ident $_56:ident $_57:ident
-        $_60:ident $_61:ident $_62:ident $_63:ident $_64:ident $_65:ident $_66:ident $_67:ident
-        $_70:ident $_71:ident $_72:ident $_73:ident $_74:ident $_75:ident $_76:ident $_77:ident
-        $($rest:ident)+
-    ) => {
-        enum_set_type_internal! { @$next u128 $($args)* }
-    };
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $_10:ident $_11:ident $_12:ident $_13:ident $_14:ident $_15:ident $_16:ident $_17:ident
-        $_20:ident $_21:ident $_22:ident $_23:ident $_24:ident $_25:ident $_26:ident $_27:ident
-        $_30:ident $_31:ident $_32:ident $_33:ident $_34:ident $_35:ident $_36:ident $_37:ident
-        $($rest:ident)+
-    ) => {
-        enum_set_type_internal! { @$next u64 $($args)* }
-    };
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $_10:ident $_11:ident $_12:ident $_13:ident $_14:ident $_15:ident $_16:ident $_17:ident
-        $($rest:ident)+
-    ) => {
-        enum_set_type_internal! { @$next u32 $($args)* }
-    };
-    ($next:ident ($($args:tt)*)
-        $_00:ident $_01:ident $_02:ident $_03:ident $_04:ident $_05:ident $_06:ident $_07:ident
-        $($rest:ident)+
-    ) => {
-        enum_set_type_internal! { @$next u16 $($args)* }
-    };
-    ($next:ident ($($args:tt)*) $($rest:ident)*) => {
-        enum_set_type_internal! { @$next u8 $($args)* }
-    };
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! enum_set_type_internal {
-    // Counting functions
-    (@ident ($($random:tt)*) $value:expr) => { $value };
-    (@count $($value:tt)*) => {
-        0u8 $(+ enum_set_type_internal!(@ident ($value) 1u8))*
-    };
-
-    // Codegen
-    (@body $repr:ident ($(#[$enum_attr:meta])*) ($($vis:tt)*) $enum_name:ident {
-        $($(#[$attr:meta])* $variant:ident,)*
-    }) => {
-        $(#[$enum_attr])* #[repr(u8)]
-        #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
-        $($vis)* enum $enum_name {
-            $($(#[$attr])* $variant,)*
-        }
-        unsafe impl $crate::EnumSetType for $enum_name {
-            type Repr = $repr;
-            const ALL_BITS: Self::Repr = (1 << enum_set_type_internal!(@count $($variant)*)) - 1;
-
-            fn enum_into_u8(self) -> u8 {
-                self as u8
-            }
-            unsafe fn enum_from_u8(val: u8) -> Self {
-                ::std::mem::transmute(val)
-            }
-        }
-        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::Sub<O> for $enum_name {
-            type Output = $crate::EnumSet<$enum_name>;
-            fn sub(self, other: O) -> Self::Output {
-                $crate::EnumSet::only(self) - other.into()
-            }
-        }
-        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitAnd<O> for $enum_name {
-            type Output = $crate::EnumSet<$enum_name>;
-            fn bitand(self, other: O) -> Self::Output {
-                $crate::EnumSet::only(self) & other.into()
-            }
-        }
-        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitOr<O> for $enum_name {
-            type Output = $crate::EnumSet<$enum_name>;
-            fn bitor(self, other: O) -> Self::Output {
-                $crate::EnumSet::only(self) | other.into()
-            }
-        }
-        impl <O : Into<$crate::EnumSet<$enum_name>>> ::std::ops::BitXor<O> for $enum_name {
-            type Output = $crate::EnumSet<$enum_name>;
-            fn bitxor(self, other: O) -> Self::Output {
-                $crate::EnumSet::only(self) ^ other.into()
-            }
-        }
-        impl ::std::ops::Not for $enum_name {
-            type Output = $crate::EnumSet<$enum_name>;
-            fn not(self) -> Self::Output {
-                !$crate::EnumSet::only(self)
-            }
-        }
-        impl ::std::cmp::PartialEq<$crate::EnumSet<$enum_name>> for $enum_name {
-            fn eq(&self, other: &$crate::EnumSet<$enum_name>) -> bool {
-                $crate::EnumSet::only(*self) == *other
-            }
-        }
-    };
-}
-
 /// Defines enums which can be used with EnumSet.
 ///
 /// While attributes and documentation can be attached to the enum variants, the variants may not
@@ -614,9 +495,12 @@ macro_rules! enum_set_type {
     ($(#[$enum_attr:meta])* $vis:vis enum $enum_name:ident {
         $($(#[$attr:meta])* $variant:ident),* $(,)*
     } $($rest:tt)*) => {
-        enum_set_type_internal_count_variants!(body (($(#[$enum_attr])*) ($vis) $enum_name {
+        $(#[$enum_attr])* #[repr(u8)]
+        #[derive($crate::EnumSetType, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+        $vis enum $enum_name {
             $($(#[$attr])* $variant,)*
-        }) $($variant)*);
+        }
+
         enum_set_type!($($rest)*);
     };
     () => { };
@@ -666,7 +550,7 @@ macro_rules! enum_set {
         $crate::EnumSet { __enumset_underlying: 0 }
     };
     ($($value:path)|* $(|)*) => {
-        $crate::EnumSetSameTypeHack {
+        $crate::internal::EnumSetSameTypeHack {
             unified: &[$($value,)*],
             enum_set: $crate::EnumSet {
                 __enumset_underlying: 0 $(| (1 << ($value as u8)))*
@@ -721,14 +605,6 @@ mod test {
 
     macro_rules! test_variants {
         ($enum_name:ident $variant_range:ident $all_empty_test:ident $($variant:ident,)*) => {
-            #[test]
-            fn $variant_range() {
-                let count = enum_set_type_internal!(@count u8 $($variant)*);
-                $(
-                    assert!(($enum_name::$variant as u8) < count);
-                )*
-            }
-
             #[test]
             fn $all_empty_test() {
                 let all = EnumSet::<$enum_name>::all();
