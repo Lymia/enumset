@@ -126,6 +126,16 @@ use private::EnumSetTypeRepr;
 ///
 /// In most cases, this trait should be implemented using `#[derive(EnumSetType)]`.
 ///
+/// # Custom Derive
+///
+/// The custom derive for `EnumSetType` automatically creates implementations of [`PartialEq`],
+/// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] allowing the enum to be used as
+/// if it were an [`EnumSet`] in expressions. This can be disabled by adding an `#[enumset_no_ops]`
+/// annotation to the enum.
+///
+/// Any C-like enum is supported, as long as there are no more than 128 variants in the enum,
+/// and no variant discriminator is larger than 127.
+///
 /// # Examples
 ///
 /// Deriving a plain EnumSetType:
@@ -144,7 +154,18 @@ use private::EnumSetTypeRepr;
 /// # use enumset::*;
 /// #[derive(EnumSetType, Copy, Clone, Debug)]
 /// pub enum SparseEnum {
-///    A = 10, B = 20, C = 30,
+///    A = 10, B = 20, C = 30, D = 127,
+/// }
+/// ```
+///
+/// Deriving an EnumSetType without adding ops:
+///
+/// ```rust
+/// # use enumset::*;
+/// #[derive(EnumSetType, Copy, Clone, Debug)]
+/// #[enumset_no_ops]
+/// pub enum NoOpsEnum {
+///    A, B, C, D, E, F, G,
 /// }
 /// ```
 pub unsafe trait EnumSetType: Copy {

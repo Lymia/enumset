@@ -25,13 +25,57 @@ fn error(_: Span, data: &str) -> TokenStream {
     panic!("{}", data)
 }
 
-fn enum_set_type_impl(name: &Ident, all_variants: u128, repr: Ident) -> SynTokenStream {
+fn enum_set_type_impl(
+    name: &Ident, all_variants: u128, repr: Ident, no_ops: bool,
+) -> SynTokenStream {
     let typed_enumset = quote!(::enumset::EnumSet<#name>);
     let core = quote!(::enumset::internal::core);
 
     // proc_macro2 does not support creating u128 literals.
     let all_variants_tt = TokenTree::Literal(Literal::u128_unsuffixed(all_variants));
     let all_variants_tt = SynTokenStream::from(TokenStream::from(all_variants_tt));
+
+    let ops = if no_ops {
+        quote! {}
+    } else {
+        quote! {
+            impl <O : Into<#typed_enumset>> #core::ops::Sub<O> for #name {
+                type Output = #typed_enumset;
+                fn sub(self, other: O) -> Self::Output {
+                    ::enumset::EnumSet::only(self) - other.into()
+                }
+            }
+            impl <O : Into<#typed_enumset>> #core::ops::BitAnd<O> for #name {
+                type Output = #typed_enumset;
+                fn bitand(self, other: O) -> Self::Output {
+                    ::enumset::EnumSet::only(self) & other.into()
+                }
+            }
+            impl <O : Into<#typed_enumset>> #core::ops::BitOr<O> for #name {
+                type Output = #typed_enumset;
+                fn bitor(self, other: O) -> Self::Output {
+                    ::enumset::EnumSet::only(self) | other.into()
+                }
+            }
+            impl <O : Into<#typed_enumset>> #core::ops::BitXor<O> for #name {
+                type Output = #typed_enumset;
+                fn bitxor(self, other: O) -> Self::Output {
+                    ::enumset::EnumSet::only(self) ^ other.into()
+                }
+            }
+            impl #core::ops::Not for #name {
+                type Output = #typed_enumset;
+                fn not(self) -> Self::Output {
+                    !::enumset::EnumSet::only(self)
+                }
+            }
+            impl #core::cmp::PartialEq<#typed_enumset> for #name {
+                fn eq(&self, other: &#typed_enumset) -> bool {
+                    ::enumset::EnumSet::only(*self) == *other
+                }
+            }
+        }
+    };
 
     quote! {
         unsafe impl ::enumset::EnumSetType for #name {
@@ -46,45 +90,11 @@ fn enum_set_type_impl(name: &Ident, all_variants: u128, repr: Ident) -> SynToken
             }
         }
 
-        impl <O : Into<#typed_enumset>> #core::ops::Sub<O> for #name {
-            type Output = #typed_enumset;
-            fn sub(self, other: O) -> Self::Output {
-                ::enumset::EnumSet::only(self) - other.into()
-            }
-        }
-        impl <O : Into<#typed_enumset>> #core::ops::BitAnd<O> for #name {
-            type Output = #typed_enumset;
-            fn bitand(self, other: O) -> Self::Output {
-                ::enumset::EnumSet::only(self) & other.into()
-            }
-        }
-        impl <O : Into<#typed_enumset>> #core::ops::BitOr<O> for #name {
-            type Output = #typed_enumset;
-            fn bitor(self, other: O) -> Self::Output {
-                ::enumset::EnumSet::only(self) | other.into()
-            }
-        }
-        impl <O : Into<#typed_enumset>> #core::ops::BitXor<O> for #name {
-            type Output = #typed_enumset;
-            fn bitxor(self, other: O) -> Self::Output {
-                ::enumset::EnumSet::only(self) ^ other.into()
-            }
-        }
-        impl #core::ops::Not for #name {
-            type Output = #typed_enumset;
-            fn not(self) -> Self::Output {
-                !::enumset::EnumSet::only(self)
-            }
-        }
-        impl #core::cmp::PartialEq<#typed_enumset> for #name {
-            fn eq(&self, other: &#typed_enumset) -> bool {
-                ::enumset::EnumSet::only(*self) == *other
-            }
-        }
+        #ops
     }
 }
 
-#[proc_macro_derive(EnumSetType)]
+#[proc_macro_derive(EnumSetType, attributes(enumset_no_ops))]
 pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
     if let Data::Enum(data) = input.data {
@@ -147,7 +157,20 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                 panic!("max_variant > 128?")
             }, Span::call_site());
 
-            enum_set_type_impl(&input.ident, all_variants, repr).into()
+            let excluded_impl_attrs: Vec<_> = input.attrs.iter().filter(|attr| match attr {
+                Attribute { path: Path { segments, .. }, .. } =>
+                    segments.len() == 1 &&
+                    segments[0].ident.to_string() == "enumset_no_ops"
+            }).collect();
+            for attr in &excluded_impl_attrs {
+                if !attr.tts.is_empty() {
+                    return error(attr.span(), "`#[enumset_no_ops]` takes no arguments.")
+                }
+            }
+
+            enum_set_type_impl(
+                &input.ident, all_variants, repr, !excluded_impl_attrs.is_empty(),
+            ).into()
         }
     } else {
         error(input.span(), "`#[derive(EnumSetType)]` may only be used on enums")
