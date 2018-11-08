@@ -124,7 +124,8 @@ use private::EnumSetTypeRepr;
 
 /// The trait used to define enum types that may be used with [`EnumSet`].
 ///
-/// In most cases, this trait should be implemented using `#[derive(EnumSetType)]`.
+/// This trait should be implemented using `#[derive(EnumSetType)]`. Its internal structure is
+/// not currently stable, and may change at any time.
 ///
 /// # Custom Derive
 ///
@@ -169,30 +170,10 @@ use private::EnumSetTypeRepr;
 /// }
 /// ```
 pub unsafe trait EnumSetType: Copy {
-    /// The underlying integer type used by the bitset contained in `EnumSet`.
-    ///
-    /// This must be one of `u8`, `u16`, `u32`, `u64`, or `u128`.
-    type Repr: EnumSetTypeRepr;
-
-    /// A mask containing all bits valid for this enum.
-    const ALL_BITS: Self::Repr;
-
-    /// Converts an instance of this enum into an `u8` corresponding to a bit of the
-    /// underlying repr, where 0 is the least significant bit.
-    ///
-    /// The value this method returns must correspond to a bit set in `ALL_BITS`. When called on
-    /// a value returned by `enum_from_u8`, this method must return the same value passed to
-    /// that function.
-    fn enum_into_u8(self) -> u8;
-
-    /// Converts an `u8` returned by `enum_into_u8` back into an instance of this enum.
-    ///
-    /// The value passed to this function must correspond to a bit set in `ALL_BITS`.
-    ///
-    /// This function must return a distinct value for every bit set in `ALL_BITS`.
-    /// When called on a value returned by `enum_into_u8`, this method must return the same
-    /// value passed to that method.
-    unsafe fn enum_from_u8(val: u8) -> Self;
+    #[doc(hidden)] type Repr: EnumSetTypeRepr;
+    #[doc(hidden)] const ALL_BITS: Self::Repr;
+    #[doc(hidden)] fn enum_into_u8(self) -> u8;
+    #[doc(hidden)] unsafe fn enum_from_u8(val: u8) -> Self;
 }
 
 /// An efficient set type for enums.
