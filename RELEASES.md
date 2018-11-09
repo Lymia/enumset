@@ -1,4 +1,4 @@
-# Version 0.3.13 (2018-11-08)
+# Version 0.3.14 (2018-11-09)
 
 * Deprecated the `enum_set_type!` macro in favor of a custom derive.
 * Added a way to avoid the automatic operator overloads derived from
