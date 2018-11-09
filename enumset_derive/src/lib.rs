@@ -26,7 +26,7 @@ fn error(_: Span, data: &str) -> TokenStream {
 }
 
 fn enum_set_type_impl(
-    name: &Ident, all_variants: u128, repr: Ident, no_ops: bool,
+    name: &Ident, all_variants: u128, repr: Ident, no_ops: bool, no_derives: bool,
 ) -> SynTokenStream {
     let typed_enumset = quote!(::enumset::EnumSet<#name>);
     let core = quote!(::enumset::internal::core);
@@ -77,6 +77,40 @@ fn enum_set_type_impl(
         }
     };
 
+    let derives = if no_derives {
+        quote! {}
+    } else {
+        quote! {
+            impl #core::cmp::PartialOrd for #name {
+                fn partial_cmp(&self, other: &Self) -> #core::option::Option<#core::cmp::Ordering> {
+                    (*self as u8).partial_cmp(&(*other as u8))
+                }
+            }
+            impl #core::cmp::Ord for #name {
+                fn cmp(&self, other: &Self) -> #core::cmp::Ordering {
+                    (*self as u8).cmp(&(*other as u8))
+                }
+            }
+            impl #core::cmp::PartialEq for #name {
+                fn eq(&self, other: &Self) -> bool {
+                    (*self as u8) == (*other as u8)
+                }
+            }
+            impl #core::cmp::Eq for #name { }
+            impl #core::hash::Hash for #name {
+                fn hash<H: #core::hash::Hasher>(&self, state: &mut H) {
+                    state.write_u8(*self as u8)
+                }
+            }
+            impl #core::clone::Clone for #name {
+                fn clone(&self) -> Self {
+                    *self
+                }
+            }
+            impl #core::marker::Copy for #name { }
+        }
+    };
+
     quote! {
         unsafe impl ::enumset::EnumSetType for #name {
             type Repr = #repr;
@@ -91,10 +125,11 @@ fn enum_set_type_impl(
         }
 
         #ops
+        #derives
     }
 }
 
-#[proc_macro_derive(EnumSetType, attributes(enumset_no_ops))]
+#[proc_macro_derive(EnumSetType, attributes(enumset_no_ops, enumset_no_derives))]
 pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
     if let Data::Enum(data) = input.data {
@@ -157,19 +192,29 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                 panic!("max_variant > 128?")
             }, Span::call_site());
 
-            let excluded_impl_attrs: Vec<_> = input.attrs.iter().filter(|attr| match attr {
-                Attribute { path: Path { segments, .. }, .. } =>
-                    segments.len() == 1 &&
-                    segments[0].ident.to_string() == "enumset_no_ops"
-            }).collect();
-            for attr in &excluded_impl_attrs {
-                if !attr.tts.is_empty() {
-                    return error(attr.span(), "`#[enumset_no_ops]` takes no arguments.")
+            let mut no_ops = false;
+            let mut no_derives = false;
+
+            for attr in &input.attrs {
+                let span = attr.span();
+                let Attribute { tts, path: Path { segments, ..}, .. } = attr;
+
+                if segments.len() == 1 && segments[0].ident.to_string() == "enumset_no_ops" {
+                    no_ops = true;
+                    if !tts.is_empty() {
+                        return error(span, "`#[enumset_no_ops]` takes no arguments.")
+                    }
+                }
+                if segments.len() == 1 && segments[0].ident.to_string() == "enumset_no_derives" {
+                    no_derives = true;
+                    if !tts.is_empty() {
+                        return error(span, "`#[enumset_no_derives]` takes no arguments.")
+                    }
                 }
             }
 
             enum_set_type_impl(
-                &input.ident, all_variants, repr, !excluded_impl_attrs.is_empty(),
+                &input.ident, all_variants, repr, no_ops, no_derives,
             ).into()
         }
     } else {

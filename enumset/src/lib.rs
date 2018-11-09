@@ -10,7 +10,7 @@
 //!
 //! ```rust
 //! # use enumset::*;
-//! #[derive(EnumSetType, Copy, Clone, Debug)]
+//! #[derive(EnumSetType, Debug)]
 //! pub enum Enum {
 //!    A, B, C, D, E, F, G,
 //! }
@@ -23,7 +23,7 @@
 //!
 //! ```rust
 //! # use enumset::*;
-//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
+//! # #[derive(EnumSetType, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! let new_set = Enum::A | Enum::C | Enum::G;
 //! assert_eq!(new_set.len(), 3);
 //! ```
@@ -32,7 +32,7 @@
 //! enums with `#[derive(EnumSetType)]`:
 //! ```
 //! # use enumset::*;
-//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
+//! # #[derive(EnumSetType, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! // Intersection of sets
 //! assert_eq!((Enum::A | Enum::B) & Enum::C, EnumSet::empty());
 //! assert_eq!((Enum::A | Enum::B) & Enum::A, Enum::A);
@@ -53,7 +53,7 @@
 //!
 //! ```rust
 //! # use enumset::*;
-//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
+//! # #[derive(EnumSetType, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
 //! assert_eq!(CONST_SET, Enum::A | Enum::B);
 //! ```
@@ -62,7 +62,7 @@
 //!
 //! ```rust
 //! # use enumset::*;
-//! # #[derive(EnumSetType, Copy, Clone, Debug)] pub enum Enum { A, B, C, D, E, F, G }
+//! # #[derive(EnumSetType, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! let mut set = EnumSet::new();
 //! set.insert(Enum::A);
 //! set.insert_all(Enum::E | Enum::G);
@@ -78,10 +78,9 @@ extern crate num_traits;
 pub use enumset_derive::*;
 mod enumset { pub use super::*; }
 
-use core::cmp::Ordering;
 use core::fmt;
 use core::fmt::{Debug, Formatter};
-use core::hash::{Hash, Hasher};
+use core::hash::Hash;
 use core::ops::*;
 
 use num_traits::*;
@@ -134,6 +133,10 @@ use private::EnumSetTypeRepr;
 /// if it were an [`EnumSet`] in expressions. This can be disabled by adding an `#[enumset_no_ops]`
 /// annotation to the enum.
 ///
+/// The custom derive for `EnumSetType` also automatically creates implementations equivalent to
+/// `#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]`. This can be disabled by adding
+/// an `#[enumset_no_derives]` annotation to the enum.
+///
 /// Any C-like enum is supported, as long as there are no more than 128 variants in the enum,
 /// and no variant discriminator is larger than 127.
 ///
@@ -143,7 +146,7 @@ use private::EnumSetTypeRepr;
 ///
 /// ```rust
 /// # use enumset::*;
-/// #[derive(EnumSetType, Copy, Clone, Debug)]
+/// #[derive(EnumSetType, Debug)]
 /// pub enum Enum {
 ///    A, B, C, D, E, F, G,
 /// }
@@ -153,7 +156,7 @@ use private::EnumSetTypeRepr;
 ///
 /// ```rust
 /// # use enumset::*;
-/// #[derive(EnumSetType, Copy, Clone, Debug)]
+/// #[derive(EnumSetType, Debug)]
 /// pub enum SparseEnum {
 ///    A = 10, B = 20, C = 30, D = 127,
 /// }
@@ -163,7 +166,7 @@ use private::EnumSetTypeRepr;
 ///
 /// ```rust
 /// # use enumset::*;
-/// #[derive(EnumSetType, Copy, Clone, Debug)]
+/// #[derive(EnumSetType, Debug)]
 /// #[enumset_no_ops]
 /// pub enum NoOpsEnum {
 ///    A, B, C, D, E, F, G,
@@ -177,39 +180,13 @@ pub unsafe trait EnumSetType: Copy {
 }
 
 /// An efficient set type for enums.
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct EnumSet<T : EnumSetType> {
     #[doc(hidden)]
     /// This is public due to the [`enum_set!`] macro.
     /// This is **NOT** public API and may change at any time.
     pub __enumset_underlying: T::Repr
 }
-impl <T : EnumSetType> PartialOrd for EnumSet<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.__enumset_underlying.partial_cmp(&other.__enumset_underlying)
-    }
-}
-impl <T : EnumSetType> Ord for EnumSet<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.__enumset_underlying.cmp(&other.__enumset_underlying)
-    }
-}
-impl <T : EnumSetType> PartialEq for EnumSet<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.__enumset_underlying.eq(&other.__enumset_underlying)
-    }
-}
-impl <T : EnumSetType> Eq for EnumSet<T> { }
-impl <T : EnumSetType> Hash for EnumSet<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.__enumset_underlying.hash(state)
-    }
-}
-impl <T : EnumSetType> Clone for EnumSet<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl <T : EnumSetType> Copy for EnumSet<T> { }
 impl <T : EnumSetType> EnumSet<T> {
     fn mask(bit: u8) -> T::Repr {
         Shl::<usize>::shl(T::Repr::one(), bit as usize)
@@ -302,7 +279,7 @@ impl <T : EnumSetType> EnumSet<T> {
     }
     /// Checks if all elements in another set are in this set.
     pub fn is_superset(&self, other: Self) -> bool {
-        *self & other == other
+        (*self & other).__enumset_underlying == other.__enumset_underlying
     }
     /// Checks if all elements of this set are in another set.
     pub fn is_subset(&self, other: Self) -> bool {
@@ -432,7 +409,7 @@ impl <T : EnumSetType> From<T> for EnumSet<T> {
 
 impl <T : EnumSetType> PartialEq<T> for EnumSet<T> {
     fn eq(&self, other: &T) -> bool {
-        *self == EnumSet::only(*other)
+        self.__enumset_underlying == EnumSet::<T>::mask(other.enum_into_u8())
     }
 }
 impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
@@ -486,7 +463,7 @@ macro_rules! enum_set_type {
         $($(#[$attr:meta])* $variant:ident),* $(,)*
     } $($rest:tt)*) => {
         $(#[$enum_attr])* #[repr(u8)]
-        #[derive($crate::EnumSetType, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+        #[derive($crate::EnumSetType, Debug)]
         $vis enum $enum_name {
             $($(#[$attr])* $variant,)*
         }
@@ -508,7 +485,7 @@ macro_rules! enum_set_type {
 ///
 /// ```rust
 /// # use enumset::*;
-/// # #[derive(EnumSetType, Copy, Clone, Debug)] enum Enum { A, B, C }
+/// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C }
 /// const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
 /// assert_eq!(CONST_SET, Enum::A | Enum::B);
 ///
@@ -520,8 +497,8 @@ macro_rules! enum_set_type {
 ///
 /// ```compile_fail
 /// # use enumset::*;
-/// # #[derive(EnumSetType, Copy, Clone, Debug)] enum Enum { A, B, C }
-/// # #[derive(EnumSetType, Copy, Clone, Debug)] enum Enum2 { A, B, C }
+/// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C }
+/// # #[derive(EnumSetType, Debug)] enum Enum2 { A, B, C }
 /// let type_error = enum_set!(Enum::A | Enum2::B);
 /// ```
 #[macro_export]
@@ -550,11 +527,11 @@ mod test {
     use super::*;
 
     mod enums {
-        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        #[derive(::EnumSetType, Debug)]
         pub enum SmallEnum {
             A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
         }
-        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        #[derive(::EnumSetType, Debug)]
         pub enum LargeEnum {
             _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
             _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
@@ -566,11 +543,11 @@ mod test {
             _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
             A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
         }
-        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        #[derive(::EnumSetType, Debug)]
         pub enum Enum8 {
             A, B, C, D, E, F, G, H,
         }
-        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        #[derive(::EnumSetType, Debug)]
         pub enum Enum128 {
             A, B, C, D, E, F, G, H, _8, _9, _10, _11, _12, _13, _14, _15,
             _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31,
@@ -582,7 +559,7 @@ mod test {
             _110, _111, _112, _113, _114, _115, _116, _117, _118, _119, _120, _121, _122,
             _123, _124,  _125, _126, _127,
         }
-        #[derive(::EnumSetType, Copy, Clone, Debug)]
+        #[derive(::EnumSetType, Debug)]
         pub enum SparseEnum {
             A = 10, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
         }
@@ -724,6 +701,14 @@ mod test {
                         panic!("(test skipped)")
                     }
                     EnumSet::<$e>::from_bits(!0);
+                }
+
+                #[test]
+                fn match_const_test() {
+                    match CONST_SET {
+                        CONST_SET => { /* ok */ }
+                        _ => panic!("match fell through?"),
+                    }
                 }
             }
         }
