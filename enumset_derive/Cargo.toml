@@ -19,4 +19,4 @@ nightly = ["proc-macro2/nightly"]
 [dependencies]
 syn = "0.15.18"
 quote = "0.6.9"
-proc-macro2 = "0.4.20"
+proc-macro2 = "0.4.21"

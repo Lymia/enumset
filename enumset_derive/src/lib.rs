@@ -6,9 +6,8 @@ extern crate proc_macro;
 extern crate proc_macro2;
 extern crate quote;
 
-use self::proc_macro::{TokenStream, TokenTree, Literal};
-
-use proc_macro2::{TokenStream as SynTokenStream};
+use proc_macro::TokenStream;
+use proc_macro2::{TokenStream as SynTokenStream, Literal};
 use syn::*;
 use syn::export::Span;
 use syn::spanned::Spanned;
@@ -32,8 +31,7 @@ fn enum_set_type_impl(
     let core = quote!(::enumset::internal::core);
 
     // proc_macro2 does not support creating u128 literals.
-    let all_variants_tt = TokenTree::Literal(Literal::u128_unsuffixed(all_variants));
-    let all_variants_tt = SynTokenStream::from(TokenStream::from(all_variants_tt));
+    let all_variants = Literal::u128_unsuffixed(all_variants);
 
     let ops = if no_ops {
         quote! {}
@@ -114,7 +112,7 @@ fn enum_set_type_impl(
     quote! {
         unsafe impl ::enumset::EnumSetType for #name {
             type Repr = #repr;
-            const ALL_BITS: Self::Repr = #all_variants_tt;
+            const ALL_BITS: Self::Repr = #all_variants;
 
             fn enum_into_u8(self) -> u8 {
                 self as u8
