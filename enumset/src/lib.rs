@@ -74,6 +74,7 @@
 #[cfg(test)] extern crate core;
 extern crate enumset_derive;
 extern crate num_traits;
+#[cfg(feature = "serde")] extern crate serde;
 
 pub use enumset_derive::*;
 mod enumset { pub use super::*; }
@@ -423,6 +424,26 @@ impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
         }
         f.write_str(")")?;
         Ok(())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl <T : EnumSetType > serde::Serialize for EnumSet<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_u128(self.to_bits())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl <'de, T : EnumSetType > serde::Deserialize<'de> for EnumSet<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        u128::deserialize(deserializer).map(EnumSet::from_bits)
     }
 }
 
