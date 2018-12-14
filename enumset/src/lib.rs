@@ -428,21 +428,15 @@ impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
 }
 
 #[cfg(feature = "serde")]
-impl <T : EnumSetType > serde::Serialize for EnumSet<T> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
+impl <T : EnumSetType> serde::Serialize for EnumSet<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u128(self.to_bits())
     }
 }
 
 #[cfg(feature = "serde")]
-impl <'de, T : EnumSetType > serde::Deserialize<'de> for EnumSet<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
+impl <'de, T : EnumSetType> serde::Deserialize<'de> for EnumSet<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         u128::deserialize(deserializer).map(EnumSet::from_bits)
     }
 }
@@ -546,6 +540,9 @@ macro_rules! enum_set {
 #[allow(dead_code)]
 mod test {
     use super::*;
+
+    #[cfg(feature = "serde")]
+    extern crate bincode;
 
     mod enums {
         #[derive(::EnumSetType, Debug)]
@@ -730,6 +727,15 @@ mod test {
                         CONST_SET => { /* ok */ }
                         _ => panic!("match fell through?"),
                     }
+                }
+
+                #[test]
+                #[cfg(feature = "serde")]
+                fn serialize_deserialize_test() {
+                    let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
+                    let serialized = bincode::serialize(&value).unwrap();
+                    let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+                    assert_eq!(value, deserialized);
                 }
             }
         }

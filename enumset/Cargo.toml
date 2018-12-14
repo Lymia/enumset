@@ -20,3 +20,6 @@ nightly = ["enumset_derive/nightly"]
 enumset_derive = { version = "0.2.0", path = "../enumset_derive" }
 num-traits = { version = "0.2", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
+
+[dev-dependencies]
+bincode = { version = "1.0", features = ["i128"] }
