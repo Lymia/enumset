@@ -428,16 +428,20 @@ impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
 }
 
 #[cfg(feature = "serde")]
-impl <T : EnumSetType> serde::Serialize for EnumSet<T> {
+impl <T : EnumSetType> serde::Serialize for EnumSet<T>
+    where T::Repr: serde::Serialize
+{
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_u128(self.to_bits())
+        self.__enumset_underlying.serialize(serializer)
     }
 }
 
 #[cfg(feature = "serde")]
-impl <'de, T : EnumSetType> serde::Deserialize<'de> for EnumSet<T> {
+impl <'de, T : EnumSetType> serde::Deserialize<'de> for EnumSet<T>
+    where T::Repr: serde::Deserialize<'de>
+{
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        u128::deserialize(deserializer).map(EnumSet::from_bits)
+        T::Repr::deserialize(deserializer).map(|x| EnumSet { __enumset_underlying: x })
     }
 }
 
