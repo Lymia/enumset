@@ -1,3 +1,6 @@
+# Unreleased
+* Added optional `serde` support.
+
 # Version 0.3.14 (2018-11-09)
 
 * Deprecated the `enum_set_type!` macro in favor of a custom derive.

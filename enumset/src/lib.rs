@@ -4,6 +4,8 @@
 //! A library for defining enums that can be used in compact bit sets. It supports enums up to 128
 //! variants, and has a macro to use these sets in constants.
 //!
+//! For serde support, enable the `serde` feature.
+//!
 //! # Defining enums for use with EnumSet
 //!
 //! Enums to be used with [`EnumSet`] should be defined using `#[derive(EnumSetType)]`:
