@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.3.15 (2019-01-08)
 * Added optional `serde` support.
 
 # Version 0.3.14 (2018-11-09)
