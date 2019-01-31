@@ -342,6 +342,14 @@ impl <T : EnumSetType> EnumSet<T> {
         EnumSetIter(*self, 0)
     }
 }
+
+impl <T: EnumSetType> Default for EnumSet<T> {
+    /// Returns an empty set.
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl <T : EnumSetType> IntoIterator for EnumSet<T> {
     type Item = T;
     type IntoIter = EnumSetIter<T>;
