@@ -1,3 +1,6 @@
+# Version 0.3.16 (2019-02-04)
+* Added `Default` implementation for `EnumSet<T>` that returns an empty map.
+
 # Version 0.3.15 (2019-01-08)
 * Added optional `serde` support.
 

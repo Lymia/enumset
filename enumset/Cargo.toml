@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "0.3.15"
+version = "0.3.16"
 authors = ["Lymia Aluysia <lymia@lymiahugs.com>"]
 
 description = "A library for creating compact sets of enums."
@@ -17,7 +17,7 @@ license = "MIT/Apache-2.0"
 nightly = ["enumset_derive/nightly"]
 
 [dependencies]
-enumset_derive = { version = "0.2.0", path = "../enumset_derive" }
+enumset_derive = { version = "0.2", path = "../enumset_derive" }
 num-traits = { version = "0.2", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
 
