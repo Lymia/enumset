@@ -1,3 +1,8 @@
+# Version 0.3.17 (2019-03-11)
+* Add an `#[enumset_serialize_as_list]` attribute to cause the `Deserialize`
+  and `Serialize` implementations for `EnumSet<T>` to serialize it as a seq
+  of `T`s rather than an integer bitmask.
+
 # Version 0.3.16 (2019-02-04)
 * Added `Default` implementation for `EnumSet<T>` that returns an empty map.
 
