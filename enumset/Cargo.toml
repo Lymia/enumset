@@ -15,11 +15,13 @@ license = "MIT/Apache-2.0"
 
 [features]
 nightly = ["enumset_derive/nightly"]
+serde = ["serde2", "enumset_derive/serde"]
 
 [dependencies]
 enumset_derive = { version = "0.2", path = "../enumset_derive" }
 num-traits = { version = "0.2", default-features = false }
-serde = { version = "1.0", default-features = false, optional = true }
+serde2 = { package = "serde", version = "1.0", default-features = false, optional = true }
 
 [dev-dependencies]
 bincode = { version = "1.0", features = ["i128"] }
+serde_derive = { version = "1.0" }

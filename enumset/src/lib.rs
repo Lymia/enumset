@@ -76,7 +76,7 @@
 #[cfg(test)] extern crate core;
 extern crate enumset_derive;
 extern crate num_traits;
-#[cfg(feature = "serde")] extern crate serde;
+#[cfg(feature = "serde")] extern crate serde2 as serde;
 
 pub use enumset_derive::*;
 mod enumset { pub use super::*; }
@@ -93,7 +93,6 @@ use num_traits::*;
 pub mod internal {
     use super::*;
 
-    #[doc(hidden)]
     /// A struct used to type check [`enum_set!`].
     pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
         pub unified: &'a [T],
@@ -102,6 +101,9 @@ pub mod internal {
 
     /// A reexport of core to allow our macros to be generic to std vs core.
     pub extern crate core;
+
+    /// A reexport of serde so there is no requirement to depend on serde.
+    #[cfg(feature = "serde")] pub extern crate serde2 as serde;
 }
 
 mod private {
@@ -180,6 +182,11 @@ pub unsafe trait EnumSetType: Copy {
     #[doc(hidden)] const ALL_BITS: Self::Repr;
     #[doc(hidden)] fn enum_into_u8(self) -> u8;
     #[doc(hidden)] unsafe fn enum_from_u8(val: u8) -> Self;
+
+    #[cfg(feature = "serde")] #[doc(hidden)]
+    fn serialize<S: serde::Serializer>(set: EnumSet<Self>, ser: S) -> Result<S::Ok, S::Error>;
+    #[cfg(feature = "serde")] #[doc(hidden)]
+    fn deserialize<'de, D: serde::Deserializer<'de>>(de: D) -> Result<EnumSet<Self>, D::Error>;
 }
 
 /// An efficient set type for enums.
@@ -438,20 +445,16 @@ impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
 }
 
 #[cfg(feature = "serde")]
-impl <T : EnumSetType> serde::Serialize for EnumSet<T>
-    where T::Repr: serde::Serialize
-{
+impl <T : EnumSetType> serde::Serialize for EnumSet<T> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.__enumset_underlying.serialize(serializer)
+        T::serialize(*self, serializer)
     }
 }
 
 #[cfg(feature = "serde")]
-impl <'de, T : EnumSetType> serde::Deserialize<'de> for EnumSet<T>
-    where T::Repr: serde::Deserialize<'de>
-{
+impl <'de, T : EnumSetType> serde::Deserialize<'de> for EnumSet<T> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        T::Repr::deserialize(deserializer).map(|x| EnumSet { __enumset_underlying: x })
+        T::deserialize(deserializer)
     }
 }
 
