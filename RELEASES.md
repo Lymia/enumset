@@ -1,3 +1,7 @@
+# Version 0.3.18 (2019-03-11)
+* Fix an off-by-one error causing enums with 9, 17, 33, etc variants to behave
+  unexpectedly.
+
 # Version 0.3.17 (2019-03-11)
 * Add an `#[enumset_serialize_as_list]` attribute to cause the `Deserialize`
   and `Serialize` implementations for `EnumSet<T>` to serialize it as a seq
