@@ -244,18 +244,18 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                 }
             }
 
-            let repr = Ident::new(if max_variant <= 8 {
+            let repr = Ident::new(if max_variant <= 7 {
                 "u8"
-            } else if max_variant <= 16 {
+            } else if max_variant <= 15 {
                 "u16"
-            } else if max_variant <= 32 {
+            } else if max_variant <= 31 {
                 "u32"
-            } else if max_variant <= 64 {
+            } else if max_variant <= 63 {
                 "u64"
-            } else if max_variant <= 128 {
+            } else if max_variant <= 127 {
                 "u128"
             } else {
-                panic!("max_variant > 128?")
+                panic!("max_variant > 127?")
             }, Span::call_site());
 
             let mut no_ops = false;
