@@ -754,6 +754,14 @@ mod test {
                     let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
                     assert_eq!(value, deserialized);
                 }
+
+                #[test]
+                #[cfg(feature = "serde")]
+                fn deserialize_all_test() {
+                    let serialized = bincode::serialize(&(!0 as <$e as EnumSetType>::Repr)).unwrap();
+                    let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+                    assert_eq!(EnumSet::<$e>::all(), deserialized);
+                }
             }
         }
     }

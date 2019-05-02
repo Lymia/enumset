@@ -165,7 +165,8 @@ fn enum_set_type_impl(
             ) -> #core::result::Result<::enumset::EnumSet<#name>, D::Error> {
                 use #serde::Deserialize;
                 #core::prelude::v1::Ok(::enumset::EnumSet {
-                    __enumset_underlying: <#name as ::enumset::EnumSetType>::Repr::deserialize(de)?,
+                    __enumset_underlying:
+                        <#name as ::enumset::EnumSetType>::Repr::deserialize(de)? & #all_variants,
                 })
             }
         }
