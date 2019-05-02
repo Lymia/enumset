@@ -1,3 +1,6 @@
+# Version 0.3.19 (2019-05-02)
+* Fix a bug when deserializing enums containing invalid bits set.
+
 # Version 0.3.18 (2019-03-11)
 * Fix an off-by-one error causing enums with 9, 17, 33, etc variants to behave
   unexpectedly.
