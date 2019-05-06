@@ -139,8 +139,8 @@ use private::EnumSetTypeRepr;
 /// if it were an [`EnumSet`] in expressions. This can be disabled by adding an `#[enumset(no_ops)]`
 /// annotation to the enum.
 ///
-/// The custom derive for `EnumSetType` automatically implements [`Copy`] and [`Clone`] on the
-/// enum. These are required for the [`EnumSet`] to function.
+/// The custom derive for `EnumSetType` automatically implements [`Copy`], [`Clone`], [`Eq`], and
+/// [`PartialEq`] on the enum. These are required for the [`EnumSet`] to function.
 ///
 /// Any C-like enum is supported, as long as there are no more than 128 variants in the enum,
 /// and no variant discriminator is larger than 127.
@@ -479,30 +479,6 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
         let left = (self.0.__enumset_underlying & left_mask).count_ones() as usize;
         (left, Some(left))
     }
-}
-
-/// Defines enums which can be used with EnumSet.
-///
-/// [`Copy`], [`Clone`], [`PartialOrd`], [`Ord`], [`PartialEq`], [`Eq`], [`Hash`], [`Debug`],
-/// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] are automatically derived for the enum.
-///
-/// These impls, in general, behave as if the enum variant was an [`EnumSet`] with a single value,
-/// as those created by [`EnumSet::only`].
-#[macro_export]
-#[deprecated(since = "0.3.13", note = "Use `#[derive(EnumSetType)] instead.")]
-macro_rules! enum_set_type {
-    ($(#[$enum_attr:meta])* $vis:vis enum $enum_name:ident {
-        $($(#[$attr:meta])* $variant:ident),* $(,)*
-    } $($rest:tt)*) => {
-        $(#[$enum_attr])* #[repr(u8)]
-        #[derive($crate::EnumSetType, Debug)]
-        $vis enum $enum_name {
-            $($(#[$attr])* $variant,)*
-        }
-
-        enum_set_type!($($rest)*);
-    };
-    () => { };
 }
 
 /// Creates a EnumSet literal, which can be used in const contexts.

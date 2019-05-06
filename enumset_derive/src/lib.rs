@@ -79,40 +79,6 @@ fn enum_set_type_impl(
         }
     };
 
-    let derives = if attrs.no_derives {
-        quote! {}
-    } else {
-        quote! {
-            impl #core::cmp::PartialOrd for #name {
-                fn partial_cmp(&self, other: &Self) -> #core::option::Option<#core::cmp::Ordering> {
-                    (*self as u8).partial_cmp(&(*other as u8))
-                }
-            }
-            impl #core::cmp::Ord for #name {
-                fn cmp(&self, other: &Self) -> #core::cmp::Ordering {
-                    (*self as u8).cmp(&(*other as u8))
-                }
-            }
-            impl #core::cmp::PartialEq for #name {
-                fn eq(&self, other: &Self) -> bool {
-                    (*self as u8) == (*other as u8)
-                }
-            }
-            impl #core::cmp::Eq for #name { }
-            impl #core::hash::Hash for #name {
-                fn hash<H: #core::hash::Hasher>(&self, state: &mut H) {
-                    state.write_u8(*self as u8)
-                }
-            }
-            impl #core::clone::Clone for #name {
-                fn clone(&self) -> Self {
-                    *self
-                }
-            }
-            impl #core::marker::Copy for #name { }
-        }
-    };
-
     #[cfg(feature = "serde")]
     let expecting_str = format!("a list of {}", name);
 
@@ -194,8 +160,20 @@ fn enum_set_type_impl(
             #serde_ops
         }
 
+        impl #core::cmp::PartialEq for #name {
+            fn eq(&self, other: &Self) -> bool {
+                (*self as u8) == (*other as u8)
+            }
+        }
+        impl #core::cmp::Eq for #name { }
+        impl #core::clone::Clone for #name {
+            fn clone(&self) -> Self {
+                *self
+            }
+        }
+        impl #core::marker::Copy for #name { }
+
         #ops
-        #derives
     }
 }
 
@@ -203,7 +181,6 @@ fn enum_set_type_impl(
 #[darling(attributes(enumset), default)]
 struct EnumsetAttrs {
     no_ops: bool,
-    no_derives: bool,
     serialize_as_list: bool,
     #[darling(default)]
     serialize_repr: Option<String>,
