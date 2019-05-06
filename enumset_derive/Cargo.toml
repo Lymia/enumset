@@ -1,6 +1,6 @@
 [package]
 name = "enumset_derive"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["Lymia Aluysia <lymia@lymiahugs.com>"]
 
 description = "An internal helper crate for enumset."
@@ -14,10 +14,11 @@ license = "MIT/Apache-2.0"
 proc-macro = true
 
 [features]
-nightly = ["proc-macro2/nightly"]
+nightly = ["proc-macro2/nightly", "darling/diagnostics"]
 serde = []
 
 [dependencies]
+darling = "0.9.0"
 syn = "0.15.18"
 quote = "0.6.9"
 proc-macro2 = "0.4.21"

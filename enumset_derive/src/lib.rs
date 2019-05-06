@@ -1,11 +1,13 @@
 #![recursion_limit="256"]
 #![cfg_attr(feature = "nightly", feature(proc_macro_diagnostic))]
 
+extern crate darling;
 extern crate syn;
 extern crate proc_macro;
 extern crate proc_macro2;
 extern crate quote;
 
+use darling::*;
 use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as SynTokenStream, Literal};
 use syn::*;
@@ -25,8 +27,7 @@ fn error(_: Span, data: &str) -> TokenStream {
 }
 
 fn enum_set_type_impl(
-    name: &Ident, all_variants: u128, repr: Ident,
-    no_ops: bool, no_derives: bool, _serialize_as_list: bool,
+    name: &Ident, all_variants: u128, repr: Ident, attrs: EnumsetAttrs,
 ) -> SynTokenStream {
     let typed_enumset = quote!(::enumset::EnumSet<#name>);
     let core = quote!(::enumset::internal::core);
@@ -36,7 +37,7 @@ fn enum_set_type_impl(
     // proc_macro2 does not support creating u128 literals.
     let all_variants = Literal::u128_unsuffixed(all_variants);
 
-    let ops = if no_ops {
+    let ops = if attrs.no_ops {
         quote! {}
     } else {
         quote! {
@@ -78,7 +79,7 @@ fn enum_set_type_impl(
         }
     };
 
-    let derives = if no_derives {
+    let derives = if attrs.no_derives {
         quote! {}
     } else {
         quote! {
@@ -116,7 +117,7 @@ fn enum_set_type_impl(
     let expecting_str = format!("a list of {}", name);
 
     #[cfg(feature = "serde")]
-    let serde_ops = if _serialize_as_list {
+    let serde_ops = if attrs.serialize_as_list {
         quote! {
             fn serialize<S: #serde::Serializer>(
                 set: ::enumset::EnumSet<#name>, ser: S,
@@ -153,12 +154,15 @@ fn enum_set_type_impl(
             }
         }
     } else {
+        let serialize_repr = attrs.serialize_repr.as_ref()
+            .map(|x| Ident::new(&x, Span::call_site()))
+            .unwrap_or(repr.clone());
         quote! {
             fn serialize<S: #serde::Serializer>(
                 set: ::enumset::EnumSet<#name>, ser: S,
             ) -> #core::result::Result<S::Ok, S::Error> {
                 use #serde::Serialize;
-                <#name as ::enumset::EnumSetType>::Repr::serialize(&set.__enumset_underlying, ser)
+                #serialize_repr::serialize(&(set.__enumset_underlying as #serialize_repr), ser)
             }
             fn deserialize<'de, D: #serde::Deserializer<'de>>(
                 de: D,
@@ -166,7 +170,7 @@ fn enum_set_type_impl(
                 use #serde::Deserialize;
                 #core::prelude::v1::Ok(::enumset::EnumSet {
                     __enumset_underlying:
-                        <#name as ::enumset::EnumSetType>::Repr::deserialize(de)? & #all_variants,
+                        (#serialize_repr::deserialize(de)? & #all_variants) as #repr,
                 })
             }
         }
@@ -195,11 +199,20 @@ fn enum_set_type_impl(
     }
 }
 
-#[proc_macro_derive(EnumSetType,
-                    attributes(enumset_no_ops, enumset_no_derives, enumset_serialize_as_list))]
+#[derive(FromDeriveInput, Default)]
+#[darling(attributes(enumset), default)]
+struct EnumsetAttrs {
+    no_ops: bool,
+    no_derives: bool,
+    serialize_as_list: bool,
+    #[darling(default)]
+    serialize_repr: Option<String>,
+}
+
+#[proc_macro_derive(EnumSetType, attributes(enumset))]
 pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
-    if let Data::Enum(data) = input.data {
+    if let Data::Enum(data) = &input.data {
         if !input.generics.params.is_empty() {
             error(input.generics.span(),
                   "`#[derive(EnumSetType)]` cannot be used on enums with type parameters.")
@@ -259,41 +272,18 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                 panic!("max_variant > 127?")
             }, Span::call_site());
 
-            let mut no_ops = false;
-            let mut no_derives = false;
-            let mut serialize_as_list = false;
+            let attrs: EnumsetAttrs = match EnumsetAttrs::from_derive_input(&input) {
+                Ok(attrs) => attrs,
+                Err(e) => return e.write_errors().into(),
+            };
 
-            for attr in &input.attrs {
-                let span = attr.span();
-                let Attribute { tts, path: Path { segments, ..}, .. } = attr;
+            match attrs.serialize_repr.as_ref().map(|x| x.as_str()) {
+                Some("u8") | Some("u16") | Some("u32") | Some("u64") | Some("u128") | None => { }
+                Some(x) => return error(input.span(),
+                                        &format!("{} is not a valid serialization repr.", x)),
+            };
 
-                if segments.len() == 1 {
-                    let name = segments[0].ident.to_string();
-                    let mut is_attr = false;
-                    match name.as_str() {
-                        "enumset_no_ops" => {
-                            no_ops = true;
-                            is_attr = true;
-                        }
-                        "enumset_no_derives" => {
-                            no_derives = true;
-                            is_attr = true;
-                        }
-                        "enumset_serialize_as_list" => {
-                            serialize_as_list = true;
-                            is_attr = true;
-                        }
-                        _ => { }
-                    }
-                    if is_attr && !tts.is_empty() {
-                        return error(span, &format!("`#[{}]` takes no arguments.", name))
-                    }
-                }
-            }
-
-            enum_set_type_impl(
-                &input.ident, all_variants, repr, no_ops, no_derives, serialize_as_list,
-            ).into()
+            enum_set_type_impl(&input.ident, all_variants, repr, attrs).into()
         }
     } else {
         error(input.span(), "`#[derive(EnumSetType)]` may only be used on enums")

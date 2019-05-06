@@ -77,6 +77,7 @@
 extern crate enumset_derive;
 extern crate num_traits;
 #[cfg(feature = "serde")] extern crate serde2 as serde;
+#[cfg(test)] #[cfg(feature = "serde")] #[macro_use] extern crate serde_derive;
 
 pub use enumset_derive::*;
 mod enumset { pub use super::*; }
@@ -133,14 +134,13 @@ use private::EnumSetTypeRepr;
 ///
 /// # Custom Derive
 ///
-/// The custom derive for `EnumSetType` automatically creates implementations of [`PartialEq`],
+/// The custom derive for [`EnumSetType`] automatically creates implementations of [`PartialEq`],
 /// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] allowing the enum to be used as
-/// if it were an [`EnumSet`] in expressions. This can be disabled by adding an `#[enumset_no_ops]`
+/// if it were an [`EnumSet`] in expressions. This can be disabled by adding an `#[enumset(no_ops)]`
 /// annotation to the enum.
 ///
-/// The custom derive for `EnumSetType` also automatically creates implementations equivalent to
-/// `#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]`. This can be disabled by adding
-/// an `#[enumset_no_derives]` annotation to the enum.
+/// The custom derive for `EnumSetType` automatically implements [`Copy`] and [`Clone`] on the
+/// enum. These are required for the [`EnumSet`] to function.
 ///
 /// Any C-like enum is supported, as long as there are no more than 128 variants in the enum,
 /// and no variant discriminator is larger than 127.
@@ -151,7 +151,7 @@ use private::EnumSetTypeRepr;
 ///
 /// ```rust
 /// # use enumset::*;
-/// #[derive(EnumSetType, Debug)]
+/// #[derive(EnumSetType)]
 /// pub enum Enum {
 ///    A, B, C, D, E, F, G,
 /// }
@@ -161,7 +161,7 @@ use private::EnumSetTypeRepr;
 ///
 /// ```rust
 /// # use enumset::*;
-/// #[derive(EnumSetType, Debug)]
+/// #[derive(EnumSetType)]
 /// pub enum SparseEnum {
 ///    A = 10, B = 20, C = 30, D = 127,
 /// }
@@ -171,8 +171,8 @@ use private::EnumSetTypeRepr;
 ///
 /// ```rust
 /// # use enumset::*;
-/// #[derive(EnumSetType, Debug)]
-/// #[enumset_no_ops]
+/// #[derive(EnumSetType)]
+/// #[enumset(no_ops)]
 /// pub enum NoOpsEnum {
 ///    A, B, C, D, E, F, G,
 /// }
@@ -598,6 +598,21 @@ mod test {
         pub enum SparseEnum {
             A = 10, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
         }
+
+        #[cfg(feature = "serde")]
+        #[derive(Serialize, Deserialize, ::EnumSetType, Debug)]
+        #[enumset(serialize_as_list)]
+        #[serde(crate="serde")]
+        pub enum ListEnum {
+            A, B, C, D, E, F, G, H,
+        }
+
+        #[cfg(feature = "serde")]
+        #[derive(::EnumSetType, Debug)]
+        #[enumset(serialize_repr = "u128")]
+        pub enum ReprEnum {
+            A, B, C, D, E, F, G, H,
+        }
     }
     use self::enums::*;
 
@@ -633,8 +648,23 @@ mod test {
         A, B, C, D, E, F, G,
     }
 
+    macro_rules! serde_test {
+        ($e:ident, $ser_size:expr) => {
+            #[test]
+            #[cfg(feature = "serde")]
+            fn serialize_deserialize_test() {
+                let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
+                let serialized = bincode::serialize(&value).unwrap();
+                let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+                assert_eq!(value, deserialized);
+                if $ser_size != !0 {
+                    assert_eq!(serialized.len(), $ser_size);
+                }
+            }
+        }
+    }
     macro_rules! test_enum {
-        ($e:ident, $m:ident) => {
+        ($e:ident, $m:ident, $mem_size:expr, $ser_size:expr) => {
             mod $m {
                 use super::*;
 
@@ -747,18 +777,16 @@ mod test {
                 }
 
                 #[test]
-                #[cfg(feature = "serde")]
-                fn serialize_deserialize_test() {
-                    let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
-                    let serialized = bincode::serialize(&value).unwrap();
-                    let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
-                    assert_eq!(value, deserialized);
+                fn check_size() {
+                    assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
                 }
+
+                serde_test!($e, $ser_size);
 
                 #[test]
                 #[cfg(feature = "serde")]
                 fn deserialize_all_test() {
-                    let serialized = bincode::serialize(&(!0 as <$e as EnumSetType>::Repr)).unwrap();
+                    let serialized = bincode::serialize(&!0u128).unwrap();
                     let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
                     assert_eq!(EnumSet::<$e>::all(), deserialized);
                 }
@@ -766,9 +794,14 @@ mod test {
         }
     }
 
-    test_enum!(SmallEnum, small_enum);
-    test_enum!(LargeEnum, large_enum);
-    test_enum!(Enum8, enum8);
-    test_enum!(Enum128, enum128);
-    test_enum!(SparseEnum, sparse_enum);
+    test_enum!(SmallEnum, small_enum, 4, 4);
+    test_enum!(LargeEnum, large_enum, 16, 16);
+    test_enum!(Enum8, enum8, 1, 1);
+    test_enum!(Enum128, enum128, 16, 16);
+    test_enum!(SparseEnum, sparse_enum, 16, 16);
+
+    #[cfg(feature = "serde")]
+    serde_test!(ListEnum, !0);
+    #[cfg(feature = "serde")]
+    test_enum!(ReprEnum, repr_enum, 1, 16);
 }
