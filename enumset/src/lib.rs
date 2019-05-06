@@ -82,9 +82,10 @@ extern crate num_traits;
 pub use enumset_derive::*;
 mod enumset { pub use super::*; }
 
+use core::cmp::Ordering;
 use core::fmt;
 use core::fmt::{Debug, Formatter};
-use core::hash::Hash;
+use core::hash::{Hash, Hasher};
 use core::ops::*;
 
 use num_traits::*;
@@ -177,7 +178,7 @@ use private::EnumSetTypeRepr;
 ///    A, B, C, D, E, F, G,
 /// }
 /// ```
-pub unsafe trait EnumSetType: Copy {
+pub unsafe trait EnumSetType: Copy + Eq {
     #[doc(hidden)] type Repr: EnumSetTypeRepr;
     #[doc(hidden)] const ALL_BITS: Self::Repr;
     #[doc(hidden)] fn enum_into_u8(self) -> u8;
@@ -190,7 +191,7 @@ pub unsafe trait EnumSetType: Copy {
 }
 
 /// An efficient set type for enums.
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct EnumSet<T : EnumSetType> {
     #[doc(hidden)]
     /// This is public due to the [`enum_set!`] macro.
@@ -441,6 +442,22 @@ impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
         }
         f.write_str(")")?;
         Ok(())
+    }
+}
+
+impl <T: EnumSetType> Hash for EnumSet<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.__enumset_underlying.hash(state)
+    }
+}
+impl <T: EnumSetType> PartialOrd for EnumSet<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.__enumset_underlying.partial_cmp(&other.__enumset_underlying)
+    }
+}
+impl <T: EnumSetType> Ord for EnumSet<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.__enumset_underlying.cmp(&other.__enumset_underlying)
     }
 }
 
