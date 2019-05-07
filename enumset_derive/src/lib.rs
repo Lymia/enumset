@@ -154,7 +154,7 @@ fn enum_set_type_impl(
     let serde_ops = quote! { };
 
     quote! {
-        unsafe impl ::enumset::EnumSetType for #name {
+        unsafe impl ::enumset::internal::EnumSetTypePrivate for #name {
             type Repr = #repr;
             const ALL_BITS: Self::Repr = #all_variants;
 
@@ -167,6 +167,8 @@ fn enum_set_type_impl(
 
             #serde_ops
         }
+
+        unsafe impl ::enumset::EnumSetType for #name { }
 
         impl #core::cmp::PartialEq for #name {
             fn eq(&self, other: &Self) -> bool {

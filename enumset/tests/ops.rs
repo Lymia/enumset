@@ -72,8 +72,8 @@ test_variants! { SparseEnum sparse_enum_all_empty
 }
 
 macro_rules! test_enum {
-    ($e:ident, $mem_size:expr, $ser_size:expr) => {
-        const CONST_SET: EnumSet<$e> = enum_set!($e, $e::A | $e::C);
+    ($e:ident, $mem_size:expr) => {
+        const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
         const EMPTY_SET: EnumSet<$e> = enum_set!();
         #[test]
         fn const_set() {
@@ -191,8 +191,8 @@ macro_rules! tests {
     ($m:ident, $($tt:tt)*) => { mod $m { use super::*; $($tt)*; } }
 }
 
-tests!(small_enum, test_enum!(SmallEnum, 4, 4));
-tests!(large_enum, test_enum!(LargeEnum, 16, 16));
-tests!(enum8, test_enum!(Enum8, 1, 1));
-tests!(enum128, test_enum!(Enum128, 16, 16));
-tests!(sparse_enum, test_enum!(SparseEnum, 16, 16));
+tests!(small_enum, test_enum!(SmallEnum, 4));
+tests!(large_enum, test_enum!(LargeEnum, 16));
+tests!(enum8, test_enum!(Enum8, 1));
+tests!(enum128, test_enum!(Enum128, 16));
+tests!(sparse_enum, test_enum!(SparseEnum, 16));

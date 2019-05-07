@@ -80,7 +80,6 @@ use core::fmt;
 use core::fmt::{Debug, Formatter};
 use core::hash::{Hash, Hasher};
 use core::ops::*;
-use serde2 as serde;
 
 use num_traits::*;
 
@@ -100,7 +99,23 @@ pub mod internal {
 
     /// A reexport of serde so there is no requirement to depend on serde.
     #[cfg(feature = "serde")] pub use serde2 as serde;
+
+    /// The actual members of EnumSetType. Put here to avoid polluting global namespaces.
+    pub unsafe trait EnumSetTypePrivate {
+        type Repr: EnumSetTypeRepr;
+        const ALL_BITS: Self::Repr;
+        fn enum_into_u8(self) -> u8;
+        unsafe fn enum_from_u8(val: u8) -> Self;
+
+        #[cfg(feature = "serde")]
+        fn serialize<S: serde::Serializer>(set: EnumSet<Self>, ser: S) -> Result<S::Ok, S::Error>
+            where Self: EnumSetType;
+        #[cfg(feature = "serde")]
+        fn deserialize<'de, D: serde::Deserializer<'de>>(de: D) -> Result<EnumSet<Self>, D::Error>
+            where Self: EnumSetType;
+    }
 }
+use internal::EnumSetTypePrivate;
 
 mod private {
     use super::*;
@@ -172,17 +187,7 @@ use private::EnumSetTypeRepr;
 ///    A, B, C, D, E, F, G,
 /// }
 /// ```
-pub unsafe trait EnumSetType: Copy + Eq {
-    #[doc(hidden)] type Repr: EnumSetTypeRepr;
-    #[doc(hidden)] const ALL_BITS: Self::Repr;
-    #[doc(hidden)] fn enum_into_u8(self) -> u8;
-    #[doc(hidden)] unsafe fn enum_from_u8(val: u8) -> Self;
-
-    #[cfg(feature = "serde")] #[doc(hidden)]
-    fn serialize<S: serde::Serializer>(set: EnumSet<Self>, ser: S) -> Result<S::Ok, S::Error>;
-    #[cfg(feature = "serde")] #[doc(hidden)]
-    fn deserialize<'de, D: serde::Deserializer<'de>>(de: D) -> Result<EnumSet<Self>, D::Error>;
-}
+pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate { }
 
 /// An efficient set type for enums.
 ///
