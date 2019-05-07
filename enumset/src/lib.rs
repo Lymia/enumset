@@ -95,7 +95,7 @@ pub mod internal {
     }
 
     /// A reexport of core to allow our macros to be generic to std vs core.
-    pub extern crate core;
+    pub use ::core as core_export;
 
     /// A reexport of serde so there is no requirement to depend on serde.
     #[cfg(feature = "serde")] pub use serde2 as serde;
@@ -115,9 +115,9 @@ pub mod internal {
             where Self: EnumSetType;
     }
 }
-use internal::EnumSetTypePrivate;
-#[cfg(feature = "serde")] use internal::serde;
-#[cfg(feature = "serde")] use serde::{Serialize, Deserialize};
+use crate::internal::EnumSetTypePrivate;
+#[cfg(feature = "serde")] use crate::internal::serde;
+#[cfg(feature = "serde")] use crate::serde::{Serialize, Deserialize};
 
 mod private {
     use super::*;
@@ -137,7 +137,7 @@ mod private {
     prim!(u64 , 64 );
     prim!(u128, 128);
 }
-use private::EnumSetTypeRepr;
+use crate::private::EnumSetTypeRepr;
 
 /// The trait used to define enum types that may be used with [`EnumSet`].
 ///

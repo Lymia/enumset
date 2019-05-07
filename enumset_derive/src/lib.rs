@@ -26,7 +26,7 @@ fn enum_set_type_impl(
     name: &Ident, all_variants: u128, repr: Ident, attrs: EnumsetAttrs,
 ) -> SynTokenStream {
     let typed_enumset = quote!(::enumset::EnumSet<#name>);
-    let core = quote!(::enumset::internal::core);
+    let core = quote!(::enumset::internal::core_export);
     #[cfg(feature = "serde")]
     let serde = quote!(::enumset::internal::serde);
 
