@@ -73,18 +73,14 @@
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
 //! ```
 
-extern crate enumset_derive;
-extern crate num_traits;
-#[cfg(feature = "serde")] extern crate serde2 as serde;
-
 pub use enumset_derive::*;
-mod enumset { pub use super::*; }
 
 use core::cmp::Ordering;
 use core::fmt;
 use core::fmt::{Debug, Formatter};
 use core::hash::{Hash, Hasher};
 use core::ops::*;
+use serde2 as serde;
 
 use num_traits::*;
 
@@ -103,7 +99,7 @@ pub mod internal {
     pub extern crate core;
 
     /// A reexport of serde so there is no requirement to depend on serde.
-    #[cfg(feature = "serde")] pub extern crate serde2 as serde;
+    #[cfg(feature = "serde")] pub use serde2 as serde;
 }
 
 mod private {
@@ -446,7 +442,7 @@ impl <T : EnumSetType> PartialEq<T> for EnumSet<T> {
     }
 }
 impl <T : EnumSetType + Debug> Debug for EnumSet<T> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut is_first = true;
         f.write_str("EnumSet(")?;
         for v in self.iter() {

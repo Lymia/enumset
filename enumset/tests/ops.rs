@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-extern crate enumset;
 use enumset::*;
 
 #[derive(EnumSetType, Debug)]

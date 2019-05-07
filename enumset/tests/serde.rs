@@ -1,29 +1,23 @@
 #![cfg(feature = "serde")]
 #![allow(dead_code)]
 
-extern crate enumset;
-extern crate serde2 as serde;
-extern crate serde_derive;
-extern crate bincode;
-extern crate serde_json;
-
 use enumset::*;
 use serde_derive::*;
 
 #[derive(Serialize, Deserialize, EnumSetType, Debug)]
 #[enumset(serialize_as_list)]
-#[serde(crate="serde")]
+#[serde(crate="serde2")]
 pub enum ListEnum {
     A, B, C, D, E, F, G, H,
 }
 
-#[derive(::EnumSetType, Debug)]
+#[derive(EnumSetType, Debug)]
 #[enumset(serialize_repr = "u128")]
 pub enum ReprEnum {
     A, B, C, D, E, F, G, H,
 }
 
-#[derive(::EnumSetType, Debug)]
+#[derive(EnumSetType, Debug)]
 #[enumset(serialize_repr = "u128", serialize_deny_unknown)]
 pub enum DenyUnknownEnum {
     A, B, C, D, E, F, G, H,
