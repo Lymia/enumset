@@ -1,3 +1,10 @@
+# Version 0.4.0 (2019-05-06)
+* Removed outdated macros and attributes.
+* All attributes for the custom derive are now written as `#[enumset(...)]`
+* Implemented `#[enumset(serialize_deny_unknown)]`
+* Implemented `#[enumset(serialize_repr="...")]`
+* `#[derive(EnumSetType)]` now only implements `Copy`, `Clone`, `PartialEq` and `Eq` automatically.
+
 # Version 0.3.19 (2019-05-02)
 * Fix a bug when deserializing enums containing invalid bits set.
 
