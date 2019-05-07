@@ -513,9 +513,6 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
 /// The syntax used is `enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same
 /// type, or a error will occur at compile-time.
 ///
-/// You may also explicitly state the type of the variants that follow, as in
-/// `enum_set!(Type, Type::A | Type::B | Type::C)`.
-///
 /// # Examples
 ///
 /// ```rust
@@ -523,9 +520,6 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
 /// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C }
 /// const CONST_SET: EnumSet<Enum> = enum_set!(Enum::A | Enum::B);
 /// assert_eq!(CONST_SET, Enum::A | Enum::B);
-///
-/// const EXPLICIT_CONST_SET: EnumSet<Enum> = enum_set!(Enum, Enum::A | Enum::B);
-/// assert_eq!(EXPLICIT_CONST_SET, Enum::A | Enum::B);
 /// ```
 ///
 /// This macro is strongly typed. For example, the following will not compile:
@@ -549,9 +543,4 @@ macro_rules! enum_set {
             },
         }.enum_set
     };
-    ($enum_name:ty, $($value:path)|* $(|)*) => {
-        $crate::EnumSet::<$enum_name> {
-            __enumset_underlying: 0 $(| (1 << ($value as $enum_name as u8)))*
-        }
-    }
 }
