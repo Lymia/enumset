@@ -191,6 +191,22 @@ pub unsafe trait EnumSetType: Copy + Eq {
 }
 
 /// An efficient set type for enums.
+///
+/// # Serialization
+///
+/// The default representation serializes enumsets as an `u8`, `u16`, `u32`, `u64`, or `u128`,
+/// whichever is the smallest that can contain all bits that are part of the set.
+///
+/// Unknown bits are ignored, and are simply dropped. To override this behavior, you can add a
+/// `#[enumset(serialize_deny_unknown)]` annotation to your enum.
+///
+/// You can add a `#[enumset(serialize_repr = "u8")]` annotation to your enum to explicitly set
+/// the bit width the `EnumSet` is serialized as. This can be used to avoid breaking changes in
+/// certain serialization formats (such as `bincode`).
+///
+/// In addition, the `#[enumset(serialize_as_list)]` annotation causes the `EnumSet` to be
+/// instead serialized as a list. This requires your enum type implement [`Serialize`] and
+/// [`Deserialize`].
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct EnumSet<T : EnumSetType> {
     #[doc(hidden)]
@@ -554,6 +570,9 @@ mod test {
     #[cfg(feature = "serde")]
     extern crate bincode;
 
+    #[cfg(feature = "serde")]
+    extern crate serde_json;
+
     mod enums {
         #[derive(::EnumSetType, Debug)]
         pub enum SmallEnum {
@@ -606,6 +625,13 @@ mod test {
         pub enum ReprEnum {
             A, B, C, D, E, F, G, H,
         }
+
+        #[cfg(feature = "serde")]
+        #[derive(::EnumSetType, Debug)]
+        #[enumset(serialize_repr = "u128", serialize_deny_unknown)]
+        pub enum DenyUnknownEnum {
+            A, B, C, D, E, F, G, H,
+        }
     }
     use self::enums::*;
 
@@ -641,11 +667,11 @@ mod test {
         A, B, C, D, E, F, G,
     }
 
-    macro_rules! serde_test {
+    macro_rules! serde_test_simple {
         ($e:ident, $ser_size:expr) => {
             #[test]
             #[cfg(feature = "serde")]
-            fn serialize_deserialize_test() {
+            fn serialize_deserialize_test_bincode() {
                 let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
                 let serialized = bincode::serialize(&value).unwrap();
                 let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
@@ -654,147 +680,183 @@ mod test {
                     assert_eq!(serialized.len(), $ser_size);
                 }
             }
-        }
-    }
-    macro_rules! test_enum {
-        ($e:ident, $m:ident, $mem_size:expr, $ser_size:expr) => {
-            mod $m {
-                use super::*;
 
-                const CONST_SET: EnumSet<$e> = enum_set!($e, $e::A | $e::C);
-                const EMPTY_SET: EnumSet<$e> = enum_set!();
-                #[test]
-                fn const_set() {
-                    assert_eq!(CONST_SET.len(), 2);
-                    assert!(CONST_SET.contains($e::A));
-                    assert!(CONST_SET.contains($e::C));
-                    assert!(EMPTY_SET.is_empty());
-                }
-
-                #[test]
-                fn basic_add_remove() {
-                    let mut set = EnumSet::new();
-                    set.insert($e::A);
-                    set.insert($e::B);
-                    set.insert($e::C);
-                    assert_eq!(set, $e::A | $e::B | $e::C);
-                    set.remove($e::B);
-                    assert_eq!(set, $e::A | $e::C);
-                    set.insert($e::D);
-                    assert_eq!(set, $e::A | $e::C | $e::D);
-                    set.insert_all($e::F | $e::E | $e::G);
-                    assert_eq!(set, $e::A | $e::C | $e::D | $e::F | $e::E | $e::G);
-                    set.remove_all($e::A | $e::D | $e::G);
-                    assert_eq!(set, $e::C | $e::F | $e::E);
-                    assert!(!set.is_empty());
-                    set.clear();
-                    assert!(set.is_empty());
-                }
-
-                #[test]
-                fn empty_is_empty() {
-                    assert_eq!(EnumSet::<$e>::empty().len(), 0)
-                }
-
-                #[test]
-                fn all_len() {
-                    assert_eq!(EnumSet::<$e>::all().len(), EnumSet::<$e>::variant_count() as usize)
-                }
-
-                #[test]
-                fn basic_iter_test() {
-                    let mut set = EnumSet::new();
-                    set.insert($e::A);
-                    set.insert($e::B);
-                    set.insert($e::C);
-                    set.insert($e::E);
-
-                    let mut set_2 = EnumSet::new();
-                    let vec: Vec<$e> = set.iter().collect();
-                    for val in vec {
-                        assert!(!set_2.contains(val));
-                        set_2.insert(val);
-                    }
-                    assert_eq!(set, set_2);
-
-                    let mut set_3 = EnumSet::new();
-                    for val in set {
-                        assert!(!set_3.contains(val));
-                        set_3.insert(val);
-                    }
-                    assert_eq!(set, set_3);
-                }
-
-                #[test]
-                fn basic_ops_test() {
-                    assert_eq!(($e::A | $e::B) | ($e::B | $e::C), $e::A | $e::B | $e::C);
-                    assert_eq!(($e::A | $e::B) & ($e::B | $e::C), $e::B);
-                    assert_eq!(($e::A | $e::B) ^ ($e::B | $e::C), $e::A | $e::C);
-                    assert_eq!(($e::A | $e::B) - ($e::B | $e::C), $e::A);
-                }
-
-                #[test]
-                fn basic_set_status() {
-                    assert!(($e::A | $e::B | $e::C).is_disjoint($e::D | $e::E | $e::F));
-                    assert!(!($e::A | $e::B | $e::C | $e::D).is_disjoint($e::D | $e::E | $e::F));
-                    assert!(($e::A | $e::B).is_subset($e::A | $e::B | $e::C));
-                    assert!(!($e::A | $e::D).is_subset($e::A | $e::B | $e::C));
-                }
-
-                #[test]
-                fn debug_impl() {
-                    assert_eq!(format!("{:?}", $e::A | $e::B | $e::D), "EnumSet(A | B | D)");
-                }
-
-                #[test]
-                fn to_from_bits() {
-                    let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
-                    assert_eq!(EnumSet::from_bits(value.to_bits()), value);
-                }
-
-                #[test]
-                #[should_panic]
-                fn too_many_bits() {
-                    if EnumSet::<$e>::variant_count() == 128 {
-                        panic!("(test skipped)")
-                    }
-                    EnumSet::<$e>::from_bits(!0);
-                }
-
-                #[test]
-                fn match_const_test() {
-                    match CONST_SET {
-                        CONST_SET => { /* ok */ }
-                        _ => panic!("match fell through?"),
-                    }
-                }
-
-                #[test]
-                fn check_size() {
-                    assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
-                }
-
-                serde_test!($e, $ser_size);
-
-                #[test]
-                #[cfg(feature = "serde")]
-                fn deserialize_all_test() {
-                    let serialized = bincode::serialize(&!0u128).unwrap();
-                    let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
-                    assert_eq!(EnumSet::<$e>::all(), deserialized);
-                }
+            #[test]
+            #[cfg(feature = "serde")]
+            fn serialize_deserialize_test_json() {
+                let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
+                let serialized = serde_json::to_string(&value).unwrap();
+                let deserialized = serde_json::from_str::<EnumSet<$e>>(&serialized).unwrap();
+                assert_eq!(value, deserialized);
             }
         }
     }
+    macro_rules! serde_test {
+        ($e:ident, $ser_size:expr) => {
+            serde_test_simple!($e, $ser_size);
 
-    test_enum!(SmallEnum, small_enum, 4, 4);
-    test_enum!(LargeEnum, large_enum, 16, 16);
-    test_enum!(Enum8, enum8, 1, 1);
-    test_enum!(Enum128, enum128, 16, 16);
-    test_enum!(SparseEnum, sparse_enum, 16, 16);
+            #[test]
+            #[cfg(feature = "serde")]
+            fn deserialize_all_test() {
+                let serialized = bincode::serialize(&!0u128).unwrap();
+                let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+                assert_eq!(EnumSet::<$e>::all(), deserialized);
+            }
+        }
+    }
+    macro_rules! test_enum {
+        ($e:ident, $mem_size:expr, $ser_size:expr) => {
+            const CONST_SET: EnumSet<$e> = enum_set!($e, $e::A | $e::C);
+            const EMPTY_SET: EnumSet<$e> = enum_set!();
+            #[test]
+            fn const_set() {
+                assert_eq!(CONST_SET.len(), 2);
+                assert!(CONST_SET.contains($e::A));
+                assert!(CONST_SET.contains($e::C));
+                assert!(EMPTY_SET.is_empty());
+            }
+
+            #[test]
+            fn basic_add_remove() {
+                let mut set = EnumSet::new();
+                set.insert($e::A);
+                set.insert($e::B);
+                set.insert($e::C);
+                assert_eq!(set, $e::A | $e::B | $e::C);
+                set.remove($e::B);
+                assert_eq!(set, $e::A | $e::C);
+                set.insert($e::D);
+                assert_eq!(set, $e::A | $e::C | $e::D);
+                set.insert_all($e::F | $e::E | $e::G);
+                assert_eq!(set, $e::A | $e::C | $e::D | $e::F | $e::E | $e::G);
+                set.remove_all($e::A | $e::D | $e::G);
+                assert_eq!(set, $e::C | $e::F | $e::E);
+                assert!(!set.is_empty());
+                set.clear();
+                assert!(set.is_empty());
+            }
+
+            #[test]
+            fn empty_is_empty() {
+                assert_eq!(EnumSet::<$e>::empty().len(), 0)
+            }
+
+            #[test]
+            fn all_len() {
+                assert_eq!(EnumSet::<$e>::all().len(), EnumSet::<$e>::variant_count() as usize)
+            }
+
+            #[test]
+            fn basic_iter_test() {
+                let mut set = EnumSet::new();
+                set.insert($e::A);
+                set.insert($e::B);
+                set.insert($e::C);
+                set.insert($e::E);
+
+                let mut set_2 = EnumSet::new();
+                let vec: Vec<$e> = set.iter().collect();
+                for val in vec {
+                    assert!(!set_2.contains(val));
+                    set_2.insert(val);
+                }
+                assert_eq!(set, set_2);
+
+                let mut set_3 = EnumSet::new();
+                for val in set {
+                    assert!(!set_3.contains(val));
+                    set_3.insert(val);
+                }
+                assert_eq!(set, set_3);
+            }
+
+            #[test]
+            fn basic_ops_test() {
+                assert_eq!(($e::A | $e::B) | ($e::B | $e::C), $e::A | $e::B | $e::C);
+                assert_eq!(($e::A | $e::B) & ($e::B | $e::C), $e::B);
+                assert_eq!(($e::A | $e::B) ^ ($e::B | $e::C), $e::A | $e::C);
+                assert_eq!(($e::A | $e::B) - ($e::B | $e::C), $e::A);
+            }
+
+            #[test]
+            fn basic_set_status() {
+                assert!(($e::A | $e::B | $e::C).is_disjoint($e::D | $e::E | $e::F));
+                assert!(!($e::A | $e::B | $e::C | $e::D).is_disjoint($e::D | $e::E | $e::F));
+                assert!(($e::A | $e::B).is_subset($e::A | $e::B | $e::C));
+                assert!(!($e::A | $e::D).is_subset($e::A | $e::B | $e::C));
+            }
+
+            #[test]
+            fn debug_impl() {
+                assert_eq!(format!("{:?}", $e::A | $e::B | $e::D), "EnumSet(A | B | D)");
+            }
+
+            #[test]
+            fn to_from_bits() {
+                let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
+                assert_eq!(EnumSet::from_bits(value.to_bits()), value);
+            }
+
+            #[test]
+            #[should_panic]
+            fn too_many_bits() {
+                if EnumSet::<$e>::variant_count() == 128 {
+                    panic!("(test skipped)")
+                }
+                EnumSet::<$e>::from_bits(!0);
+            }
+
+            #[test]
+            fn match_const_test() {
+                match CONST_SET {
+                    CONST_SET => { /* ok */ }
+                    _ => panic!("match fell through?"),
+                }
+            }
+
+            #[test]
+            fn check_size() {
+                assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
+            }
+
+            serde_test!($e, $ser_size);
+        }
+    }
+    macro_rules! tests {
+        ($m:ident, $($tt:tt)*) => { mod $m { use super::*; $($tt)*; } }
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_deny_unknown() {
+        let serialized = bincode::serialize(&!0u128).unwrap();
+        let deserialized = bincode::deserialize::<EnumSet<DenyUnknownEnum>>(&serialized);
+        assert!(deserialized.is_err());
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_json_reprs() {
+        assert_eq!(ListEnum::A | ListEnum::C | ListEnum::F,
+                   serde_json::from_str::<EnumSet<ListEnum>>(r#"["A","C","F"]"#).unwrap());
+        assert_eq!(SmallEnum::A | SmallEnum::C | SmallEnum::D,
+                   serde_json::from_str::<EnumSet<SmallEnum>>("13").unwrap());
+        assert_eq!(r#"["A","C","F"]"#,
+                   serde_json::to_string(&(ListEnum::A | ListEnum::C | ListEnum::F)).unwrap());
+        assert_eq!("13",
+                   serde_json::to_string(&(SmallEnum::A | SmallEnum::C | SmallEnum::D)).unwrap());
+    }
+
+    tests!(small_enum, test_enum!(SmallEnum, 4, 4));
+    tests!(large_enum, test_enum!(LargeEnum, 16, 16));
+    tests!(enum8, test_enum!(Enum8, 1, 1));
+    tests!(enum128, test_enum!(Enum128, 16, 16));
+    tests!(sparse_enum, test_enum!(SparseEnum, 16, 16));
 
     #[cfg(feature = "serde")]
-    serde_test!(ListEnum, !0);
+    tests!(list_enum, serde_test_simple!(ListEnum, !0));
     #[cfg(feature = "serde")]
-    test_enum!(ReprEnum, repr_enum, 1, 16);
+    tests!(repr_enum, serde_test!(ReprEnum, 16));
+    #[cfg(feature = "serde")]
+    tests!(deny_unknown_enum, serde_test_simple!(DenyUnknownEnum, 16));
 }

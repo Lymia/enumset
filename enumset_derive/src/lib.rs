@@ -80,10 +80,8 @@ fn enum_set_type_impl(
     };
 
     #[cfg(feature = "serde")]
-    let expecting_str = format!("a list of {}", name);
-
-    #[cfg(feature = "serde")]
     let serde_ops = if attrs.serialize_as_list {
+        let expecting_str = format!("a list of {}", name);
         quote! {
             fn serialize<S: #serde::Serializer>(
                 set: ::enumset::EnumSet<#name>, ser: S,
@@ -123,6 +121,19 @@ fn enum_set_type_impl(
         let serialize_repr = attrs.serialize_repr.as_ref()
             .map(|x| Ident::new(&x, Span::call_site()))
             .unwrap_or(repr.clone());
+        let check_unknown = if attrs.serialize_deny_unknown {
+            quote! {
+                if value & !#all_variants != 0 {
+                    use #serde::de::Error;
+                    let unexpected = serde::de::Unexpected::Unsigned(value as u64);
+                    return #core::prelude::v1::Err(
+                        D::Error::custom("enumset contains unknown bits")
+                    )
+                }
+            }
+        } else {
+            quote! { }
+        };
         quote! {
             fn serialize<S: #serde::Serializer>(
                 set: ::enumset::EnumSet<#name>, ser: S,
@@ -134,9 +145,10 @@ fn enum_set_type_impl(
                 de: D,
             ) -> #core::result::Result<::enumset::EnumSet<#name>, D::Error> {
                 use #serde::Deserialize;
+                let value = #serialize_repr::deserialize(de)?;
+                #check_unknown
                 #core::prelude::v1::Ok(::enumset::EnumSet {
-                    __enumset_underlying:
-                        (#serialize_repr::deserialize(de)? & #all_variants) as #repr,
+                    __enumset_underlying: (value & #all_variants) as #repr,
                 })
             }
         }
@@ -182,6 +194,7 @@ fn enum_set_type_impl(
 struct EnumsetAttrs {
     no_ops: bool,
     serialize_as_list: bool,
+    serialize_deny_unknown: bool,
     #[darling(default)]
     serialize_repr: Option<String>,
 }
@@ -255,7 +268,22 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
             };
 
             match attrs.serialize_repr.as_ref().map(|x| x.as_str()) {
-                Some("u8") | Some("u16") | Some("u32") | Some("u64") | Some("u128") | None => { }
+                Some("u8") => if max_variant > 7 {
+                    return error(input.span(), "Too many variants for u8 serialization repr.")
+                }
+                Some("u16") => if max_variant > 15 {
+                    return error(input.span(), "Too many variants for u16 serialization repr.")
+                }
+                Some("u32") => if max_variant > 31 {
+                    return error(input.span(), "Too many variants for u32 serialization repr.")
+                }
+                Some("u64") => if max_variant > 63 {
+                    return error(input.span(), "Too many variants for u64 serialization repr.")
+                }
+                Some("u128") => if max_variant > 127 {
+                    return error(input.span(), "Too many variants for u128 serialization repr.")
+                }
+                None => { }
                 Some(x) => return error(input.span(),
                                         &format!("{} is not a valid serialization repr.", x)),
             };
