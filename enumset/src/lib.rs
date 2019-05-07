@@ -32,7 +32,7 @@
 //!
 //! All bitwise operations you would expect to work on bitsets also work on both EnumSets and
 //! enums with `#[derive(EnumSetType)]`:
-//! ```
+//! ```rust
 //! # use enumset::*;
 //! # #[derive(EnumSetType, Debug)] pub enum Enum { A, B, C, D, E, F, G }
 //! // Intersection of sets
