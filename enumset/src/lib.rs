@@ -116,6 +116,8 @@ pub mod internal {
     }
 }
 use internal::EnumSetTypePrivate;
+#[cfg(feature = "serde")] use internal::serde;
+#[cfg(feature = "serde")] use serde::{Serialize, Deserialize};
 
 mod private {
     use super::*;
@@ -477,14 +479,14 @@ impl <T: EnumSetType> Ord for EnumSet<T> {
 }
 
 #[cfg(feature = "serde")]
-impl <T : EnumSetType> serde::Serialize for EnumSet<T> {
+impl <T : EnumSetType> Serialize for EnumSet<T> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         T::serialize(*self, serializer)
     }
 }
 
 #[cfg(feature = "serde")]
-impl <'de, T : EnumSetType> serde::Deserialize<'de> for EnumSet<T> {
+impl <'de, T : EnumSetType> Deserialize<'de> for EnumSet<T> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         T::deserialize(deserializer)
     }
