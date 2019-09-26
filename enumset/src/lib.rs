@@ -509,7 +509,7 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
         None
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let left_mask = EnumSet::<T>::partial_bits(self.1);
+        let left_mask = !EnumSet::<T>::partial_bits(self.1);
         let left = (self.0.__enumset_underlying & left_mask).count_ones() as usize;
         (left, Some(left))
     }

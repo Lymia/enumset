@@ -137,6 +137,25 @@ macro_rules! test_enum {
             assert_eq!(set, set_3);
         }
 
+        fn check_iter_size_hint(set: EnumSet<$e>) {
+            let count = set.len();
+            let mut itr = set.iter();
+            for idx in 0 .. count {
+                assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                assert!(itr.next().is_some());
+            }
+            assert_eq!(itr.size_hint(), (0, Some(0)));
+        }
+        #[test]
+        fn test_iter_size_hint() {
+            check_iter_size_hint(EnumSet::<$e>::all());
+            let mut set = EnumSet::new();
+            set.insert($e::A);
+            set.insert($e::C);
+            set.insert($e::E);
+            check_iter_size_hint(set);
+        }
+
         #[test]
         fn basic_ops_test() {
             assert_eq!(($e::A | $e::B) | ($e::B | $e::C), $e::A | $e::B | $e::C);
