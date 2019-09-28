@@ -1,3 +1,6 @@
+# Version 0.4.1 (2019-08-27)
+* Fixed bug in `EnumSetIter::size_hint`.
+
 # Version 0.4.0 (2019-05-06)
 * Removed outdated macros and attributes.
 * All attributes for the custom derive are now written as `#[enumset(...)]`
