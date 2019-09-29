@@ -23,8 +23,11 @@ fn error(_: Span, data: &str) -> TokenStream {
 }
 
 fn enum_set_type_impl(
-    name: &Ident, all_variants: u128, repr: Ident, attrs: EnumsetAttrs,
+    name: &Ident, all_variants: u128, repr: Ident, attrs: EnumsetAttrs, variants: Vec<Ident>,
 ) -> SynTokenStream {
+    let is_uninhabited = variants.is_empty();
+    let is_zst = variants.len() == 1;
+
     let typed_enumset = quote!(::enumset::EnumSet<#name>);
     let core = quote!(::enumset::internal::core_export);
     #[cfg(feature = "serde")]
@@ -153,18 +156,47 @@ fn enum_set_type_impl(
     #[cfg(not(feature = "serde"))]
     let serde_ops = quote! { };
 
-    quote! {
-        unsafe impl ::enumset::internal::EnumSetTypePrivate for #name {
-            type Repr = #repr;
-            const ALL_BITS: Self::Repr = #all_variants;
-
+    let into_impl = if is_uninhabited {
+        quote! {
+            fn enum_into_u8(self) -> u8 {
+                panic!(concat!(stringify!(#name), " is uninhabited."))
+            }
+            unsafe fn enum_from_u8(val: u8) -> Self {
+                panic!(concat!(stringify!(#name), " is uninhabited."))
+            }
+        }
+    } else if is_zst {
+        let variant = &variants[0];
+        quote! {
+            fn enum_into_u8(self) -> u8 {
+                self as u8
+            }
+            unsafe fn enum_from_u8(val: u8) -> Self {
+                #name::#variant
+            }
+        }
+    } else {
+        quote! {
             fn enum_into_u8(self) -> u8 {
                 self as u8
             }
             unsafe fn enum_from_u8(val: u8) -> Self {
                 #core::mem::transmute(val)
             }
+        }
+    };
 
+    let eq_impl = if is_uninhabited {
+        quote!(panic!(concat!(stringify!(#name), " is uninhabited.")))
+    } else {
+        quote!((*self as u8) == (*other as u8))
+    };
+
+    quote! {
+        unsafe impl ::enumset::internal::EnumSetTypePrivate for #name {
+            type Repr = #repr;
+            const ALL_BITS: Self::Repr = #all_variants;
+            #into_impl
             #serde_ops
         }
 
@@ -172,7 +204,7 @@ fn enum_set_type_impl(
 
         impl #core::cmp::PartialEq for #name {
             fn eq(&self, other: &Self) -> bool {
-                (*self as u8) == (*other as u8)
+                #eq_impl
             }
         }
         impl #core::cmp::Eq for #name { }
@@ -209,6 +241,7 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
             let mut max_variant = 0;
             let mut current_variant = 0;
             let mut has_manual_discriminant = false;
+            let mut variants = Vec::new();
 
             for variant in &data.variants {
                 if let Fields::Unit = variant.fields {
@@ -239,6 +272,7 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                         max_variant = current_variant
                     }
 
+                    variants.push(variant.ident.clone());
                     current_variant += 1;
                 } else {
                     return error(variant.span(),
@@ -286,7 +320,7 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                                         &format!("{} is not a valid serialization repr.", x)),
             };
 
-            enum_set_type_impl(&input.ident, all_variants, repr, attrs).into()
+            enum_set_type_impl(&input.ident, all_variants, repr, attrs, variants).into()
         }
     } else {
         error(input.span(), "`#[derive(EnumSetType)]` may only be used on enums")

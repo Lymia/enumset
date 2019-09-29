@@ -3,6 +3,14 @@
 use enumset::*;
 
 #[derive(EnumSetType, Debug)]
+pub enum EmptyEnum { }
+
+#[derive(EnumSetType, Debug)]
+pub enum Enum1 {
+    A,
+}
+
+#[derive(EnumSetType, Debug)]
 pub enum SmallEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
