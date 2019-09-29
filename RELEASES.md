@@ -1,3 +1,6 @@
+# Version 0.4.2 (2019-08-28)
+* Fixed a bug preventing empty enums and enums with one value from compiling.
+
 # Version 0.4.1 (2019-08-27)
 * Fixed bug in `EnumSetIter::size_hint`.
 
