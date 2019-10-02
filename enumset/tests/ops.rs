@@ -165,6 +165,13 @@ macro_rules! test_enum {
         }
 
         #[test]
+        fn iter_ops_test() {
+            let set = $e::A | $e::B | $e::C | $e::E;
+            let set2 = set.iter().filter(|&v| v != $e::B).collect::<EnumSet<_>>();
+            assert_eq!(set2, $e::A | $e::C | $e::E);
+        }
+
+        #[test]
         fn basic_ops_test() {
             assert_eq!(($e::A | $e::B) | ($e::B | $e::C), $e::A | $e::B | $e::C);
             assert_eq!(($e::A | $e::B) & ($e::B | $e::C), $e::B);

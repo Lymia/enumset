@@ -79,6 +79,7 @@ use core::cmp::Ordering;
 use core::fmt;
 use core::fmt::{Debug, Formatter};
 use core::hash::{Hash, Hasher};
+use core::iter::FromIterator;
 use core::ops::*;
 
 use num_traits::*;
@@ -512,6 +513,20 @@ impl <T : EnumSetType> Iterator for EnumSetIter<T> {
         let left_mask = !EnumSet::<T>::partial_bits(self.1);
         let left = (self.0.__enumset_underlying & left_mask).count_ones() as usize;
         (left, Some(left))
+    }
+}
+
+impl<T: EnumSetType> Extend<T> for EnumSet<T> {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        iter.into_iter().for_each(|v| { self.insert(v); });
+    }
+}
+
+impl<T: EnumSetType> FromIterator<T> for EnumSet<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut set = EnumSet::default();
+        set.extend(iter);
+        set
     }
 }
 
