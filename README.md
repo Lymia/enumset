@@ -1,5 +1,6 @@
 # enumset
 
+[![Build Status](https://api.travis-ci.org/Lymia/enumset.svg?branch=master)](https://travis-ci.org/Lymia/enumset)
 [![Latest Version](https://img.shields.io/crates/v/enumset.svg)](https://crates.io/crates/enumset)
 ![Requires rustc 1.31+](https://img.shields.io/badge/rustc-1.31+-red.svg)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/enumset)
