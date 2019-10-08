@@ -1,0 +1,13 @@
+language: rust
+
+matrix:
+  include:
+    - rust: stable
+    - rust: beta
+    - rust: nightly
+    - rust: 1.31.0
+
+script:
+  - cd "${TRAVIS_BUILD_DIR}/enumset"
+  - cargo test
+  - cargo test --features serde
