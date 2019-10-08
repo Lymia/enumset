@@ -1,7 +1,10 @@
-# Version 0.4.2 (2019-08-28)
+# Version 0.4.3 (2019-10-08)
+* Implemented `Extend` and `FromIterator` for `EnumSet<T>`.
+
+# Version 0.4.2 (2019-09-28)
 * Fixed a bug preventing empty enums and enums with one value from compiling.
 
-# Version 0.4.1 (2019-08-27)
+# Version 0.4.1 (2019-09-27)
 * Fixed bug in `EnumSetIter::size_hint`.
 
 # Version 0.4.0 (2019-05-06)
