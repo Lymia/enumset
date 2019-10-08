@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use enumset::*;
+use std::collections::{HashSet, BTreeSet};
 
 #[derive(EnumSetType, Debug)]
 pub enum EmptyEnum { }
@@ -177,6 +178,21 @@ macro_rules! test_enum {
             assert_eq!(($e::A | $e::B) & ($e::B | $e::C), $e::B);
             assert_eq!(($e::A | $e::B) ^ ($e::B | $e::C), $e::A | $e::C);
             assert_eq!(($e::A | $e::B) - ($e::B | $e::C), $e::A);
+            assert_eq!($e::A | !$e::A, EnumSet::<$e>::all());
+        }
+
+        #[test]
+        fn mutable_ops_test() {
+            let mut set = $e::A | $e::B;
+            assert_eq!(set, $e::A | $e::B);
+            set |= $e::C | $e::D;
+            assert_eq!(set, $e::A | $e::B | $e::C | $e::D);
+            set -= $e::C;
+            assert_eq!(set, $e::A | $e::B | $e::D);
+            set ^= $e::B | $e::E;
+            assert_eq!(set, $e::A | $e::D | $e::E);
+            set &= $e::A | $e::E | $e::F;
+            assert_eq!(set, $e::A | $e::E);
         }
 
         #[test]
@@ -213,6 +229,51 @@ macro_rules! test_enum {
                 CONST_SET => { /* ok */ }
                 _ => panic!("match fell through?"),
             }
+        }
+
+        #[test]
+        fn set_test() {
+            const SET_TEST_A: EnumSet<$e> = enum_set!($e::A | $e::B | $e::C);
+            const SET_TEST_B: EnumSet<$e> = enum_set!($e::A | $e::B | $e::D);
+            const SET_TEST_C: EnumSet<$e> = enum_set!($e::A | $e::B | $e::E);
+            const SET_TEST_D: EnumSet<$e> = enum_set!($e::A | $e::B | $e::F);
+            const SET_TEST_E: EnumSet<$e> = enum_set!($e::A | $e::B | $e::G);
+            macro_rules! test_set {
+                ($set:ident) => {{
+                    assert!(!$set.contains(&SET_TEST_A));
+                    assert!(!$set.contains(&SET_TEST_B));
+                    assert!(!$set.contains(&SET_TEST_C));
+                    assert!(!$set.contains(&SET_TEST_D));
+                    assert!(!$set.contains(&SET_TEST_E));
+                    $set.insert(SET_TEST_A);
+                    $set.insert(SET_TEST_C);
+                    assert!($set.contains(&SET_TEST_A));
+                    assert!(!$set.contains(&SET_TEST_B));
+                    assert!($set.contains(&SET_TEST_C));
+                    assert!(!$set.contains(&SET_TEST_D));
+                    assert!(!$set.contains(&SET_TEST_E));
+                    $set.remove(&SET_TEST_C);
+                    $set.remove(&SET_TEST_D);
+                    assert!($set.contains(&SET_TEST_A));
+                    assert!(!$set.contains(&SET_TEST_B));
+                    assert!(!$set.contains(&SET_TEST_C));
+                    assert!(!$set.contains(&SET_TEST_D));
+                    assert!(!$set.contains(&SET_TEST_E));
+                    $set.insert(SET_TEST_A);
+                    $set.insert(SET_TEST_D);
+                    assert!($set.contains(&SET_TEST_A));
+                    assert!(!$set.contains(&SET_TEST_B));
+                    assert!(!$set.contains(&SET_TEST_C));
+                    assert!($set.contains(&SET_TEST_D));
+                    assert!(!$set.contains(&SET_TEST_E));
+                }}
+            }
+            
+            let mut hash_set = HashSet::new();
+            test_set!(hash_set);
+            
+            let mut tree_set = BTreeSet::new();
+            test_set!(tree_set);
         }
 
         #[test]
