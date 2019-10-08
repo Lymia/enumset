@@ -45,7 +45,7 @@ pub enum Enum128 {
 }
 #[derive(EnumSetType, Debug)]
 pub enum SparseEnum {
-    A = 10, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
+    A = 0xA, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
 }
 
 macro_rules! test_variants {

@@ -246,7 +246,10 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                 if let Fields::Unit = variant.fields {
                     if let Some((_, expr)) = &variant.discriminant {
                         if let Expr::Lit(ExprLit { lit: Lit::Int(i), .. }) = expr {
-                            current_variant = i.value();
+                            current_variant = match i.base10_parse() {
+                                Ok(val) => val,
+                                Err(_) => return error(expr.span(), "Error parsing discriminant."),
+                            };
                             has_manual_discriminant = true;
                         } else {
                             return error(variant.span(), "Unrecognized discriminant for variant.")

@@ -19,7 +19,7 @@ nightly = ["proc-macro2/nightly", "darling/diagnostics"]
 serde = []
 
 [dependencies]
-darling = "0.9.0"
-syn = "0.15.18"
-quote = "0.6.9"
-proc-macro2 = "0.4.21"
+darling = "0.10.0"
+syn = "1"
+quote = "1"
+proc-macro2 = "1"
