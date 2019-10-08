@@ -124,7 +124,6 @@ fn enum_set_type_impl(
             quote! {
                 if value & !#all_variants != 0 {
                     use #serde::de::Error;
-                    let unexpected = #serde::de::Unexpected::Unsigned(value as u64);
                     return #core::prelude::v1::Err(
                         D::Error::custom("enumset contains unknown bits")
                     )
