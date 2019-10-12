@@ -1,3 +1,7 @@
+# Version 0.4.4 (2019-10-12)
+* Fixed a bug where `#[enumset(serialize_as_list)]` did not work when `Result`
+  is shadowed.
+
 # Version 0.4.3 (2019-10-08)
 * Implemented `Extend` and `FromIterator` for `EnumSet<T>`.
 
@@ -12,7 +16,8 @@
 * All attributes for the custom derive are now written as `#[enumset(...)]`
 * Implemented `#[enumset(serialize_deny_unknown)]`
 * Implemented `#[enumset(serialize_repr="...")]`
-* `#[derive(EnumSetType)]` now only implements `Copy`, `Clone`, `PartialEq` and `Eq` automatically.
+* `#[derive(EnumSetType)]` now only implements `Copy`, `Clone`, `PartialEq` and
+  `Eq` automatically.
 
 # Version 0.3.19 (2019-05-02)
 * Fix a bug when deserializing enums containing invalid bits set.
@@ -39,8 +44,8 @@
   EnumSetTypes.
 * Fixed a major issue that would have prevented `enumset` from being used in
   `#[no_std]` crates.
-* Minimum required version is now 1.30.0+. There should be no more need to bump
-  the minimum Rust version in the forseeable future.
+* Minimum required version is now 1.30.0+. There should be no more need to
+  bump the minimum Rust version in the forseeable future.
 
 # Prior versions
 

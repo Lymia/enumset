@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Lymia Aluysia <lymia@lymiahugs.com>"]
 edition = "2018"
 
@@ -19,7 +19,7 @@ nightly = ["enumset_derive/nightly"]
 serde = ["serde2", "enumset_derive/serde"]
 
 [dependencies]
-enumset_derive = { version = "0.4.2", path = "../enumset_derive" }
+enumset_derive = { version = "0.4.3", path = "../enumset_derive" }
 num-traits = { version = "0.2", default-features = false }
 serde2 = { package = "serde", version = "1.0.91", default-features = false, optional = true }
 
