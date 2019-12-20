@@ -530,6 +530,30 @@ impl<T: EnumSetType> FromIterator<T> for EnumSet<T> {
     }
 }
 
+impl<'a, T: EnumSetType> Index<&'a T> for EnumSet<T> {
+    type Output = bool;
+
+    #[inline]
+    fn index(&self, val: &'a T) -> &bool {
+        match self.contains(*val) {
+            true => &true,
+            false => &false,
+        }
+    }
+}
+
+impl<T: EnumSetType> Index<T> for EnumSet<T> {
+    type Output = bool;
+
+    #[inline]
+    fn index(&self, val: T) -> &bool {
+        match self.contains(val) {
+            true => &true,
+            false => &false,
+        }
+    }
+}
+
 /// Creates a EnumSet literal, which can be used in const contexts.
 ///
 /// The syntax used is `enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same

@@ -280,6 +280,25 @@ macro_rules! test_enum {
         fn check_size() {
             assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
         }
+
+        #[test]
+        fn index() {
+            let value = $e::A | $e::C | $e::F;
+
+            macro_rules! test_index {
+                ($variant:ident, $expect:expr) => {
+                    assert_eq!(value[$e::$variant], $expect);
+                    assert_eq!(value[&$e::$variant], $expect);
+                };
+            }
+
+            test_index!(A, true);
+            test_index!(B, false);
+            test_index!(C, true);
+            test_index!(D, false);
+            test_index!(E, false);
+            test_index!(F, true);
+        }
     }
 }
 macro_rules! tests {
