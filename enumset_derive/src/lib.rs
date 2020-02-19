@@ -138,14 +138,12 @@ fn enum_set_type_impl(
             fn serialize<S: #serde::Serializer>(
                 set: ::enumset::EnumSet<#name>, ser: S,
             ) -> #core::result::Result<S::Ok, S::Error> {
-                use #serde::Serialize;
-                #serialize_repr::serialize(&(set.__enumset_underlying as #serialize_repr), ser)
+                #serde::Serialize::serialize(&(set.__enumset_underlying as #serialize_repr), ser)
             }
             fn deserialize<'de, D: #serde::Deserializer<'de>>(
                 de: D,
             ) -> #core::result::Result<::enumset::EnumSet<#name>, D::Error> {
-                use #serde::Deserialize;
-                let value = #serialize_repr::deserialize(de)?;
+                let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
                 #check_unknown
                 #core::prelude::v1::Ok(::enumset::EnumSet {
                     __enumset_underlying: (value & #all_variants) as #repr,
