@@ -1,3 +1,7 @@
+# Version 0.4.5 (2020-02-19)
+* Fixed a bug where compilation failed when the `serde` flag was enabled, and
+  another trait that defined `serialize` or `deserialize` was in scope.
+
 # Version 0.4.4 (2019-10-12)
 * Fixed a bug where `#[enumset(serialize_as_list)]` did not work when `Result`
   is shadowed.
