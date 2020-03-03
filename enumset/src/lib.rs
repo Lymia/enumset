@@ -343,7 +343,7 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Adds a value to this set.
     pub fn insert(&mut self, value: T) -> bool {
-        let contains = self.contains(value);
+        let contains = !self.contains(value);
         self.__enumset_underlying = self.__enumset_underlying | Self::mask(value.enum_into_u8());
         contains
     }
