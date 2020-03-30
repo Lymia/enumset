@@ -194,21 +194,24 @@ pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate { }
 
 /// An efficient set type for enums.
 ///
+/// It is implemented using a bitset stored using the smallest integer that can fit all bits
+/// in the underlying enum.
+///
 /// # Serialization
 ///
-/// The default representation serializes enumsets as an `u8`, `u16`, `u32`, `u64`, or `u128`,
-/// whichever is the smallest that can contain all bits that are part of the set.
+/// By default, `EnumSet`s are serialized as an unsigned integer of the same width as used to store
+/// it in memory.
 ///
 /// Unknown bits are ignored, and are simply dropped. To override this behavior, you can add a
 /// `#[enumset(serialize_deny_unknown)]` annotation to your enum.
 ///
-/// You can add a `#[enumset(serialize_repr = "u8")]` annotation to your enum to explicitly set
-/// the bit width the `EnumSet` is serialized as. This can be used to avoid breaking changes in
-/// certain serialization formats (such as `bincode`).
+/// You can add a `#[enumset(serialize_repr = "u8")]` annotation to your enum to manually set
+/// the number width the `EnumSet` is serialized as. Only unsigned integer types may be used. This
+/// can be used to avoid breaking changes in certain serialization formats (such as `bincode`).
 ///
 /// In addition, the `#[enumset(serialize_as_list)]` annotation causes the `EnumSet` to be
-/// instead serialized as a list. This requires your enum type implement [`Serialize`] and
-/// [`Deserialize`].
+/// instead serialized as a list of enum variants. This requires your enum type implement
+/// [`Serialize`] and [`Deserialize`].
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct EnumSet<T : EnumSetType> {
     #[doc(hidden)]
@@ -235,26 +238,29 @@ impl <T : EnumSetType> EnumSet<T> {
         T::ALL_BITS
     }
 
-    /// Returns an empty set.
+    /// Creates an empty `EnumSet`.
     pub fn new() -> Self {
         EnumSet { __enumset_underlying: T::Repr::zero() }
     }
 
-    /// Returns a set containing a single value.
+    /// Returns an `EnumSet` containing a single element.
     pub fn only(t: T) -> Self {
         EnumSet { __enumset_underlying: Self::mask(t.enum_into_u8()) }
     }
 
-    /// Returns an empty set.
+    /// Creates an empty `EnumSet`.
+    ///
+    /// This is an alias for [`EnumSet::new`].
     pub fn empty() -> Self {
         Self::new()
     }
-    /// Returns a set with all bits set.
+
+    /// Returns an `EnumSet` containing all valid variants of the enum.
     pub fn all() -> Self {
         EnumSet { __enumset_underlying: Self::all_bits() }
     }
 
-    /// Total number of bits this enumset uses. Note that the actual amount of space used is
+    /// Total number of bits used by this type. Note that the actual amount of space used is
     /// rounded up to the next highest integer type (`u8`, `u16`, `u32`, `u64`, or `u128`).
     ///
     /// This is the same as [`EnumSet::variant_count`] except in enums with "sparse" variants.
@@ -263,7 +269,7 @@ impl <T : EnumSetType> EnumSet<T> {
         T::Repr::WIDTH - T::ALL_BITS.leading_zeros() as u8
     }
 
-    /// The number of valid variants in this enumset.
+    /// The number of valid variants that this type can contain.
     ///
     /// This is the same as [`EnumSet::bit_width`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
@@ -271,7 +277,7 @@ impl <T : EnumSetType> EnumSet<T> {
         T::ALL_BITS.count_ones() as u8
     }
 
-    /// Returns the raw bits of this set
+    /// Returns the raw bits of this set.
     pub fn to_bits(&self) -> u128 {
         self.__enumset_underlying.to_u128()
             .expect("Impossible: Bits cannot be to converted into i128?")
@@ -289,11 +295,16 @@ impl <T : EnumSetType> EnumSet<T> {
         }
     }
 
-    /// Returns the number of values in this set.
+    /// Constructs a bitset from raw bits, ignoring any unknown variants.
+    pub fn from_bits_safe(bits: u128) -> Self {
+        Self::form_bits(bits & Self::all().to_bits())
+    }
+
+    /// Returns the number of elements in this set.
     pub fn len(&self) -> usize {
         self.__enumset_underlying.count_ones() as usize
     }
-    /// Checks if the set is empty.
+    /// Returns `true` if the set contains no elements.
     pub fn is_empty(&self) -> bool {
         self.__enumset_underlying.is_zero()
     }
@@ -302,36 +313,40 @@ impl <T : EnumSetType> EnumSet<T> {
         self.__enumset_underlying = T::Repr::zero()
     }
 
-    /// Checks if this set shares no elements with another.
+    /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
+    /// checking for an empty intersection.
     pub fn is_disjoint(&self, other: Self) -> bool {
         (*self & other).is_empty()
     }
-    /// Checks if all elements in another set are in this set.
+    /// Returns `true` if the set is a superset of another, i.e., `self` contains at least all the
+    /// values in `other`.
     pub fn is_superset(&self, other: Self) -> bool {
         (*self & other).__enumset_underlying == other.__enumset_underlying
     }
-    /// Checks if all elements of this set are in another set.
+    /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all
+    /// the values in `self`.
     pub fn is_subset(&self, other: Self) -> bool {
         other.is_superset(*self)
     }
 
-    /// Returns a set containing the union of all elements in both sets.
+    /// Returns a set containing any elements present in either set.
     pub fn union(&self, other: Self) -> Self {
         EnumSet { __enumset_underlying: self.__enumset_underlying | other.__enumset_underlying }
     }
-    /// Returns a set containing all elements in common with another set.
+    /// Returns a set containing every element present in both sets.
     pub fn intersection(&self, other: Self) -> Self {
         EnumSet { __enumset_underlying: self.__enumset_underlying & other.__enumset_underlying }
     }
-    /// Returns a set with all elements of the other set removed.
+    /// Returns a set containing element present in `self` but not in `other`.
     pub fn difference(&self, other: Self) -> Self {
         EnumSet { __enumset_underlying: self.__enumset_underlying & !other.__enumset_underlying }
     }
-    /// Returns a set with all elements not contained in both sets.
+    /// Returns a set containing every element present in either `self` or `other`, but is not
+    /// present in both.
     pub fn symmetrical_difference(&self, other: Self) -> Self {
         EnumSet { __enumset_underlying: self.__enumset_underlying ^ other.__enumset_underlying }
     }
-    /// Returns a set containing all elements not in this set.
+    /// Returns a set containing all enum variants not in this set.
     pub fn complement(&self) -> Self {
         EnumSet { __enumset_underlying: !self.__enumset_underlying & Self::all_bits() }
     }
@@ -342,12 +357,16 @@ impl <T : EnumSetType> EnumSet<T> {
     }
 
     /// Adds a value to this set.
+    ///
+    /// If the set did not have this value present, `false` is returned.
+    ///
+    /// If the set did have this value present, `true` is returned.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = self.contains(value);
         self.__enumset_underlying = self.__enumset_underlying | Self::mask(value.enum_into_u8());
         contains
     }
-    /// Removes a value from this set.
+    /// Removes a value from this set. Returns whether the value was present in the set.
     pub fn remove(&mut self, value: T) -> bool {
         let contains = self.contains(value);
         self.__enumset_underlying = self.__enumset_underlying & !Self::mask(value.enum_into_u8());
@@ -493,7 +512,7 @@ impl <'de, T : EnumSetType> Deserialize<'de> for EnumSet<T> {
     }
 }
 
-/// The iterator used by [`EnumSet`](./struct.EnumSet.html).
+/// The iterator used by [`EnumSet`]s.
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
 pub struct EnumSetIter<T : EnumSetType>(EnumSet<T>, u8);
 impl <T : EnumSetType> Iterator for EnumSetIter<T> {
