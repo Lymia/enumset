@@ -113,6 +113,15 @@ macro_rules! test_enum {
         }
 
         #[test]
+        fn already_present_element() {
+            let mut set = EnumSet::new();
+            assert!(set.insert($e::A));
+            assert!(!set.insert($e::A));
+            set.remove($e::A);
+            assert!(set.insert($e::A));
+        }
+
+        #[test]
         fn empty_is_empty() {
             assert_eq!(EnumSet::<$e>::empty().len(), 0)
         }
