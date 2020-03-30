@@ -297,7 +297,7 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Constructs a bitset from raw bits, ignoring any unknown variants.
     pub fn from_bits_safe(bits: u128) -> Self {
-        Self::form_bits(bits & Self::all().to_bits())
+        Self::from_bits(bits & Self::all().to_bits())
     }
 
     /// Returns the number of elements in this set.
@@ -513,7 +513,7 @@ impl <'de, T : EnumSetType> Deserialize<'de> for EnumSet<T> {
 }
 
 /// The iterator used by [`EnumSet`]s.
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Debug)]
 pub struct EnumSetIter<T : EnumSetType>(EnumSet<T>, u8);
 impl <T : EnumSetType> Iterator for EnumSetIter<T> {
     type Item = T;
