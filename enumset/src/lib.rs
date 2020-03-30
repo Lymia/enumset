@@ -358,9 +358,9 @@ impl <T : EnumSetType> EnumSet<T> {
 
     /// Adds a value to this set.
     ///
-    /// If the set did not have this value present, `false` is returned.
+    /// If the set did not have this value present, `true` is returned.
     ///
-    /// If the set did have this value present, `true` is returned.
+    /// If the set did have this value present, `false` is returned.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = !self.contains(value);
         self.__enumset_underlying = self.__enumset_underlying | Self::mask(value.enum_into_u8());
