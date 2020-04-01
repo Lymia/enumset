@@ -220,7 +220,7 @@ macro_rules! test_enum {
         #[test]
         fn to_from_bits() {
             let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
-            assert_eq!(EnumSet::from_bits(value.to_bits()), value);
+            assert_eq!(EnumSet::from_u128(value.to_u128()), value);
         }
 
         #[test]
@@ -229,7 +229,7 @@ macro_rules! test_enum {
             if EnumSet::<$e>::variant_count() == 128 {
                 panic!("(test skipped)")
             }
-            EnumSet::<$e>::from_bits(!0);
+            EnumSet::<$e>::from_u128(!0);
         }
 
         #[test]
@@ -300,3 +300,75 @@ tests!(large_enum, test_enum!(LargeEnum, 16));
 tests!(enum8, test_enum!(Enum8, 1));
 tests!(enum128, test_enum!(Enum128, 16));
 tests!(sparse_enum, test_enum!(SparseEnum, 16));
+
+#[derive(EnumSetType, Debug)]
+pub enum ThresholdEnum {
+    A = 1, B, C, D,
+    U8 = 0, U16 = 8, U32 = 16, U64 = 32, U128 = 64,
+}
+macro_rules! bits_tests {
+    (
+        $mod_name:ident, $threshold_expr:expr, ($($too_big_expr:expr)?), $ty:ty,
+        $to:ident $try_to:ident $to_truncated:ident
+        $from:ident $try_from:ident $from_truncated:ident
+    ) => {
+        mod $mod_name {
+            use super::*;
+            use crate::ThresholdEnum::*;
+
+            #[test]
+            fn to_from_basic() {
+                for &mask in &[
+                    $threshold_expr | B | C | D,
+                    $threshold_expr | A | D,
+                    $threshold_expr | B | C,
+                ] {
+                    assert_eq!(mask, EnumSet::<ThresholdEnum>::$from(mask.$to()));
+                    assert_eq!(mask.$to_truncated(), mask.$to());
+                    assert_eq!(Some(mask.$to()), mask.$try_to())
+                }
+            }
+
+            #[test]
+            #[should_panic]
+            fn from_invalid() {
+                let invalid_mask: $ty = 0x80;
+                EnumSet::<ThresholdEnum>::$from(invalid_mask);
+            }
+
+            #[test]
+            fn try_from_invalid() {
+                assert!(EnumSet::<ThresholdEnum>::$try_from(0xFF).is_none());
+            }
+
+            $(
+                #[test]
+                fn try_to_overflow() {
+                        let set: EnumSet<ThresholdEnum> = $too_big_expr.into();
+                        assert!(set.$try_to().is_none());
+                }
+            )?
+
+            #[test]
+            fn truncated_overflow() {
+                let trunc_invalid = EnumSet::<ThresholdEnum>::$from_truncated(0xFE);
+                assert_eq!(A | B | C | D, trunc_invalid);
+                $(
+                    let set: EnumSet<ThresholdEnum> = $too_big_expr | A;
+                    assert_eq!(2, set.$to_truncated());
+                )?
+            }
+        }
+    }
+}
+
+bits_tests!(test_u8_bits, U8, (U16), u8,
+            to_u8 to_u8_checked to_u8_truncated from_u8 try_from_u8 from_u8_truncated);
+bits_tests!(test_u16_bits, U16, (U32), u16,
+            to_u16 to_u16_checked to_u16_truncated from_u16 try_from_u16 from_u16_truncated);
+bits_tests!(test_u32_bits, U32, (U64), u32,
+            to_u32 to_u32_checked to_u32_truncated from_u32 try_from_u32 from_u32_truncated);
+bits_tests!(test_u64_bits, U64, (U128), u64,
+            to_u64 to_u64_checked to_u64_truncated from_u64 try_from_u64 from_u64_truncated);
+bits_tests!(test_u128_bits, U128, (), u128,
+            to_u128 to_u128_checked to_u128_truncated from_u128 try_from_u128 from_u128_truncated);
