@@ -1,5 +1,7 @@
 #[test]
 fn ui() {
-    let t = trybuild::TestCases::new();
-    t.compile_fail("tests/compile-fail/*.rs");
+    if version_check::is_min_version("1.36.0") {
+        let t = trybuild::TestCases::new();
+        t.compile_fail("tests/compile-fail/*.rs");
+    }
 }

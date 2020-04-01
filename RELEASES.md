@@ -1,3 +1,13 @@
+# Version 1.0.0 (2020-04-01) - Unreleased
+* **[WARNING: Potential silent breaking change]** Changed `EnumSet::insert` to
+  return whether a value was newly  inserted, rather than whether the value
+  already existed in the set. This corresponds better with the behavior of
+  `HashSet::insert` and `BTreeSet::insert`.
+* Renamed `to_bits`/`from_bits` to `to_u128`/`from_u128` and added additional
+  methods for other built-in numeric types. 
+* `EnumSet::bit_width` and `EnumSet::variant_count` now return a `u32` instead
+  of a `u8` for future-proofing.
+
 # Version 0.4.5 (2020-02-19)
 * Fixed a bug where compilation failed when the `serde` flag was enabled, and
   another trait that defined `serialize` or `deserialize` was in scope.

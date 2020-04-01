@@ -4,7 +4,8 @@ matrix:
   include:
     - rust: stable
     - rust: beta
-    - rust: 1.31.0
+    - rust: 1.31.0 # minimum version supported by enumset
+    - rust: 1.36.0 # minimum version trybuild supports
 
     - rust: nightly
       script:
