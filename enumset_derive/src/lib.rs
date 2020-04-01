@@ -245,13 +245,13 @@ fn derive_enum_set_type_impl(input: DeriveInput) -> Result<TokenStream> {
                             current_variant = match i.base10_parse() {
                                 Ok(val) => val,
                                 Err(_) => error(
-                                    expr.span(), "Could not parse discriminant as u32.",
+                                    expr.span(), "Enum set discriminants must be `u32`s.",
                                 )?,
                             };
                             has_manual_discriminant = true;
                         } else {
                             error(
-                                variant.span(), "Unrecognized discriminant for variant."
+                                variant.span(), "Enum set discriminants must be `u32`s."
                             )?;
                         }
                     }
@@ -283,7 +283,7 @@ fn derive_enum_set_type_impl(input: DeriveInput) -> Result<TokenStream> {
                 } else {
                     error(
                         variant.span(),
-                        "`#[derive(EnumSetType)]` can only be used on C-like enums."
+                        "`#[derive(EnumSetType)]` can only be used on fieldless enums."
                     )?;
                 }
             }
