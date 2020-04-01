@@ -1,29 +1,25 @@
 #![recursion_limit="256"]
 #![cfg_attr(feature = "nightly", feature(proc_macro_diagnostic))]
 
+// TODO: Read #[repr(...)] attributes.
+
 extern crate proc_macro;
 
 use darling::*;
 use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as SynTokenStream, Literal};
-use syn::*;
+use syn::{*, Result, Error};
 use syn::export::Span;
 use syn::spanned::Spanned;
 use quote::*;
 
-#[cfg(feature = "nightly")]
-fn error(span: Span, data: &str) -> TokenStream {
-    span.unstable().error(data).emit();
-    TokenStream::new()
-}
-
-#[cfg(not(feature = "nightly"))]
-fn error(_: Span, data: &str) -> TokenStream {
-    panic!("{}", data)
+fn error<T>(span: Span, message: &str) -> Result<T> {
+    Err(Error::new(span, message))
 }
 
 fn enum_set_type_impl(
     name: &Ident, all_variants: u128, repr: Ident, attrs: EnumsetAttrs, variants: Vec<Ident>,
+    enum_repr: Ident,
 ) -> SynTokenStream {
     let is_uninhabited = variants.is_empty();
     let is_zst = variants.len() == 1;
@@ -157,30 +153,30 @@ fn enum_set_type_impl(
 
     let into_impl = if is_uninhabited {
         quote! {
-            fn enum_into_u8(self) -> u8 {
+            fn enum_into_u32(self) -> u32 {
                 panic!(concat!(stringify!(#name), " is uninhabited."))
             }
-            unsafe fn enum_from_u8(val: u8) -> Self {
+            unsafe fn enum_from_u32(val: u32) -> Self {
                 panic!(concat!(stringify!(#name), " is uninhabited."))
             }
         }
     } else if is_zst {
         let variant = &variants[0];
         quote! {
-            fn enum_into_u8(self) -> u8 {
-                self as u8
+            fn enum_into_u32(self) -> u32 {
+                self as u32
             }
-            unsafe fn enum_from_u8(val: u8) -> Self {
+            unsafe fn enum_from_u32(val: u32) -> Self {
                 #name::#variant
             }
         }
     } else {
         quote! {
-            fn enum_into_u8(self) -> u8 {
-                self as u8
+            fn enum_into_u32(self) -> u32 {
+                self as u32
             }
-            unsafe fn enum_from_u8(val: u8) -> Self {
-                #core::mem::transmute(val)
+            unsafe fn enum_from_u32(val: u32) -> Self {
+                #core::mem::transmute(val as #enum_repr)
             }
         }
     };
@@ -188,7 +184,7 @@ fn enum_set_type_impl(
     let eq_impl = if is_uninhabited {
         quote!(panic!(concat!(stringify!(#name), " is uninhabited.")))
     } else {
-        quote!((*self as u8) == (*other as u8))
+        quote!((*self as u32) == (*other as u32))
     };
 
     quote! {
@@ -228,17 +224,17 @@ struct EnumsetAttrs {
     serialize_repr: Option<String>,
 }
 
-#[proc_macro_derive(EnumSetType, attributes(enumset))]
-pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
-    let input: DeriveInput = parse_macro_input!(input);
+fn derive_enum_set_type_impl(input: DeriveInput) -> Result<TokenStream> {
     if let Data::Enum(data) = &input.data {
         if !input.generics.params.is_empty() {
-            error(input.generics.span(),
-                  "`#[derive(EnumSetType)]` cannot be used on enums with type parameters.")
+            error(
+                input.generics.span(),
+                "`#[derive(EnumSetType)]` cannot be used on enums with type parameters."
+            )
         } else {
             let mut all_variants = 0u128;
-            let mut max_variant = 0;
-            let mut current_variant = 0;
+            let mut max_variant = 0u32;
+            let mut current_variant = 0u32;
             let mut has_manual_discriminant = false;
             let mut variants = Vec::new();
 
@@ -248,28 +244,36 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                         if let Expr::Lit(ExprLit { lit: Lit::Int(i), .. }) = expr {
                             current_variant = match i.base10_parse() {
                                 Ok(val) => val,
-                                Err(_) => return error(expr.span(), "Error parsing discriminant."),
+                                Err(_) => error(
+                                    expr.span(), "Could not parse discriminant as u32.",
+                                )?,
                             };
                             has_manual_discriminant = true;
                         } else {
-                            return error(variant.span(), "Unrecognized discriminant for variant.")
+                            error(
+                                variant.span(), "Unrecognized discriminant for variant."
+                            )?;
                         }
                     }
 
                     if current_variant >= 128 {
                         let message = if has_manual_discriminant {
-                            "`#[derive(EnumSetType)]` only supports enum discriminants up to 127."
+                            "`#[derive(EnumSetType)]` currently only supports \
+                             enum discriminants up to 127."
                         } else {
-                            "`#[derive(EnumSetType)]` only supports enums up to 128 variants."
+                            "`#[derive(EnumSetType)]` currently only supports \
+                             enums up to 128 variants."
                         };
-                        return error(variant.span(), message)
+                        error(variant.span(), message)?;
                     }
 
-                    if all_variants & (1 << current_variant) != 0 {
-                        return error(variant.span(),
-                                     &format!("Duplicate enum discriminant: {}", current_variant))
+                    if all_variants & (1 << current_variant as u128) != 0 {
+                        error(
+                            variant.span(),
+                            &format!("Duplicate enum discriminant: {}", current_variant)
+                        )?;
                     }
-                    all_variants |= 1 << current_variant;
+                    all_variants |= 1 << current_variant as u128;
                     if current_variant > max_variant {
                         max_variant = current_variant
                     }
@@ -277,8 +281,10 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
                     variants.push(variant.ident.clone());
                     current_variant += 1;
                 } else {
-                    return error(variant.span(),
-                                 "`#[derive(EnumSetType)]` can only be used on C-like enums.")
+                    error(
+                        variant.span(),
+                        "`#[derive(EnumSetType)]` can only be used on C-like enums."
+                    )?;
                 }
             }
 
@@ -298,33 +304,72 @@ pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
 
             let attrs: EnumsetAttrs = match EnumsetAttrs::from_derive_input(&input) {
                 Ok(attrs) => attrs,
-                Err(e) => return e.write_errors().into(),
+                Err(e) => return Ok(e.write_errors().into()),
             };
+
+            let mut enum_repr = None;
+            for attr in &input.attrs {
+                if attr.path.is_ident(&Ident::new("repr", Span::call_site())) {
+                    let meta: Ident = attr.parse_args()?;
+                    if enum_repr.is_some() {
+                        error(attr.span(), "Cannot duplicate #[repr(...)] annotations.")?;
+                    }
+                    let repr_max_variant = match meta.to_string().as_str() {
+                        "u8" => 0xFF,
+                        "u16" => 0xFFFF,
+                        "u32" => 0xFFFFFFFF,
+                        _ => error(attr.span(), "Only `u8`, `u16` and `u32` reprs are supported.")?,
+                    };
+                    if max_variant > repr_max_variant {
+                        error(attr.span(), "A variant of this enum overflows its repr.")?;
+                    }
+                    enum_repr = Some(meta);
+                }
+            }
+            let enum_repr = enum_repr.unwrap_or_else(|| if max_variant < 0x100 {
+                Ident::new("u8", Span::call_site())
+            } else if max_variant < 0x10000 {
+                Ident::new("u16", Span::call_site())
+            } else {
+                Ident::new("u32", Span::call_site())
+            });
 
             match attrs.serialize_repr.as_ref().map(|x| x.as_str()) {
                 Some("u8") => if max_variant > 7 {
-                    return error(input.span(), "Too many variants for u8 serialization repr.")
+                    error(input.span(), "Too many variants for u8 serialization repr.")?;
                 }
                 Some("u16") => if max_variant > 15 {
-                    return error(input.span(), "Too many variants for u16 serialization repr.")
+                    error(input.span(), "Too many variants for u16 serialization repr.")?;
                 }
                 Some("u32") => if max_variant > 31 {
-                    return error(input.span(), "Too many variants for u32 serialization repr.")
+                    error(input.span(), "Too many variants for u32 serialization repr.")?;
                 }
                 Some("u64") => if max_variant > 63 {
-                    return error(input.span(), "Too many variants for u64 serialization repr.")
+                    error(input.span(), "Too many variants for u64 serialization repr.")?;
                 }
                 Some("u128") => if max_variant > 127 {
-                    return error(input.span(), "Too many variants for u128 serialization repr.")
+                    error(input.span(), "Too many variants for u128 serialization repr.")?;
                 }
                 None => { }
-                Some(x) => return error(input.span(),
-                                        &format!("{} is not a valid serialization repr.", x)),
+                Some(x) => error(
+                    input.span(), &format!("{} is not a valid serialization repr.", x)
+                )?,
             };
 
-            enum_set_type_impl(&input.ident, all_variants, repr, attrs, variants).into()
+            Ok(enum_set_type_impl(
+                &input.ident, all_variants, repr, attrs, variants, enum_repr,
+            ).into())
         }
     } else {
         error(input.span(), "`#[derive(EnumSetType)]` may only be used on enums")
+    }
+}
+
+#[proc_macro_derive(EnumSetType, attributes(enumset))]
+pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
+    let input: DeriveInput = parse_macro_input!(input);
+    match derive_enum_set_type_impl(input) {
+        Ok(v) => v,
+        Err(e) => e.to_compile_error().into(),
     }
 }

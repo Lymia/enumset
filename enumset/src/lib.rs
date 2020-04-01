@@ -105,8 +105,8 @@ pub mod internal {
     pub unsafe trait EnumSetTypePrivate {
         type Repr: EnumSetTypeRepr;
         const ALL_BITS: Self::Repr;
-        fn enum_into_u8(self) -> u8;
-        unsafe fn enum_from_u8(val: u8) -> Self;
+        fn enum_into_u32(self) -> u32;
+        unsafe fn enum_from_u32(val: u32) -> Self;
 
         #[cfg(feature = "serde")]
         fn serialize<S: serde::Serializer>(set: EnumSet<Self>, ser: S) -> Result<S::Ok, S::Error>
@@ -128,7 +128,7 @@ mod private {
         AsPrimitive<u8> + AsPrimitive<u16> + AsPrimitive<u32> + AsPrimitive<u64> +
         AsPrimitive<u128> + AsPrimitive<usize>
     {
-        const WIDTH: u8;
+        const WIDTH: u32;
 
         fn from_u8(v: u8) -> Self;
         fn from_u16(v: u16) -> Self;
@@ -140,7 +140,7 @@ mod private {
     macro_rules! prim {
         ($name:ty, $width:expr) => {
             impl EnumSetTypeRepr for $name {
-                const WIDTH: u8 = $width;
+                const WIDTH: u32 = $width;
                 fn from_u8(v: u8) -> Self { v.as_() }
                 fn from_u16(v: u16) -> Self { v.as_() }
                 fn from_u32(v: u32) -> Self { v.as_() }
@@ -238,15 +238,15 @@ pub struct EnumSet<T: EnumSetType> {
     pub __enumset_underlying: T::Repr
 }
 impl <T: EnumSetType> EnumSet<T> {
-    fn mask(bit: u8) -> T::Repr {
+    fn mask(bit: u32) -> T::Repr {
         Shl::<usize>::shl(T::Repr::one(), bit as usize)
     }
-    fn has_bit(&self, bit: u8) -> bool {
+    fn has_bit(&self, bit: u32) -> bool {
         let mask = Self::mask(bit);
         self.__enumset_underlying & mask == mask
     }
-    fn partial_bits(bits: u8) -> T::Repr {
-        T::Repr::one().checked_shl(bits.into())
+    fn partial_bits(bits: u32) -> T::Repr {
+        T::Repr::one().checked_shl(bits as u32)
             .unwrap_or(T::Repr::zero())
             .wrapping_sub(&T::Repr::one())
     }
@@ -263,7 +263,7 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Returns an `EnumSet` containing a single element.
     pub fn only(t: T) -> Self {
-        EnumSet { __enumset_underlying: Self::mask(t.enum_into_u8()) }
+        EnumSet { __enumset_underlying: Self::mask(t.enum_into_u32()) }
     }
 
     /// Creates an empty `EnumSet`.
@@ -283,16 +283,16 @@ impl <T: EnumSetType> EnumSet<T> {
     ///
     /// This is the same as [`EnumSet::variant_count`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
-    pub fn bit_width() -> u8 {
-        T::Repr::WIDTH - T::ALL_BITS.leading_zeros() as u8
+    pub fn bit_width() -> u32 {
+        T::Repr::WIDTH - T::ALL_BITS.leading_zeros()
     }
 
     /// The number of valid variants that this type can contain.
     ///
     /// This is the same as [`EnumSet::bit_width`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
-    pub fn variant_count() -> u8 {
-        T::ALL_BITS.count_ones() as u8
+    pub fn variant_count() -> u32 {
+        T::ALL_BITS.count_ones()
     }
 
     /// Returns the number of elements in this set.
@@ -348,7 +348,7 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Checks whether this set contains a value.
     pub fn contains(&self, value: T) -> bool {
-        self.has_bit(value.enum_into_u8())
+        self.has_bit(value.enum_into_u32())
     }
 
     /// Adds a value to this set.
@@ -358,13 +358,13 @@ impl <T: EnumSetType> EnumSet<T> {
     /// If the set did have this value present, `false` is returned.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = !self.contains(value);
-        self.__enumset_underlying = self.__enumset_underlying | Self::mask(value.enum_into_u8());
+        self.__enumset_underlying = self.__enumset_underlying | Self::mask(value.enum_into_u32());
         contains
     }
     /// Removes a value from this set. Returns whether the value was present in the set.
     pub fn remove(&mut self, value: T) -> bool {
         let contains = self.contains(value);
-        self.__enumset_underlying = self.__enumset_underlying & !Self::mask(value.enum_into_u8());
+        self.__enumset_underlying = self.__enumset_underlying & !Self::mask(value.enum_into_u32());
         contains
     }
 
@@ -553,7 +553,7 @@ impl <T: EnumSetType> From<T> for EnumSet<T> {
 
 impl <T: EnumSetType> PartialEq<T> for EnumSet<T> {
     fn eq(&self, other: &T) -> bool {
-        self.__enumset_underlying == EnumSet::<T>::mask(other.enum_into_u8())
+        self.__enumset_underlying == EnumSet::<T>::mask(other.enum_into_u32())
     }
 }
 impl <T: EnumSetType + Debug> Debug for EnumSet<T> {
@@ -602,7 +602,7 @@ impl <'de, T: EnumSetType> Deserialize<'de> for EnumSet<T> {
 
 /// The iterator used by [`EnumSet`]s.
 #[derive(Clone, Debug)]
-pub struct EnumSetIter<T: EnumSetType>(EnumSet<T>, u8);
+pub struct EnumSetIter<T: EnumSetType>(EnumSet<T>, u32);
 impl <T: EnumSetType> Iterator for EnumSetIter<T> {
     type Item = T;
 
@@ -611,7 +611,7 @@ impl <T: EnumSetType> Iterator for EnumSetIter<T> {
             let bit = self.1;
             self.1 += 1;
             if self.0.has_bit(bit) {
-                return unsafe { Some(T::enum_from_u8(bit)) }
+                return unsafe { Some(T::enum_from_u32(bit)) }
             }
         }
         None
@@ -668,7 +668,7 @@ macro_rules! enum_set {
         $crate::internal::EnumSetSameTypeHack {
             unified: &[$($value,)*],
             enum_set: $crate::EnumSet {
-                __enumset_underlying: 0 $(| (1 << ($value as u8)))*
+                __enumset_underlying: 0 $(| (1 << ($value as u32)))*
             },
         }.enum_set
     };
