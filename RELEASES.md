@@ -7,6 +7,7 @@
   methods for other built-in numeric types. 
 * `EnumSet::bit_width` and `EnumSet::variant_count` now return a `u32` instead
   of a `u8` for future-proofing.
+* Removed `nightly` feature flag, as it is no longer required.
 
 # Version 0.4.5 (2020-02-19)
 * Fixed a bug where compilation failed when the `serde` flag was enabled, and

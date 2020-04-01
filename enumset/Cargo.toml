@@ -15,7 +15,6 @@ readme = "../README.md"
 license = "MIT/Apache-2.0"
 
 [features]
-nightly = ["enumset_derive/nightly"]
 serde = ["serde2", "enumset_derive/serde"]
 
 [dependencies]

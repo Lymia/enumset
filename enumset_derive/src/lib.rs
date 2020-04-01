@@ -1,7 +1,4 @@
 #![recursion_limit="256"]
-#![cfg_attr(feature = "nightly", feature(proc_macro_diagnostic))]
-
-// TODO: Read #[repr(...)] attributes.
 
 extern crate proc_macro;
 

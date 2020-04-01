@@ -19,7 +19,6 @@ maintenance = { status = "actively-developed" }
 proc-macro = true
 
 [features]
-nightly = []
 serde = []
 
 [dependencies]
