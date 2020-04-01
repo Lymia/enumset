@@ -308,7 +308,7 @@ pub enum ThresholdEnum {
 }
 macro_rules! bits_tests {
     (
-        $mod_name:ident, $threshold_expr:expr, ($($too_big_expr:expr)?), $ty:ty,
+        $mod_name:ident, $threshold_expr:expr, ($($too_big_expr:expr),*), $ty:ty,
         $to:ident $try_to:ident $to_truncated:ident
         $from:ident $try_from:ident $from_truncated:ident
     ) => {
@@ -347,7 +347,7 @@ macro_rules! bits_tests {
                         let set: EnumSet<ThresholdEnum> = $too_big_expr.into();
                         assert!(set.$try_to().is_none());
                 }
-            )?
+            )*
 
             #[test]
             fn truncated_overflow() {
@@ -356,7 +356,7 @@ macro_rules! bits_tests {
                 $(
                     let set: EnumSet<ThresholdEnum> = $too_big_expr | A;
                     assert_eq!(2, set.$to_truncated());
-                )?
+                )*
             }
         }
     }
