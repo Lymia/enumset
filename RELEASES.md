@@ -8,6 +8,9 @@
 * `EnumSet::bit_width` and `EnumSet::variant_count` now return a `u32` instead
   of a `u8` for future-proofing.
 * Removed `nightly` feature flag, as it is no longer required.
+* Fixed a bug where the procedural macro would fail on enums with a repr
+  annotation set. While reprs larger than u8 are supported, negative enum
+  variants or enum variants above 127 are still not currently supported.
 
 # Version 0.4.5 (2020-02-19)
 * Fixed a bug where compilation failed when the `serde` flag was enabled, and

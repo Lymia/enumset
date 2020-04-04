@@ -1,46 +1,45 @@
-error: `#[derive(EnumSetType)]` currently only supports enum discriminants up to 127.
+error: `#[derive(EnumSetType)]` currently only supports discriminants up to 127.
  --> $DIR/variants.rs:5:5
   |
 5 |     Variant = 128,
   |     ^^^^^^^^^^^^^
 
-error: `#[derive(EnumSetType)]` currently only supports enums up to 128 variants.
-  --> $DIR/variants.rs:16:95
+error: Enum set discriminants must be `u32`s. (larger discrimiants are still unsupported with reprs that allow them.)
+  --> $DIR/variants.rs:11:15
    |
-16 |     _113, _114, _115, _116, _117, _118, _119, _120, _121, _122, _123, _124, _125, _126, _127, _128,
+11 |     Variant = 0x100000000,
+   |               ^^^^^^^^^^^
+
+error: `#[derive(EnumSetType)]` currently only supports enums up to 128 variants.
+  --> $DIR/variants.rs:22:95
+   |
+22 |     _113, _114, _115, _116, _117, _118, _119, _120, _121, _122, _123, _124, _125, _126, _127, _128,
    |                                                                                               ^^^^
 
 error: Enum set discriminants must be `u32`s.
-  --> $DIR/variants.rs:21:5
+  --> $DIR/variants.rs:27:5
    |
-21 |     Variant = -1,
+27 |     Variant = -1,
    |     ^^^^^^^^^^^^
-
-error: Only `u8`, `u16` and `u32` reprs are supported.
-  --> $DIR/variants.rs:25:1
-   |
-25 | #[repr(usize)]
-   | ^^^^^^^^^^^^^^
 
 error: `#[derive(EnumSetType)]` can only be used on fieldless enums.
-  --> $DIR/variants.rs:32:5
+  --> $DIR/variants.rs:38:5
    |
-32 |     Variant(u32),
+38 |     Variant(u32),
    |     ^^^^^^^^^^^^
 
-error: Too many variants for u8 serialization repr.
-  --> $DIR/variants.rs:36:1
+error: serialize_repr cannot be smaller than bitset.
+  --> $DIR/variants.rs:41:10
    |
-36 | / #[enumset(serialize_repr = "u8")]
-37 | | enum BadSerializationRepr {
-38 | |     Variant = 8,
-39 | | }
-   | |_^
+41 | #[derive(EnumSetType)]
+   |          ^^^^^^^^^^^
+   |
+   = note: this error originates in a derive macro (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: `#[derive(EnumSetType)]` may only be used on enums
-  --> $DIR/variants.rs:42:1
+  --> $DIR/variants.rs:48:1
    |
-42 | / struct BadItemType {
-43 | |
-44 | | }
+48 | / struct BadItemType {
+49 | |
+50 | | }
    | |_^
