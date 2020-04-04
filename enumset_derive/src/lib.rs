@@ -37,7 +37,6 @@ struct EnumSetValue {
 #[allow(dead_code)]
 struct EnumSetInfo {
     name: Ident,
-    explicit_repr: Option<Ident>,
     explicit_serde_repr: Option<Ident>,
     has_signed_repr: bool,
     has_large_repr: bool,
@@ -56,7 +55,6 @@ impl EnumSetInfo {
     fn new(input: &DeriveInput, attrs: EnumsetAttrs) -> EnumSetInfo {
         EnumSetInfo {
             name: input.ident.clone(),
-            explicit_repr: None,
             explicit_serde_repr: attrs.serialize_repr.map(|x| Ident::new(&x, Span::call_site())),
             has_signed_repr: false,
             has_large_repr: false,
@@ -72,28 +70,22 @@ impl EnumSetInfo {
     }
 
     fn push_explicit_repr(&mut self, attr_span: Span, repr: &str) -> Result<()> {
-        if self.explicit_repr.is_some() {
-            error(attr_span, "Cannot duplicate #[repr(...)] annotations.")
-        } else {
-            self.explicit_repr = Some(Ident::new(match repr {
-                "Rust" | "C" => return Ok(()), // We assume default repr in these cases.
-                "u8" | "u16" | "u32" => repr,
-                "usize" | "u64" | "u128" => {
-                    self.has_large_repr = true;
-                    repr
-                }
-                "i8" | "i16" | "i32" => {
-                    self.has_signed_repr = true;
-                    repr
-                }
-                "isize" | "i64" | "i128" => {
-                    self.has_signed_repr = true;
-                    self.has_large_repr = true;
-                    repr
-                }
-                _ => return error(attr_span, "Unsupported repr.")
-            }, Span::call_site()));
-            Ok(())
+        match repr {
+            "Rust" | "C" | "u8" | "u16" | "u32" => Ok(()),
+            "usize" | "u64" | "u128" => {
+                self.has_large_repr = true;
+                Ok(())
+            }
+            "i8" | "i16" | "i32" => {
+                self.has_signed_repr = true;
+                Ok(())
+            }
+            "isize" | "i64" | "i128" => {
+                self.has_signed_repr = true;
+                self.has_large_repr = true;
+                Ok(())
+            }
+            _ => error(attr_span, "Unsupported repr.")
         }
     }
     fn push_variant(&mut self, variant: &Variant) -> Result<()> {
@@ -178,17 +170,6 @@ impl EnumSetInfo {
         Ok(())
     }
 
-    fn enum_repr(&self) -> SynTokenStream {
-        if let Some(explicit_repr) = &self.explicit_repr {
-            quote! { #explicit_repr }
-        } else if self.max_discrim < 0x100 {
-            quote! { u8 }
-        } else if self.max_discrim < 0x10000 {
-            quote! { u16 }
-        } else {
-            quote! { u32 }
-        }
-    }
     fn enumset_repr(&self) -> SynTokenStream {
         if self.max_discrim <= 7 {
             quote! { u8 }
@@ -223,17 +204,12 @@ impl EnumSetInfo {
     }
 }
 
-fn enum_set_type_impl(
-    info: EnumSetInfo,
-//    name: &Ident, all_variants: u128, repr: Ident, attrs: EnumsetAttrs, variants: Vec<Ident>,
-//    enum_repr: Ident,
-) -> SynTokenStream {
+fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     let name = &info.name;
     let typed_enumset = quote!(::enumset::EnumSet<#name>);
     let core = quote!(::enumset::internal::core_export);
 
     let repr = info.enumset_repr();
-    let enum_repr = info.enum_repr();
     let all_variants = Literal::u128_unsuffixed(info.all_variants());
 
     let ops = if info.no_ops {
@@ -379,12 +355,37 @@ fn enum_set_type_impl(
             }
         }
     } else {
+        let variant_name: Vec<_> = info.variants.iter().map(|x| &x.name).collect();
+        let variant_value: Vec<_> = info.variants.iter().map(|x| x.variant_repr).collect();
+
+        let const_field: Vec<_> = ["IS_U8", "IS_U16", "IS_U32", "IS_U64", "IS_U128"]
+            .iter().map(|x| Ident::new(x, Span::call_site())).collect();
+        let int_type: Vec<_> = ["u8", "u16", "u32", "u64", "u128"]
+            .iter().map(|x| Ident::new(x, Span::call_site())).collect();
+
         quote! {
             fn enum_into_u32(self) -> u32 {
                 self as u32
             }
             unsafe fn enum_from_u32(val: u32) -> Self {
-                #core::mem::transmute(val as #enum_repr)
+                // We put these in const fields so they aren't generated even on -O0
+                #(const #const_field: bool =
+                    #core::mem::size_of::<#name>() == #core::mem::size_of::<#int_type>();)*
+                match val {
+                    // Every valid variant value has an explicit branch. If they get optimized out,
+                    // great. If the representation has changed somehow, and they don't, oh well,
+                    // there's still no UB.
+                    #(#variant_value => #name::#variant_name,)*
+                    // Helps hint to the LLVM that this is a transmute. Note that this branch is
+                    // still unreachable.
+                    #(x if #const_field => {
+                        let x = x as #int_type;
+                        *(&x as *const _ as *const #name)
+                    })*
+                    // Default case. Sometimes causes LLVM to generate a table instead of a simple
+                    // transmute, but, oh well.
+                    _ => #core::hint::unreachable_unchecked(),
+                }
             }
         }
     };
