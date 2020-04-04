@@ -31,27 +31,42 @@ struct EnumsetAttrs {
 
 /// An variant in the enum set type.
 struct EnumSetValue {
+    /// The name of the variant.
     name: Ident,
+    /// The discriminant of the variant.
     variant_repr: u32,
 }
 
 /// Stores information about the enum set type.
 #[allow(dead_code)]
 struct EnumSetInfo {
+    /// The name of the enum.
     name: Ident,
+    /// The crate name to use.
     crate_name: Option<Ident>,
+    /// The numeric type to serialize the enum as.
     explicit_serde_repr: Option<Ident>,
+    /// Whether the underlying repr of the enum supports negative values.
     has_signed_repr: bool,
+    /// Whether the underlying repr of the enum supports values higher than 2^32.
     has_large_repr: bool,
+    /// A list of variants in the enum.
     variants: Vec<EnumSetValue>,
 
+    /// The highest encountered variant discriminant.
     max_discrim: u32,
+    /// The current variant discriminant. Used to track, e.g. `A=10,B,C`.
     cur_discrim: u32,
+    /// A list of variant names that are already in use.
     used_variant_names: HashSet<String>,
-    used_discriminators: HashSet<u32>,
+    /// A list of variant discriminants that are already in use.
+    used_discriminants: HashSet<u32>,
 
+    /// Avoid generating operator overloads on the enum type.
     no_ops: bool,
+    /// Serialize the enum as a list.
     serialize_as_list: bool,
+    /// Disallow unknown bits while deserializing the enum.
     serialize_deny_unknown: bool,
 }
 impl EnumSetInfo {
@@ -66,14 +81,17 @@ impl EnumSetInfo {
             max_discrim: 0,
             cur_discrim: 0,
             used_variant_names: HashSet::new(),
-            used_discriminators: HashSet::new(),
+            used_discriminants: HashSet::new(),
             no_ops: attrs.no_ops,
             serialize_as_list: attrs.serialize_as_list,
             serialize_deny_unknown: attrs.serialize_deny_unknown
         }
     }
 
+    /// Sets an explicit repr for the enumset.
     fn push_explicit_repr(&mut self, attr_span: Span, repr: &str) -> Result<()> {
+        // Check whether the repr is supported, and if so, set some flags for better error
+        // messages later on.
         match repr {
             "Rust" | "C" | "u8" | "u16" | "u32" => Ok(()),
             "usize" | "u64" | "u128" => {
@@ -92,10 +110,12 @@ impl EnumSetInfo {
             _ => error(attr_span, "Unsupported repr.")
         }
     }
+    /// Adds a variant to the enumset.
     fn push_variant(&mut self, variant: &Variant) -> Result<()> {
         if self.used_variant_names.contains(&variant.ident.to_string()) {
             error(variant.span(), "Duplicated variant name.")
         } else if let Fields::Unit = variant.fields {
+            // Parse the discriminant.
             if let Some((_, expr)) = &variant.discriminant {
                 let discriminant_fail_message = format!(
                     "Enum set discriminants must be `u32`s.{}",
@@ -124,6 +144,7 @@ impl EnumSetInfo {
                 }
             }
 
+            // Validate the discriminant.
             let discriminant = self.cur_discrim;
             if discriminant >= 128 {
                 let message = if self.variants.len() <= 127 {
@@ -133,11 +154,11 @@ impl EnumSetInfo {
                 };
                 error(variant.span(), message)?;
             }
-
-            if self.used_discriminators.contains(&discriminant) {
+            if self.used_discriminants.contains(&discriminant) {
                 error(variant.span(), "Duplicated enum discriminant.")?;
             }
 
+            // Add the variant to the info.
             self.cur_discrim += 1;
             if discriminant > self.max_discrim {
                 self.max_discrim = discriminant;
@@ -147,14 +168,16 @@ impl EnumSetInfo {
                 variant_repr: discriminant,
             });
             self.used_variant_names.insert(variant.ident.to_string());
-            self.used_discriminators.insert(discriminant);
+            self.used_discriminants.insert(discriminant);
 
             Ok(())
         } else {
             error(variant.span(), "`#[derive(EnumSetType)]` can only be used on fieldless enums.")
         }
     }
+    /// Validate the enumset type.
     fn validate(&self) -> Result<()> {
+        // Check if all bits of the bitset can fit in the serialization representation.
         if let Some(explicit_serde_repr) = &self.explicit_serde_repr {
             let is_overflowed = match explicit_serde_repr.to_string().as_str() {
                 "u8" => self.max_discrim >= 8,
@@ -174,6 +197,7 @@ impl EnumSetInfo {
         Ok(())
     }
 
+    /// Computes the underlying type used to store the enumset.
     fn enumset_repr(&self) -> SynTokenStream {
         if self.max_discrim <= 7 {
             quote! { u8 }
@@ -189,6 +213,7 @@ impl EnumSetInfo {
             panic!("max_variant > 127?")
         }
     }
+    /// Computes the underlying type used to serialize the enumset.
     #[cfg(feature = "serde")]
     fn serde_repr(&self) -> SynTokenStream {
         if let Some(serde_repr) = &self.explicit_serde_repr {
@@ -198,6 +223,7 @@ impl EnumSetInfo {
         }
     }
 
+    /// Returns a bitmask of all variants in the set.
     fn all_variants(&self) -> u128 {
         let mut accum = 0u128;
         for variant in &self.variants {
@@ -208,6 +234,7 @@ impl EnumSetInfo {
     }
 }
 
+/// Generates the actual `EnumSetType` impl.
 fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     let name = &info.name;
     let enumset = match &info.crate_name {
@@ -376,7 +403,8 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                 self as u32
             }
             unsafe fn enum_from_u32(val: u32) -> Self {
-                // We put these in const fields so they aren't generated even on -O0
+                // We put these in const fields so the branches they guard aren't generated even
+                // on -O0
                 #(const #const_field: bool =
                     #core::mem::size_of::<#name>() == #core::mem::size_of::<#int_type>();)*
                 match val {
@@ -431,7 +459,20 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     }
 }
 
-fn derive_enum_set_type_impl(input: DeriveInput, attrs: EnumsetAttrs) -> Result<TokenStream> {
+/// A wrapper that parses the input enum.
+#[proc_macro_derive(EnumSetType, attributes(enumset))]
+pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
+    let input: DeriveInput = parse_macro_input!(input);
+    let attrs: EnumsetAttrs = match EnumsetAttrs::from_derive_input(&input) {
+        Ok(attrs) => attrs,
+        Err(e) => return e.write_errors().into(),
+    };
+    match derive_enum_set_type_0(input, attrs) {
+        Ok(v) => v,
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<TokenStream> {
     if !input.generics.params.is_empty() {
         error(
             input.generics.span(),
@@ -452,18 +493,5 @@ fn derive_enum_set_type_impl(input: DeriveInput, attrs: EnumsetAttrs) -> Result<
         Ok(enum_set_type_impl(info).into())
     } else {
         error(input.span(), "`#[derive(EnumSetType)]` may only be used on enums")
-    }
-}
-
-#[proc_macro_derive(EnumSetType, attributes(enumset))]
-pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
-    let input: DeriveInput = parse_macro_input!(input);
-    let attrs: EnumsetAttrs = match EnumsetAttrs::from_derive_input(&input) {
-        Ok(attrs) => attrs,
-        Err(e) => return e.write_errors().into(),
-    };
-    match derive_enum_set_type_impl(input, attrs) {
-        Ok(v) => v,
-        Err(e) => e.to_compile_error().into(),
     }
 }

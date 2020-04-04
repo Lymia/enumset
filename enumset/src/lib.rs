@@ -18,6 +18,8 @@
 //! }
 //! ```
 //!
+//! For more information on more advanced use cases, see the documentation for [`EnumSetType`].
+//!
 //! # Working with EnumSets
 //!
 //! EnumSets can be constructed via [`EnumSet::new()`] like a normal set. In addition,
@@ -60,7 +62,7 @@
 //! assert_eq!(CONST_SET, Enum::A | Enum::B);
 //! ```
 //!
-//! Mutable operations on the [`EnumSet`] otherwise work basically as expected:
+//! Mutable operations on the [`EnumSet`] otherwise similarly to Rust's builtin sets:
 //!
 //! ```rust
 //! # use enumset::*;
@@ -103,14 +105,24 @@ pub mod __internal {
 
     /// The actual members of EnumSetType. Put here to avoid polluting global namespaces.
     pub unsafe trait EnumSetTypePrivate {
+        /// The underlying type used to store the bitset.
         type Repr: EnumSetTypeRepr;
+        /// A mask of bits that are valid in the bitset.
         const ALL_BITS: Self::Repr;
+
+        /// Converts an enum of this type into its bit position.
         fn enum_into_u32(self) -> u32;
+        /// Converts a bit position into an enum value.
         unsafe fn enum_from_u32(val: u32) -> Self;
 
+        /// Serializes the `EnumSet`.
+        ///
+        /// This and `deserialize` are part of the `EnumSetType` trait so the procedural derive
+        /// can control how `EnumSet` is serialized.
         #[cfg(feature = "serde")]
         fn serialize<S: serde::Serializer>(set: EnumSet<Self>, ser: S) -> Result<S::Ok, S::Error>
             where Self: EnumSetType;
+        /// Deserializes the `EnumSet`.
         #[cfg(feature = "serde")]
         fn deserialize<'de, D: serde::Deserializer<'de>>(de: D) -> Result<EnumSet<Self>, D::Error>
             where Self: EnumSetType;
@@ -123,6 +135,8 @@ use crate::__internal::EnumSetTypePrivate;
 mod private {
     use super::*;
 
+    /// A trait marking valid underlying bitset storage types and providing the
+    /// operations `EnumSet` and related types use.
     pub trait EnumSetTypeRepr :
         PrimInt + WrappingSub + CheckedShl + Debug + Hash + FromPrimitive + ToPrimitive +
         AsPrimitive<u8> + AsPrimitive<u16> + AsPrimitive<u32> + AsPrimitive<u64> +
@@ -161,9 +175,12 @@ use crate::private::EnumSetTypeRepr;
 /// The trait used to define enum types that may be used with [`EnumSet`].
 ///
 /// This trait should be implemented using `#[derive(EnumSetType)]`. Its internal structure is
-/// not currently stable, and may change at any time.
+/// not stable, and may change at any time.
 ///
 /// # Custom Derive
+///
+/// Any C-like enum is supported, as long as there are no more than 128 variants in the enum,
+/// and no variant discriminator is larger than 127.
 ///
 /// The custom derive for [`EnumSetType`] automatically creates implementations of [`PartialEq`],
 /// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] allowing the enum to be used as
@@ -173,8 +190,12 @@ use crate::private::EnumSetTypeRepr;
 /// The custom derive for `EnumSetType` automatically implements [`Copy`], [`Clone`], [`Eq`], and
 /// [`PartialEq`] on the enum. These are required for the [`EnumSet`] to function.
 ///
-/// Any C-like enum is supported, as long as there are no more than 128 variants in the enum,
-/// and no variant discriminator is larger than 127.
+/// In addition, if you have renamed the `enumset` crate in your crate, you can use the
+/// `#[enumset(crate_name = "enumset2")]` attribute to tell the custom derive to use that name
+/// instead.
+///
+/// Attributes controlling the serialization of an `EnumSet` are documented in
+/// [its documentation](./struct.EnumSet.html#serialization).
 ///
 /// # Examples
 ///
@@ -213,23 +234,29 @@ pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate { }
 /// An efficient set type for enums.
 ///
 /// It is implemented using a bitset stored using the smallest integer that can fit all bits
-/// in the underlying enum.
+/// in the underlying enum. In general, an enum variant with a numeric value of `n` is stored in
+/// the nth least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
 ///
 /// # Serialization
 ///
-/// By default, `EnumSet`s are serialized as an unsigned integer of the same width as used to store
-/// it in memory.
+/// When the `serde` feature is enabled, `EnumSet`s can be serialized and deserialized using
+/// the `serde` crate. The exact serialization format can be controlled with additional attributes
+/// on the enum type. These attributes are valid regardless of whether the `serde` feature
+/// is enabled.
 ///
-/// Unknown bits are ignored, and are simply dropped. To override this behavior, you can add a
-/// `#[enumset(serialize_deny_unknown)]` annotation to your enum.
+/// By default, `EnumSet`s serialize by directly writing out the underlying bitset as an integer
+/// of the smallest type that can fit in the underlying enum. You can add a
+/// `#[enumset(serialize_repr = "u8")]` attribute to your enum to control the integer type used
+/// for serialization. This can be important for avoiding unintentional breaking changes when
+/// `EnumSet`s are serialized with formats like `bincode`.
 ///
-/// You can add a `#[enumset(serialize_repr = "u8")]` annotation to your enum to manually set
-/// the number width the `EnumSet` is serialized as. Only unsigned integer types may be used. This
-/// can be used to avoid breaking changes in certain serialization formats (such as `bincode`).
+/// By default, unknown bits are ignored and silently removed from the bitset. To override this
+/// behavior, you can add a `#[enumset(serialize_deny_unknown)]` attribute. This will cause
+/// deserialization to fail if an invalid bit is set.
 ///
-/// In addition, the `#[enumset(serialize_as_list)]` annotation causes the `EnumSet` to be
+/// In addition, the `#[enumset(serialize_as_list)]` attribute causes the `EnumSet` to be
 /// instead serialized as a list of enum variants. This requires your enum type implement
-/// [`Serialize`] and [`Deserialize`].
+/// [`Serialize`] and [`Deserialize`]. Note that this is a breaking change
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct EnumSet<T: EnumSetType> {
     #[doc(hidden)]
@@ -386,6 +413,7 @@ impl <T: EnumSetType> EnumSet<T> {
     }
 }
 
+/// Helper macro for generating conversion functions.
 macro_rules! conversion_impls {
     (
         $(for_num!(
@@ -397,7 +425,7 @@ macro_rules! conversion_impls {
         impl <T : EnumSetType> EnumSet<T> {$(
             #[doc = "Returns a `"]
             #[doc = $underlying_str]
-            #[doc = "` representing the elements of this set. \n\nIf the underlying bitset will \
+            #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
             #[doc = "`, this method will panic."]
@@ -407,7 +435,7 @@ macro_rules! conversion_impls {
 
             #[doc = "Tries to return a `"]
             #[doc = $underlying_str]
-            #[doc = "` representing the elements of this set. \n\nIf the underlying bitset will \
+            #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
             #[doc = "`, this method will instead return `None`."]
@@ -417,7 +445,7 @@ macro_rules! conversion_impls {
 
             #[doc = "Returns a truncated `"]
             #[doc = $underlying_str]
-            #[doc = "` representing the elements of this set. \n\nIf the underlying bitset will \
+            #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
             #[doc = "`, this method will truncate any bits that don't fit."]
@@ -427,7 +455,7 @@ macro_rules! conversion_impls {
 
             #[doc = "Constructs a bitset from a `"]
             #[doc = $underlying_str]
-            #[doc = "`. \n\nIf a bit that doesn't correspond to an enum variant is set, this \
+            #[doc = "`.\n\nIf a bit that doesn't correspond to an enum variant is set, this \
                      method will panic."]
             pub fn $from(bits: $underlying) -> Self {
                 Self::$try_from(bits).expect("Bitset contains invalid variants.")
@@ -435,7 +463,7 @@ macro_rules! conversion_impls {
 
             #[doc = "Attempts to constructs a bitset from a `"]
             #[doc = $underlying_str]
-            #[doc = "`. \n\nIf a bit that doesn't correspond to an enum variant is set, this \
+            #[doc = "`.\n\nIf a bit that doesn't correspond to an enum variant is set, this \
                      method will return `None`."]
             pub fn $try_from(bits: $underlying) -> Option<Self> {
                 let bits = <T::Repr as FromPrimitive>::$from_fn(bits);
@@ -458,7 +486,6 @@ macro_rules! conversion_impls {
         )*}
     }
 }
-
 conversion_impls! {
     for_num!(u8, "u8", from_u8, to_u8,
              from_u8 try_from_u8 from_u8_truncated as_u8 try_as_u8 as_u8_truncated);
