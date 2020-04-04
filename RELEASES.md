@@ -19,6 +19,8 @@
   of panicking.
 * Implemented `Extend<EnumSet<T>>` and `FromIterator<EnumSet<T>>` for
   `EnumSet<T>`.
+* Added an `#[enumset(crate_name = "renamed_enumset")]` annotation for
+  handling renamed crates.
 
 ## Bugfixes
 * Fixed a bug where the procedural macro would fail on enums with a repr

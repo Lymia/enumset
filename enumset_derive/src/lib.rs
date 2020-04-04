@@ -25,6 +25,8 @@ struct EnumsetAttrs {
     serialize_deny_unknown: bool,
     #[darling(default)]
     serialize_repr: Option<String>,
+    #[darling(default)]
+    crate_name: Option<String>,
 }
 
 /// An variant in the enum set type.
@@ -37,6 +39,7 @@ struct EnumSetValue {
 #[allow(dead_code)]
 struct EnumSetInfo {
     name: Ident,
+    crate_name: Option<Ident>,
     explicit_serde_repr: Option<Ident>,
     has_signed_repr: bool,
     has_large_repr: bool,
@@ -55,6 +58,7 @@ impl EnumSetInfo {
     fn new(input: &DeriveInput, attrs: EnumsetAttrs) -> EnumSetInfo {
         EnumSetInfo {
             name: input.ident.clone(),
+            crate_name: attrs.crate_name.map(|x| Ident::new(&x, Span::call_site())),
             explicit_serde_repr: attrs.serialize_repr.map(|x| Ident::new(&x, Span::call_site())),
             has_signed_repr: false,
             has_large_repr: false,
@@ -206,8 +210,12 @@ impl EnumSetInfo {
 
 fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     let name = &info.name;
-    let typed_enumset = quote!(::enumset::EnumSet<#name>);
-    let core = quote!(::enumset::__internal::core_export);
+    let enumset = match &info.crate_name {
+        Some(crate_name) => quote!(::#crate_name),
+        None => quote!(::enumset),
+    };
+    let typed_enumset = quote!(#enumset::EnumSet<#name>);
+    let core = quote!(#enumset::__internal::core_export);
 
     let repr = info.enumset_repr();
     let all_variants = Literal::u128_unsuffixed(info.all_variants());
@@ -219,36 +227,36 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             impl <O : Into<#typed_enumset>> #core::ops::Sub<O> for #name {
                 type Output = #typed_enumset;
                 fn sub(self, other: O) -> Self::Output {
-                    ::enumset::EnumSet::only(self) - other.into()
+                    #enumset::EnumSet::only(self) - other.into()
                 }
             }
             impl <O : Into<#typed_enumset>> #core::ops::BitAnd<O> for #name {
                 type Output = #typed_enumset;
                 fn bitand(self, other: O) -> Self::Output {
-                    ::enumset::EnumSet::only(self) & other.into()
+                    #enumset::EnumSet::only(self) & other.into()
                 }
             }
             impl <O : Into<#typed_enumset>> #core::ops::BitOr<O> for #name {
                 type Output = #typed_enumset;
                 fn bitor(self, other: O) -> Self::Output {
-                    ::enumset::EnumSet::only(self) | other.into()
+                    #enumset::EnumSet::only(self) | other.into()
                 }
             }
             impl <O : Into<#typed_enumset>> #core::ops::BitXor<O> for #name {
                 type Output = #typed_enumset;
                 fn bitxor(self, other: O) -> Self::Output {
-                    ::enumset::EnumSet::only(self) ^ other.into()
+                    #enumset::EnumSet::only(self) ^ other.into()
                 }
             }
             impl #core::ops::Not for #name {
                 type Output = #typed_enumset;
                 fn not(self) -> Self::Output {
-                    !::enumset::EnumSet::only(self)
+                    !#enumset::EnumSet::only(self)
                 }
             }
             impl #core::cmp::PartialEq<#typed_enumset> for #name {
                 fn eq(&self, other: &#typed_enumset) -> bool {
-                    ::enumset::EnumSet::only(*self) == *other
+                    #enumset::EnumSet::only(*self) == *other
                 }
             }
         }
@@ -256,14 +264,14 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
 
 
     #[cfg(feature = "serde")]
-    let serde = quote!(::enumset::__internal::serde);
+    let serde = quote!(#enumset::__internal::serde);
 
     #[cfg(feature = "serde")]
     let serde_ops = if info.serialize_as_list {
         let expecting_str = format!("a list of {}", name);
         quote! {
             fn serialize<S: #serde::Serializer>(
-                set: ::enumset::EnumSet<#name>, ser: S,
+                set: #enumset::EnumSet<#name>, ser: S,
             ) -> #core::result::Result<S::Ok, S::Error> {
                 use #serde::ser::SerializeSeq;
                 let mut seq = ser.serialize_seq(#core::prelude::v1::Some(set.len()))?;
@@ -274,10 +282,10 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             }
             fn deserialize<'de, D: #serde::Deserializer<'de>>(
                 de: D,
-            ) -> #core::result::Result<::enumset::EnumSet<#name>, D::Error> {
+            ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
                 struct Visitor;
                 impl <'de> #serde::de::Visitor<'de> for Visitor {
-                    type Value = ::enumset::EnumSet<#name>;
+                    type Value = #enumset::EnumSet<#name>;
                     fn expecting(
                         &self, formatter: &mut #core::fmt::Formatter,
                     ) -> #core::fmt::Result {
@@ -288,7 +296,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                     ) -> #core::result::Result<Self::Value, A::Error> where
                         A: #serde::de::SeqAccess<'de>
                     {
-                        let mut accum = ::enumset::EnumSet::<#name>::new();
+                        let mut accum = #enumset::EnumSet::<#name>::new();
                         while let #core::prelude::v1::Some(val) = seq.next_element::<#name>()? {
                             accum |= val;
                         }
@@ -314,16 +322,16 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         };
         quote! {
             fn serialize<S: #serde::Serializer>(
-                set: ::enumset::EnumSet<#name>, ser: S,
+                set: #enumset::EnumSet<#name>, ser: S,
             ) -> #core::result::Result<S::Ok, S::Error> {
                 #serde::Serialize::serialize(&(set.__enumset_underlying as #serialize_repr), ser)
             }
             fn deserialize<'de, D: #serde::Deserializer<'de>>(
                 de: D,
-            ) -> #core::result::Result<::enumset::EnumSet<#name>, D::Error> {
+            ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
                 let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
                 #check_unknown
-                #core::prelude::v1::Ok(::enumset::EnumSet {
+                #core::prelude::v1::Ok(#enumset::EnumSet {
                     __enumset_underlying: (value & #all_variants) as #repr,
                 })
             }
@@ -397,14 +405,14 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     };
 
     quote! {
-        unsafe impl ::enumset::__internal::EnumSetTypePrivate for #name {
+        unsafe impl #enumset::__internal::EnumSetTypePrivate for #name {
             type Repr = #repr;
             const ALL_BITS: Self::Repr = #all_variants;
             #into_impl
             #serde_ops
         }
 
-        unsafe impl ::enumset::EnumSetType for #name { }
+        unsafe impl #enumset::EnumSetType for #name { }
 
         impl #core::cmp::PartialEq for #name {
             fn eq(&self, other: &Self) -> bool {
