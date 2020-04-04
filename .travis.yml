@@ -11,3 +11,5 @@ script:
   - cd "${TRAVIS_BUILD_DIR}/enumset"
   - cargo test
   - cargo test --features serde
+  - cargo test --release
+  - cargo test --features serde --release
