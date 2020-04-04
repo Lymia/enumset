@@ -86,7 +86,7 @@ use num_traits::*;
 
 #[doc(hidden)]
 /// Everything in this module is internal API and may change at any time.
-pub mod internal {
+pub mod __internal {
     use super::*;
 
     /// A struct used to type check [`enum_set!`].
@@ -116,8 +116,8 @@ pub mod internal {
             where Self: EnumSetType;
     }
 }
-use crate::internal::EnumSetTypePrivate;
-#[cfg(feature = "serde")] use crate::internal::serde;
+use crate::__internal::EnumSetTypePrivate;
+#[cfg(feature = "serde")] use crate::__internal::serde;
 #[cfg(feature = "serde")] use crate::serde::{Serialize, Deserialize};
 
 mod private {
@@ -678,7 +678,7 @@ macro_rules! enum_set {
         $crate::EnumSet { __enumset_underlying: 0 }
     };
     ($($value:path)|* $(|)*) => {
-        $crate::internal::EnumSetSameTypeHack {
+        $crate::__internal::EnumSetSameTypeHack {
             unified: &[$($value,)*],
             enum_set: $crate::EnumSet {
                 __enumset_underlying: 0 $(| (1 << ($value as u32)))*

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use enumset::*;
-use enumset::internal::*;
+use enumset::__internal::*;
 use std::mem::transmute;
 
 #[derive(EnumSetType)]

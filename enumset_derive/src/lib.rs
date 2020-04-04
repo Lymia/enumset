@@ -207,7 +207,7 @@ impl EnumSetInfo {
 fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     let name = &info.name;
     let typed_enumset = quote!(::enumset::EnumSet<#name>);
-    let core = quote!(::enumset::internal::core_export);
+    let core = quote!(::enumset::__internal::core_export);
 
     let repr = info.enumset_repr();
     let all_variants = Literal::u128_unsuffixed(info.all_variants());
@@ -256,7 +256,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
 
 
     #[cfg(feature = "serde")]
-    let serde = quote!(::enumset::internal::serde);
+    let serde = quote!(::enumset::__internal::serde);
 
     #[cfg(feature = "serde")]
     let serde_ops = if info.serialize_as_list {
@@ -397,7 +397,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     };
 
     quote! {
-        unsafe impl ::enumset::internal::EnumSetTypePrivate for #name {
+        unsafe impl ::enumset::__internal::EnumSetTypePrivate for #name {
             type Repr = #repr;
             const ALL_BITS: Self::Repr = #all_variants;
             #into_impl
