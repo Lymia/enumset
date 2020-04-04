@@ -14,10 +14,6 @@ readme = "../README.md"
 
 license = "MIT/Apache-2.0"
 
-[[bench]]
-name = "bench"
-harness = false
-
 [features]
 serde = ["serde2", "enumset_derive/serde"]
 
@@ -28,7 +24,6 @@ serde2 = { package = "serde", version = "1.0.91", default-features = false, opti
 
 [dev-dependencies]
 bincode = { version = "1.0", features = ["i128"] }
-criterion = "0.3"
 serde_derive = "1.0.91"
 serde_json = "1.0.39"
 trybuild = "1.0.24"
