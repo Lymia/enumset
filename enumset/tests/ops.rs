@@ -148,15 +148,14 @@ macro_rules! test_enum {
         }
 
         #[test]
-        fn basic_iter_test() {
+        fn iter_test() {
             let mut set = EnumSet::new();
             set.insert($e::A);
             set.insert($e::B);
-            set.insert($e::C);
-            set.insert($e::E);
+            set.extend($e::C | $e::E);
 
             let mut set_2 = EnumSet::new();
-            let vec: Vec<$e> = set.iter().collect();
+            let vec: Vec<_> = set.iter().collect();
             for val in vec {
                 assert!(!set_2.contains(val));
                 set_2.insert(val);
@@ -169,6 +168,22 @@ macro_rules! test_enum {
                 set_3.insert(val);
             }
             assert_eq!(set, set_3);
+
+            let mut set_4 = EnumSet::new();
+            let vec: EnumSet<_> = set.into_iter().map(EnumSet::only).collect();
+            for val in vec {
+                assert!(!set_4.contains(val));
+                set_4.insert(val);
+            }
+            assert_eq!(set, set_4);
+
+            let mut set_5 = EnumSet::new();
+            let vec: EnumSet<_> = set.iter().collect();
+            for val in vec {
+                assert!(!set_5.contains(val));
+                set_5.insert(val);
+            }
+            assert_eq!(set, set_5);
         }
 
         fn check_iter_size_hint(set: EnumSet<$e>) {

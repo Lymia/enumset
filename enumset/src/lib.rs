@@ -636,6 +636,20 @@ impl<T: EnumSetType> FromIterator<T> for EnumSet<T> {
     }
 }
 
+impl<T: EnumSetType> Extend<EnumSet<T>> for EnumSet<T> {
+    fn extend<I: IntoIterator<Item = EnumSet<T>>>(&mut self, iter: I) {
+        iter.into_iter().for_each(|v| { self.insert_all(v); });
+    }
+}
+
+impl<T: EnumSetType> FromIterator<EnumSet<T>> for EnumSet<T> {
+    fn from_iter<I: IntoIterator<Item = EnumSet<T>>>(iter: I) -> Self {
+        let mut set = EnumSet::default();
+        set.extend(iter);
+        set
+    }
+}
+
 /// Creates a EnumSet literal, which can be used in const contexts.
 ///
 /// The syntax used is `enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same

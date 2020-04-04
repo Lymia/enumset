@@ -17,6 +17,8 @@
   panicking when the conversion cannot be done.
 * Added variants of `as_u128`/`from_u128` that truncate unknown bits instead
   of panicking.
+* Implemented `Extend<EnumSet<T>>` and `FromIterator<EnumSet<T>>` for
+  `EnumSet<T>`.
 
 ## Bugfixes
 * Fixed a bug where the procedural macro would fail on enums with a repr
