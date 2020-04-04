@@ -1,13 +1,24 @@
 # Version 1.0.0 (2020-04-01) - Unreleased
+
+## Breaking Changes
 * **[WARNING: Potential silent breaking change]** Changed `EnumSet::insert` to
   return whether a value was newly  inserted, rather than whether the value
   already existed in the set. This corresponds better with the behavior of
   `HashSet::insert` and `BTreeSet::insert`.
-* Renamed `to_bits`/`from_bits` to `to_u128`/`from_u128` and added additional
-  methods for other built-in numeric types. 
+* Renamed `to_bits`/`from_bits` to `as_u128`/`from_u128`.
 * `EnumSet::bit_width` and `EnumSet::variant_count` now return a `u32` instead
   of a `u8` for future-proofing.
 * Removed `nightly` feature flag, as it is no longer required.
+
+## New features
+* Added a series of functions like `as_u128`/`from_u128` for other unsigned
+  numeric types. (e.g. `as_u8`/`from_u8`, `as_u16`/`from_u16`, etc)
+* Added variants of `as_u128`/`from_u128` that return an `Option` instead of
+  panicking when the conversion cannot be done.
+* Added variants of `as_u128`/`from_u128` that truncate unknown bits instead
+  of panicking.
+
+## Bugfixes
 * Fixed a bug where the procedural macro would fail on enums with a repr
   annotation set. While reprs larger than u8 are supported, negative enum
   variants or enum variants above 127 are still not currently supported.

@@ -236,7 +236,7 @@ macro_rules! test_enum {
         #[test]
         fn to_from_bits() {
             let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
-            assert_eq!(EnumSet::from_u128(value.to_u128()), value);
+            assert_eq!(EnumSet::from_u128(value.as_u128()), value);
         }
 
         #[test]
@@ -382,12 +382,15 @@ macro_rules! bits_tests {
 }
 
 bits_tests!(test_u8_bits, U8, (U16), u8,
-            to_u8 to_u8_checked to_u8_truncated from_u8 try_from_u8 from_u8_truncated);
+            as_u8 try_as_u8 as_u8_truncated from_u8 try_from_u8 from_u8_truncated);
 bits_tests!(test_u16_bits, U16, (U32), u16,
-            to_u16 to_u16_checked to_u16_truncated from_u16 try_from_u16 from_u16_truncated);
+            as_u16 try_as_u16 as_u16_truncated from_u16 try_from_u16 from_u16_truncated);
 bits_tests!(test_u32_bits, U32, (U64), u32,
-            to_u32 to_u32_checked to_u32_truncated from_u32 try_from_u32 from_u32_truncated);
+            as_u32 try_as_u32 as_u32_truncated from_u32 try_from_u32 from_u32_truncated);
 bits_tests!(test_u64_bits, U64, (U128), u64,
-            to_u64 to_u64_checked to_u64_truncated from_u64 try_from_u64 from_u64_truncated);
+            as_u64 try_as_u64 as_u64_truncated from_u64 try_from_u64 from_u64_truncated);
 bits_tests!(test_u128_bits, U128, (), u128,
-            to_u128 to_u128_checked to_u128_truncated from_u128 try_from_u128 from_u128_truncated);
+            as_u128 try_as_u128 as_u128_truncated from_u128 try_from_u128 from_u128_truncated);
+bits_tests!(test_uize_bits, U32, (U128), usize,
+            as_usize try_as_usize as_usize_truncated
+            from_usize try_from_usize from_usize_truncated);

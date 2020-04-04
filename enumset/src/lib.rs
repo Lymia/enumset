@@ -461,19 +461,18 @@ macro_rules! conversion_impls {
 
 conversion_impls! {
     for_num!(u8, "u8", from_u8, to_u8,
-             from_u8 try_from_u8 from_u8_truncated to_u8 to_u8_checked to_u8_truncated);
+             from_u8 try_from_u8 from_u8_truncated as_u8 try_as_u8 as_u8_truncated);
     for_num!(u16, "u16", from_u16, to_u16,
-             from_u16 try_from_u16 from_u16_truncated to_u16 to_u16_checked to_u16_truncated);
+             from_u16 try_from_u16 from_u16_truncated as_u16 try_as_u16 as_u16_truncated);
     for_num!(u32, "u32", from_u32, to_u32,
-             from_u32 try_from_u32 from_u32_truncated to_u32 to_u32_checked to_u32_truncated);
+             from_u32 try_from_u32 from_u32_truncated as_u32 try_as_u32 as_u32_truncated);
     for_num!(u64, "u64", from_u64, to_u64,
-             from_u64 try_from_u64 from_u64_truncated to_u64 to_u64_checked to_u64_truncated);
+             from_u64 try_from_u64 from_u64_truncated as_u64 try_as_u64 as_u64_truncated);
     for_num!(u128, "u128", from_u128, to_u128,
-             from_u128 try_from_u128 from_u128_truncated to_u128
-             to_u128_checked to_u128_truncated);
+             from_u128 try_from_u128 from_u128_truncated as_u128 try_as_u128 as_u128_truncated);
     for_num!(usize, "usize", from_usize, to_usize,
              from_usize try_from_usize from_usize_truncated
-             to_usize to_usize_checked to_usize_truncated);
+             as_usize try_as_usize as_usize_truncated);
 }
 
 impl <T: EnumSetType> Default for EnumSet<T> {
