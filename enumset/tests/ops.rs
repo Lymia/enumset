@@ -63,6 +63,11 @@ pub enum ReprEnum2 {
 pub enum ReprEnum3 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+#[repr(C)]
+#[derive(EnumSetType, Debug)]
+pub enum ReprEnum4 {
+    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+}
 
 macro_rules! test_variants {
     ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
@@ -331,9 +336,10 @@ tests!(large_enum, test_enum!(LargeEnum, 16));
 tests!(enum8, test_enum!(Enum8, 1));
 tests!(enum128, test_enum!(Enum128, 16));
 tests!(sparse_enum, test_enum!(SparseEnum, 16));
-tests!(repr_enum, test_enum!(ReprEnum, 4));
-tests!(repr_enum2, test_enum!(ReprEnum2, 4));
-tests!(repr_enum3, test_enum!(ReprEnum3, 4));
+tests!(repr_enum_u32, test_enum!(ReprEnum, 4));
+tests!(repr_enum_u64, test_enum!(ReprEnum2, 4));
+tests!(repr_enum_isize, test_enum!(ReprEnum3, 4));
+tests!(repr_enum_c, test_enum!(ReprEnum4, 4));
 
 #[derive(EnumSetType, Debug)]
 pub enum ThresholdEnum {
