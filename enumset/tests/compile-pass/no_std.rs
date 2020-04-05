@@ -1,6 +1,8 @@
 #![no_std]
 #![allow(dead_code)]
 
+extern crate std as __renamed_std; // so we don't have compile issues, but ::std still errors.
+
 use enumset::*;
 
 #[derive(EnumSetType)]
