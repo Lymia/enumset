@@ -1,4 +1,4 @@
-# Version 1.0.0 (2020-04-01) - Unreleased
+# Version 1.0.0 (2020-04-06)
 
 ## Breaking Changes
 * **[WARNING: Potential silent breaking change]** Changed `EnumSet::insert` to
