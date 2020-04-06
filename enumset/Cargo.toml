@@ -14,6 +14,10 @@ readme = "../README.md"
 
 license = "MIT/Apache-2.0"
 
+[badges]
+travis-ci = { repository = "Lymia/enumset", branch = "master" }
+maintenance = { status = "actively-developed" }
+
 [features]
 serde = ["serde2", "enumset_derive/serde"]
 

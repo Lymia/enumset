@@ -11,10 +11,6 @@ repository = "https://github.com/Lymia/enumset"
 
 license = "MIT/Apache-2.0"
 
-[badges]
-travis-ci = { repository = "Lymia/enumset", branch = "master" }
-maintenance = { status = "actively-developed" }
-
 [lib]
 proc-macro = true
 
