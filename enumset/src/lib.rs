@@ -91,12 +91,6 @@ use num_traits::*;
 pub mod __internal {
     use super::*;
 
-    /// A struct used to type check [`enum_set!`].
-    pub struct EnumSetSameTypeHack<'a, T: EnumSetType + 'static> {
-        pub unified: &'a [T],
-        pub enum_set: EnumSet<T>,
-    }
-
     /// A reexport of core to allow our macros to be generic to std vs core.
     pub use ::core as core_export;
 
@@ -682,6 +676,8 @@ impl<T: EnumSetType> FromIterator<EnumSet<T>> for EnumSet<T> {
 /// The syntax used is `enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same
 /// type, or a error will occur at compile-time.
 ///
+/// This macro accepts trailing `|`s to allow easier use in other macros.
+///
 /// # Examples
 ///
 /// ```rust
@@ -701,15 +697,17 @@ impl<T: EnumSetType> FromIterator<EnumSet<T>> for EnumSet<T> {
 /// ```
 #[macro_export]
 macro_rules! enum_set {
-    () => {
+    ($(|)*) => {
         $crate::EnumSet { __enumset_underlying: 0 }
     };
-    ($($value:path)|* $(|)*) => {
-        $crate::__internal::EnumSetSameTypeHack {
-            unified: &[$($value,)*],
-            enum_set: $crate::EnumSet {
-                __enumset_underlying: 0 $(| (1 << ($value as u32)))*
-            },
-        }.enum_set
+    ($value:path $(|)*) => {
+        $value.__impl_enumset_internal__const_only()
+    };
+    ($value:path | $($rest:path)|* $(|)*) => {
+        {
+            #[allow(deprecated)] let value = $value.__impl_enumset_internal__const_only();
+            $(#[allow(deprecated)] let value = $rest.__impl_enumset_internal__const_merge(value);)*
+            value
+        }
     };
 }
