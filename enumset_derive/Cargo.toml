@@ -1,7 +1,7 @@
 [package]
 name = "enumset_derive"
 version = "0.5.0"
-authors = ["Lymia Aluysia <lymia@lymiahugs.com>"]
+authors = ["Alissa Rao <lymia@lymiahugs.com>"]
 edition = "2018"
 
 description = "An internal helper crate for enumset. Not public API."
