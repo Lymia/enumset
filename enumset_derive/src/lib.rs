@@ -351,7 +351,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             fn serialize<S: #serde::Serializer>(
                 set: #enumset::EnumSet<#name>, ser: S,
             ) -> #core::result::Result<S::Ok, S::Error> {
-                #serde::Serialize::serialize(&(set.__enumset_underlying as #serialize_repr), ser)
+                #serde::Serialize::serialize(&(set.__priv_repr as #serialize_repr), ser)
             }
             fn deserialize<'de, D: #serde::Deserializer<'de>>(
                 de: D,
@@ -359,7 +359,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                 let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
                 #check_unknown
                 #core::prelude::v1::Ok(#enumset::EnumSet {
-                    __enumset_underlying: (value & #all_variants) as #repr,
+                    __priv_repr: (value & #all_variants) as #repr,
                 })
             }
         }
@@ -469,7 +469,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                                  directly. Use `EnumSet::only` instead.")]
             #[doc(hidden)]
             pub const fn __impl_enumset_internal__const_only(self) -> EnumSet<#name> {
-                EnumSet { __enumset_underlying: #self_as_repr_mask }
+                EnumSet { __priv_repr: #self_as_repr_mask }
             }
 
             /// Creates a new enumset with this variant added.
@@ -480,7 +480,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             pub const fn __impl_enumset_internal__const_merge(
                 self, chain: EnumSet<#name>,
             ) -> EnumSet<#name> {
-                EnumSet { __enumset_underlying: chain.__enumset_underlying | #self_as_repr_mask }
+                EnumSet { __priv_repr: chain.__priv_repr | #self_as_repr_mask }
             }
         }
 

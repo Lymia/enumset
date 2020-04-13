@@ -124,134 +124,8 @@ use crate::__internal::EnumSetTypePrivate;
 #[cfg(feature = "serde")] use crate::__internal::serde;
 #[cfg(feature = "serde")] use crate::serde::{Serialize, Deserialize};
 
-mod private {
-    use super::*;
-    use core::convert::TryInto;
-
-    /// A trait marking valid underlying bitset storage types and providing the
-    /// operations `EnumSet` and related types use.
-    pub trait EnumSetTypeRepr :
-        // Basic traits used to derive traits
-        Copy +
-        Ord +
-        Eq +
-        Debug +
-        Hash +
-        // Operations used by enumset
-        BitAnd<Output = Self> +
-        BitOr<Output = Self> +
-        BitXor<Output = Self> +
-        Not<Output = Self> +
-    {
-        const WIDTH: u32;
-
-        fn is_empty(&self) -> bool;
-        fn empty() -> Self;
-
-        fn add_bit(&mut self, bit: u32);
-        fn remove_bit(&mut self, bit: u32);
-        fn has_bit(&self, bit: u32) -> bool;
-
-        fn count_ones(&self) -> u32;
-        fn count_remaining_ones(&self, cursor: u32) -> usize;
-        fn leading_zeros(&self) -> u32;
-
-        fn and_not(&self, other: Self) -> Self;
-
-        fn from_u8(v: u8) -> Self;
-        fn from_u16(v: u16) -> Self;
-        fn from_u32(v: u32) -> Self;
-        fn from_u64(v: u64) -> Self;
-        fn from_u128(v: u128) -> Self;
-        fn from_usize(v: usize) -> Self;
-
-        fn to_u8(&self) -> u8;
-        fn to_u16(&self) -> u16;
-        fn to_u32(&self) -> u32;
-        fn to_u64(&self) -> u64;
-        fn to_u128(&self) -> u128;
-        fn to_usize(&self) -> usize;
-
-        fn from_u8_opt(v: u8) -> Option<Self>;
-        fn from_u16_opt(v: u16) -> Option<Self>;
-        fn from_u32_opt(v: u32) -> Option<Self>;
-        fn from_u64_opt(v: u64) -> Option<Self>;
-        fn from_u128_opt(v: u128) -> Option<Self>;
-        fn from_usize_opt(v: usize) -> Option<Self>;
-
-        fn to_u8_opt(&self) -> Option<u8>;
-        fn to_u16_opt(&self) -> Option<u16>;
-        fn to_u32_opt(&self) -> Option<u32>;
-        fn to_u64_opt(&self) -> Option<u64>;
-        fn to_u128_opt(&self) -> Option<u128>;
-        fn to_usize_opt(&self) -> Option<usize>;
-    }
-    macro_rules! prim {
-        ($name:ty, $width:expr) => {
-            impl EnumSetTypeRepr for $name {
-                const WIDTH: u32 = $width;
-
-                fn is_empty(&self) -> bool { *self == 0 }
-                fn empty() -> Self { 0 }
-
-                fn add_bit(&mut self, bit: u32) {
-                    *self |= 1 << bit as $name;
-                }
-                fn remove_bit(&mut self, bit: u32) {
-                    *self &= !(1 << bit as $name);
-                }
-                fn has_bit(&self, bit: u32) -> bool {
-                    (self & (1 << bit as $name)) != 0
-                }
-
-                fn count_ones(&self) -> u32 { (*self).count_ones() }
-                fn leading_zeros(&self) -> u32 { (*self).leading_zeros() }
-
-                fn and_not(&self, other: Self) -> Self { (*self) & !other }
-
-                fn count_remaining_ones(&self, cursor: u32) -> usize {
-                    let left_mask =
-                        !((1 as $name).checked_shl(cursor).unwrap_or(0).wrapping_sub(1));
-                    (*self & left_mask).count_ones() as usize
-                }
-
-                fn from_u8(v: u8) -> Self { v as $name }
-                fn from_u16(v: u16) -> Self { v as $name }
-                fn from_u32(v: u32) -> Self { v as $name }
-                fn from_u64(v: u64) -> Self { v as $name }
-                fn from_u128(v: u128) -> Self { v as $name }
-                fn from_usize(v: usize) -> Self { v as $name }
-
-                fn to_u8(&self) -> u8 { (*self) as u8 }
-                fn to_u16(&self) -> u16 { (*self) as u16 }
-                fn to_u32(&self) -> u32 { (*self) as u32 }
-                fn to_u64(&self) -> u64 { (*self) as u64 }
-                fn to_u128(&self) -> u128 { (*self) as u128 }
-                fn to_usize(&self) -> usize { (*self) as usize }
-
-                fn from_u8_opt(v: u8) -> Option<Self> { v.try_into().ok() }
-                fn from_u16_opt(v: u16) -> Option<Self> { v.try_into().ok() }
-                fn from_u32_opt(v: u32) -> Option<Self> { v.try_into().ok() }
-                fn from_u64_opt(v: u64) -> Option<Self> { v.try_into().ok() }
-                fn from_u128_opt(v: u128) -> Option<Self> { v.try_into().ok() }
-                fn from_usize_opt(v: usize) -> Option<Self> { v.try_into().ok() }
-
-                fn to_u8_opt(&self) -> Option<u8> { (*self).try_into().ok() }
-                fn to_u16_opt(&self) -> Option<u16> { (*self).try_into().ok() }
-                fn to_u32_opt(&self) -> Option<u32> { (*self).try_into().ok() }
-                fn to_u64_opt(&self) -> Option<u64> { (*self).try_into().ok() }
-                fn to_u128_opt(&self) -> Option<u128> { (*self).try_into().ok() }
-                fn to_usize_opt(&self) -> Option<usize> { (*self).try_into().ok() }
-            }
-        }
-    }
-    prim!(u8  , 8  );
-    prim!(u16 , 16 );
-    prim!(u32 , 32 );
-    prim!(u64 , 64 );
-    prim!(u128, 128);
-}
-use crate::private::EnumSetTypeRepr;
+mod repr;
+use crate::repr::EnumSetTypeRepr;
 
 /// The trait used to define enum types that may be used with [`EnumSet`].
 ///
@@ -343,7 +217,7 @@ pub struct EnumSet<T: EnumSetType> {
     #[doc(hidden)]
     /// This is public due to the [`enum_set!`] macro.
     /// This is **NOT** public API and may change at any time.
-    pub __enumset_underlying: T::Repr
+    pub __priv_repr: T::Repr
 }
 impl <T: EnumSetType> EnumSet<T> {
     // Returns all bits valid for the enum
@@ -353,7 +227,7 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Creates an empty `EnumSet`.
     pub fn new() -> Self {
-        EnumSet { __enumset_underlying: T::Repr::empty() }
+        EnumSet { __priv_repr: T::Repr::empty() }
     }
 
     /// Returns an `EnumSet` containing a single element.
@@ -372,7 +246,7 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Returns an `EnumSet` containing all valid variants of the enum.
     pub fn all() -> Self {
-        EnumSet { __enumset_underlying: Self::all_bits() }
+        EnumSet { __priv_repr: Self::all_bits() }
     }
 
     /// Total number of bits used by this type. Note that the actual amount of space used is
@@ -394,15 +268,15 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Returns the number of elements in this set.
     pub fn len(&self) -> usize {
-        self.__enumset_underlying.count_ones() as usize
+        self.__priv_repr.count_ones() as usize
     }
     /// Returns `true` if the set contains no elements.
     pub fn is_empty(&self) -> bool {
-        self.__enumset_underlying.is_empty()
+        self.__priv_repr.is_empty()
     }
     /// Removes all elements from the set.
     pub fn clear(&mut self) {
-        self.__enumset_underlying = T::Repr::empty()
+        self.__priv_repr = T::Repr::empty()
     }
 
     /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
@@ -413,7 +287,7 @@ impl <T: EnumSetType> EnumSet<T> {
     /// Returns `true` if the set is a superset of another, i.e., `self` contains at least all the
     /// values in `other`.
     pub fn is_superset(&self, other: Self) -> bool {
-        (*self & other).__enumset_underlying == other.__enumset_underlying
+        (*self & other).__priv_repr == other.__priv_repr
     }
     /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all
     /// the values in `self`.
@@ -423,29 +297,29 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Returns a set containing any elements present in either set.
     pub fn union(&self, other: Self) -> Self {
-        EnumSet { __enumset_underlying: self.__enumset_underlying | other.__enumset_underlying }
+        EnumSet { __priv_repr: self.__priv_repr | other.__priv_repr }
     }
     /// Returns a set containing every element present in both sets.
     pub fn intersection(&self, other: Self) -> Self {
-        EnumSet { __enumset_underlying: self.__enumset_underlying & other.__enumset_underlying }
+        EnumSet { __priv_repr: self.__priv_repr & other.__priv_repr }
     }
     /// Returns a set containing element present in `self` but not in `other`.
     pub fn difference(&self, other: Self) -> Self {
-        EnumSet { __enumset_underlying: self.__enumset_underlying.and_not(other.__enumset_underlying) }
+        EnumSet { __priv_repr: self.__priv_repr.and_not(other.__priv_repr) }
     }
     /// Returns a set containing every element present in either `self` or `other`, but is not
     /// present in both.
     pub fn symmetrical_difference(&self, other: Self) -> Self {
-        EnumSet { __enumset_underlying: self.__enumset_underlying ^ other.__enumset_underlying }
+        EnumSet { __priv_repr: self.__priv_repr ^ other.__priv_repr }
     }
     /// Returns a set containing all enum variants not in this set.
     pub fn complement(&self) -> Self {
-        EnumSet { __enumset_underlying: !self.__enumset_underlying & Self::all_bits() }
+        EnumSet { __priv_repr: !self.__priv_repr & Self::all_bits() }
     }
 
     /// Checks whether this set contains a value.
     pub fn contains(&self, value: T) -> bool {
-        self.__enumset_underlying.has_bit(value.enum_into_u32())
+        self.__priv_repr.has_bit(value.enum_into_u32())
     }
 
     /// Adds a value to this set.
@@ -455,23 +329,23 @@ impl <T: EnumSetType> EnumSet<T> {
     /// If the set did have this value present, `false` is returned.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = !self.contains(value);
-        self.__enumset_underlying.add_bit(value.enum_into_u32());
+        self.__priv_repr.add_bit(value.enum_into_u32());
         contains
     }
     /// Removes a value from this set. Returns whether the value was present in the set.
     pub fn remove(&mut self, value: T) -> bool {
         let contains = self.contains(value);
-        self.__enumset_underlying.remove_bit(value.enum_into_u32());
+        self.__priv_repr.remove_bit(value.enum_into_u32());
         contains
     }
 
     /// Adds all elements in another set to this one.
     pub fn insert_all(&mut self, other: Self) {
-        self.__enumset_underlying = self.__enumset_underlying | other.__enumset_underlying
+        self.__priv_repr = self.__priv_repr | other.__priv_repr
     }
     /// Removes all values in another set from this one.
     pub fn remove_all(&mut self, other: Self) {
-        self.__enumset_underlying = self.__enumset_underlying.and_not(other.__enumset_underlying);
+        self.__priv_repr = self.__priv_repr.and_not(other.__priv_repr);
     }
 
     /// Creates an iterator over the values in this set.
@@ -511,7 +385,7 @@ macro_rules! conversion_impls {
             #[doc = $underlying_str]
             #[doc = "`, this method will instead return `None`."]
             pub fn $try_to(&self) -> Option<$underlying> {
-                EnumSetTypeRepr::$to_fn_opt(&self.__enumset_underlying)
+                EnumSetTypeRepr::$to_fn_opt(&self.__priv_repr)
             }
 
             #[doc = "Returns a truncated `"]
@@ -521,7 +395,7 @@ macro_rules! conversion_impls {
             #[doc = $underlying_str]
             #[doc = "`, this method will truncate any bits that don't fit."]
             pub fn $to_truncated(&self) -> $underlying {
-                EnumSetTypeRepr::$to_fn(&self.__enumset_underlying)
+                EnumSetTypeRepr::$to_fn(&self.__priv_repr)
             }
 
             #[doc = "Constructs a bitset from a `"]
@@ -538,9 +412,9 @@ macro_rules! conversion_impls {
                      method will return `None`."]
             pub fn $try_from(bits: $underlying) -> Option<Self> {
                 let bits = T::Repr::$from_fn_opt(bits);
-                let mask = Self::all().__enumset_underlying;
+                let mask = Self::all().__priv_repr;
                 bits.and_then(|bits| if bits.and_not(mask).is_empty() {
-                    Some(EnumSet { __enumset_underlying: bits })
+                    Some(EnumSet { __priv_repr: bits })
                 } else {
                     None
                 })
@@ -552,7 +426,7 @@ macro_rules! conversion_impls {
             pub fn $from_truncated(bits: $underlying) -> Self {
                 let mask = Self::all().$to_truncated();
                 let bits = <T::Repr as EnumSetTypeRepr>::$from_fn(bits & mask);
-                EnumSet { __enumset_underlying: bits }
+                EnumSet { __priv_repr: bits }
             }
         )*}
     }
@@ -650,7 +524,7 @@ impl <T: EnumSetType> From<T> for EnumSet<T> {
 
 impl <T: EnumSetType> PartialEq<T> for EnumSet<T> {
     fn eq(&self, other: &T) -> bool {
-        self.__enumset_underlying == EnumSet::only(*other).__enumset_underlying
+        self.__priv_repr == EnumSet::only(*other).__priv_repr
     }
 }
 impl <T: EnumSetType + Debug> Debug for EnumSet<T> {
@@ -669,17 +543,17 @@ impl <T: EnumSetType + Debug> Debug for EnumSet<T> {
 
 impl <T: EnumSetType> Hash for EnumSet<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.__enumset_underlying.hash(state)
+        self.__priv_repr.hash(state)
     }
 }
 impl <T: EnumSetType> PartialOrd for EnumSet<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.__enumset_underlying.partial_cmp(&other.__enumset_underlying)
+        self.__priv_repr.partial_cmp(&other.__priv_repr)
     }
 }
 impl <T: EnumSetType> Ord for EnumSet<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.__enumset_underlying.cmp(&other.__enumset_underlying)
+        self.__priv_repr.cmp(&other.__priv_repr)
     }
 }
 
@@ -707,14 +581,14 @@ impl <T: EnumSetType> Iterator for EnumSetIter<T> {
         while self.1 < EnumSet::<T>::bit_width() {
             let bit = self.1;
             self.1 += 1;
-            if self.0.__enumset_underlying.has_bit(bit) {
+            if self.0.__priv_repr.has_bit(bit) {
                 return unsafe { Some(T::enum_from_u32(bit)) }
             }
         }
         None
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let left = self.0.__enumset_underlying.count_remaining_ones(self.1);
+        let left = self.0.__priv_repr.count_remaining_ones(self.1);
         (left, Some(left))
     }
 }
@@ -774,7 +648,7 @@ impl<T: EnumSetType> FromIterator<EnumSet<T>> for EnumSet<T> {
 #[macro_export]
 macro_rules! enum_set {
     ($(|)*) => {
-        $crate::EnumSet { __enumset_underlying: 0 }
+        $crate::EnumSet { __priv_repr: 0 }
     };
     ($value:path $(|)*) => {
         $value.__impl_enumset_internal__const_only()
