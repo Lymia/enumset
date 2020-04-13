@@ -156,6 +156,8 @@ mod private {
         fn count_remaining_ones(&self, cursor: u32) -> usize;
         fn leading_zeros(&self) -> u32;
 
+        fn and_not(&self, other: Self) -> Self;
+
         fn from_u8(v: u8) -> Self;
         fn from_u16(v: u16) -> Self;
         fn from_u32(v: u32) -> Self;
@@ -204,6 +206,8 @@ mod private {
 
                 fn count_ones(&self) -> u32 { (*self).count_ones() }
                 fn leading_zeros(&self) -> u32 { (*self).leading_zeros() }
+
+                fn and_not(&self, other: Self) -> Self { (*self) & !other }
 
                 fn count_remaining_ones(&self, cursor: u32) -> usize {
                     let left_mask =
@@ -427,7 +431,7 @@ impl <T: EnumSetType> EnumSet<T> {
     }
     /// Returns a set containing element present in `self` but not in `other`.
     pub fn difference(&self, other: Self) -> Self {
-        EnumSet { __enumset_underlying: self.__enumset_underlying & !other.__enumset_underlying }
+        EnumSet { __enumset_underlying: self.__enumset_underlying.and_not(other.__enumset_underlying) }
     }
     /// Returns a set containing every element present in either `self` or `other`, but is not
     /// present in both.
@@ -467,7 +471,7 @@ impl <T: EnumSetType> EnumSet<T> {
     }
     /// Removes all values in another set from this one.
     pub fn remove_all(&mut self, other: Self) {
-        self.__enumset_underlying = self.__enumset_underlying & !other.__enumset_underlying
+        self.__enumset_underlying = self.__enumset_underlying.and_not(other.__enumset_underlying);
     }
 
     /// Creates an iterator over the values in this set.
@@ -535,7 +539,7 @@ macro_rules! conversion_impls {
             pub fn $try_from(bits: $underlying) -> Option<Self> {
                 let bits = T::Repr::$from_fn_opt(bits);
                 let mask = Self::all().__enumset_underlying;
-                bits.and_then(|bits| if (bits & !mask).is_empty() {
+                bits.and_then(|bits| if bits.and_not(mask).is_empty() {
                     Some(EnumSet { __enumset_underlying: bits })
                 } else {
                     None
