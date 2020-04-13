@@ -75,7 +75,7 @@
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
 //! ```
 
-pub use enumset_derive::*;
+pub use enumset_derive::EnumSetType;
 
 use core::cmp::Ordering;
 use core::fmt;
@@ -83,8 +83,6 @@ use core::fmt::{Debug, Formatter};
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
 use core::ops::*;
-
-use num_traits::*;
 
 #[doc(hidden)]
 /// Everything in this module is internal API and may change at any time.
@@ -128,15 +126,35 @@ use crate::__internal::EnumSetTypePrivate;
 
 mod private {
     use super::*;
+    use core::convert::TryInto;
 
     /// A trait marking valid underlying bitset storage types and providing the
     /// operations `EnumSet` and related types use.
     pub trait EnumSetTypeRepr :
-        PrimInt + WrappingSub + CheckedShl + Debug + Hash + FromPrimitive + ToPrimitive +
-        AsPrimitive<u8> + AsPrimitive<u16> + AsPrimitive<u32> + AsPrimitive<u64> +
-        AsPrimitive<u128> + AsPrimitive<usize>
+        // Basic traits used to derive traits
+        Copy +
+        Ord +
+        Eq +
+        Debug +
+        Hash +
+        // Operations used by enumset
+        BitAnd<Output = Self> +
+        BitOr<Output = Self> +
+        BitXor<Output = Self> +
+        Not<Output = Self> +
     {
         const WIDTH: u32;
+
+        fn is_empty(&self) -> bool;
+        fn empty() -> Self;
+
+        fn add_bit(&mut self, bit: u32);
+        fn remove_bit(&mut self, bit: u32);
+        fn has_bit(&self, bit: u32) -> bool;
+
+        fn count_ones(&self) -> u32;
+        fn count_remaining_ones(&self, cursor: u32) -> usize;
+        fn leading_zeros(&self) -> u32;
 
         fn from_u8(v: u8) -> Self;
         fn from_u16(v: u16) -> Self;
@@ -144,17 +162,82 @@ mod private {
         fn from_u64(v: u64) -> Self;
         fn from_u128(v: u128) -> Self;
         fn from_usize(v: usize) -> Self;
+
+        fn to_u8(&self) -> u8;
+        fn to_u16(&self) -> u16;
+        fn to_u32(&self) -> u32;
+        fn to_u64(&self) -> u64;
+        fn to_u128(&self) -> u128;
+        fn to_usize(&self) -> usize;
+
+        fn from_u8_opt(v: u8) -> Option<Self>;
+        fn from_u16_opt(v: u16) -> Option<Self>;
+        fn from_u32_opt(v: u32) -> Option<Self>;
+        fn from_u64_opt(v: u64) -> Option<Self>;
+        fn from_u128_opt(v: u128) -> Option<Self>;
+        fn from_usize_opt(v: usize) -> Option<Self>;
+
+        fn to_u8_opt(&self) -> Option<u8>;
+        fn to_u16_opt(&self) -> Option<u16>;
+        fn to_u32_opt(&self) -> Option<u32>;
+        fn to_u64_opt(&self) -> Option<u64>;
+        fn to_u128_opt(&self) -> Option<u128>;
+        fn to_usize_opt(&self) -> Option<usize>;
     }
     macro_rules! prim {
         ($name:ty, $width:expr) => {
             impl EnumSetTypeRepr for $name {
                 const WIDTH: u32 = $width;
-                fn from_u8(v: u8) -> Self { v.as_() }
-                fn from_u16(v: u16) -> Self { v.as_() }
-                fn from_u32(v: u32) -> Self { v.as_() }
-                fn from_u64(v: u64) -> Self { v.as_() }
-                fn from_u128(v: u128) -> Self { v.as_() }
-                fn from_usize(v: usize) -> Self { v.as_() }
+
+                fn is_empty(&self) -> bool { *self == 0 }
+                fn empty() -> Self { 0 }
+
+                fn add_bit(&mut self, bit: u32) {
+                    *self |= 1 << bit as $name;
+                }
+                fn remove_bit(&mut self, bit: u32) {
+                    *self &= !(1 << bit as $name);
+                }
+                fn has_bit(&self, bit: u32) -> bool {
+                    (self & (1 << bit as $name)) != 0
+                }
+
+                fn count_ones(&self) -> u32 { (*self).count_ones() }
+                fn leading_zeros(&self) -> u32 { (*self).leading_zeros() }
+
+                fn count_remaining_ones(&self, cursor: u32) -> usize {
+                    let left_mask =
+                        !((1 as $name).checked_shl(cursor).unwrap_or(0).wrapping_sub(1));
+                    (*self & left_mask).count_ones() as usize
+                }
+
+                fn from_u8(v: u8) -> Self { v as $name }
+                fn from_u16(v: u16) -> Self { v as $name }
+                fn from_u32(v: u32) -> Self { v as $name }
+                fn from_u64(v: u64) -> Self { v as $name }
+                fn from_u128(v: u128) -> Self { v as $name }
+                fn from_usize(v: usize) -> Self { v as $name }
+
+                fn to_u8(&self) -> u8 { (*self) as u8 }
+                fn to_u16(&self) -> u16 { (*self) as u16 }
+                fn to_u32(&self) -> u32 { (*self) as u32 }
+                fn to_u64(&self) -> u64 { (*self) as u64 }
+                fn to_u128(&self) -> u128 { (*self) as u128 }
+                fn to_usize(&self) -> usize { (*self) as usize }
+
+                fn from_u8_opt(v: u8) -> Option<Self> { v.try_into().ok() }
+                fn from_u16_opt(v: u16) -> Option<Self> { v.try_into().ok() }
+                fn from_u32_opt(v: u32) -> Option<Self> { v.try_into().ok() }
+                fn from_u64_opt(v: u64) -> Option<Self> { v.try_into().ok() }
+                fn from_u128_opt(v: u128) -> Option<Self> { v.try_into().ok() }
+                fn from_usize_opt(v: usize) -> Option<Self> { v.try_into().ok() }
+
+                fn to_u8_opt(&self) -> Option<u8> { (*self).try_into().ok() }
+                fn to_u16_opt(&self) -> Option<u16> { (*self).try_into().ok() }
+                fn to_u32_opt(&self) -> Option<u32> { (*self).try_into().ok() }
+                fn to_u64_opt(&self) -> Option<u64> { (*self).try_into().ok() }
+                fn to_u128_opt(&self) -> Option<u128> { (*self).try_into().ok() }
+                fn to_usize_opt(&self) -> Option<usize> { (*self).try_into().ok() }
             }
         }
     }
@@ -259,19 +342,6 @@ pub struct EnumSet<T: EnumSetType> {
     pub __enumset_underlying: T::Repr
 }
 impl <T: EnumSetType> EnumSet<T> {
-    fn mask(bit: u32) -> T::Repr {
-        Shl::<usize>::shl(T::Repr::one(), bit as usize)
-    }
-    fn has_bit(&self, bit: u32) -> bool {
-        let mask = Self::mask(bit);
-        self.__enumset_underlying & mask == mask
-    }
-    fn partial_bits(bits: u32) -> T::Repr {
-        T::Repr::one().checked_shl(bits as u32)
-            .unwrap_or(T::Repr::zero())
-            .wrapping_sub(&T::Repr::one())
-    }
-
     // Returns all bits valid for the enum
     fn all_bits() -> T::Repr {
         T::ALL_BITS
@@ -279,12 +349,14 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Creates an empty `EnumSet`.
     pub fn new() -> Self {
-        EnumSet { __enumset_underlying: T::Repr::zero() }
+        EnumSet { __enumset_underlying: T::Repr::empty() }
     }
 
     /// Returns an `EnumSet` containing a single element.
     pub fn only(t: T) -> Self {
-        EnumSet { __enumset_underlying: Self::mask(t.enum_into_u32()) }
+        let mut set = Self::new();
+        set.insert(t);
+        set
     }
 
     /// Creates an empty `EnumSet`.
@@ -322,11 +394,11 @@ impl <T: EnumSetType> EnumSet<T> {
     }
     /// Returns `true` if the set contains no elements.
     pub fn is_empty(&self) -> bool {
-        self.__enumset_underlying.is_zero()
+        self.__enumset_underlying.is_empty()
     }
     /// Removes all elements from the set.
     pub fn clear(&mut self) {
-        self.__enumset_underlying = T::Repr::zero()
+        self.__enumset_underlying = T::Repr::empty()
     }
 
     /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
@@ -369,7 +441,7 @@ impl <T: EnumSetType> EnumSet<T> {
 
     /// Checks whether this set contains a value.
     pub fn contains(&self, value: T) -> bool {
-        self.has_bit(value.enum_into_u32())
+        self.__enumset_underlying.has_bit(value.enum_into_u32())
     }
 
     /// Adds a value to this set.
@@ -379,13 +451,13 @@ impl <T: EnumSetType> EnumSet<T> {
     /// If the set did have this value present, `false` is returned.
     pub fn insert(&mut self, value: T) -> bool {
         let contains = !self.contains(value);
-        self.__enumset_underlying = self.__enumset_underlying | Self::mask(value.enum_into_u32());
+        self.__enumset_underlying.add_bit(value.enum_into_u32());
         contains
     }
     /// Removes a value from this set. Returns whether the value was present in the set.
     pub fn remove(&mut self, value: T) -> bool {
         let contains = self.contains(value);
-        self.__enumset_underlying = self.__enumset_underlying & !Self::mask(value.enum_into_u32());
+        self.__enumset_underlying.remove_bit(value.enum_into_u32());
         contains
     }
 
@@ -411,7 +483,8 @@ impl <T: EnumSetType> EnumSet<T> {
 macro_rules! conversion_impls {
     (
         $(for_num!(
-            $underlying:ty, $underlying_str:expr, $from_fn:ident, $to_fn:ident,
+            $underlying:ty, $underlying_str:expr,
+            $from_fn:ident $to_fn:ident $from_fn_opt:ident $to_fn_opt:ident,
             $from:ident $try_from:ident $from_truncated:ident
             $to:ident $try_to:ident $to_truncated:ident
         );)*
@@ -434,7 +507,7 @@ macro_rules! conversion_impls {
             #[doc = $underlying_str]
             #[doc = "`, this method will instead return `None`."]
             pub fn $try_to(&self) -> Option<$underlying> {
-                self.__enumset_underlying.$to_fn()
+                EnumSetTypeRepr::$to_fn_opt(&self.__enumset_underlying)
             }
 
             #[doc = "Returns a truncated `"]
@@ -444,7 +517,7 @@ macro_rules! conversion_impls {
             #[doc = $underlying_str]
             #[doc = "`, this method will truncate any bits that don't fit."]
             pub fn $to_truncated(&self) -> $underlying {
-                AsPrimitive::<$underlying>::as_(self.__enumset_underlying)
+                EnumSetTypeRepr::$to_fn(&self.__enumset_underlying)
             }
 
             #[doc = "Constructs a bitset from a `"]
@@ -460,9 +533,9 @@ macro_rules! conversion_impls {
             #[doc = "`.\n\nIf a bit that doesn't correspond to an enum variant is set, this \
                      method will return `None`."]
             pub fn $try_from(bits: $underlying) -> Option<Self> {
-                let bits = <T::Repr as FromPrimitive>::$from_fn(bits);
+                let bits = T::Repr::$from_fn_opt(bits);
                 let mask = Self::all().__enumset_underlying;
-                bits.and_then(|bits| if (bits & !mask) == T::Repr::zero() {
+                bits.and_then(|bits| if (bits & !mask).is_empty() {
                     Some(EnumSet { __enumset_underlying: bits })
                 } else {
                     None
@@ -481,17 +554,17 @@ macro_rules! conversion_impls {
     }
 }
 conversion_impls! {
-    for_num!(u8, "u8", from_u8, to_u8,
+    for_num!(u8, "u8", from_u8 to_u8 from_u8_opt to_u8_opt,
              from_u8 try_from_u8 from_u8_truncated as_u8 try_as_u8 as_u8_truncated);
-    for_num!(u16, "u16", from_u16, to_u16,
+    for_num!(u16, "u16", from_u16 to_u16 from_u16_opt to_u16_opt,
              from_u16 try_from_u16 from_u16_truncated as_u16 try_as_u16 as_u16_truncated);
-    for_num!(u32, "u32", from_u32, to_u32,
+    for_num!(u32, "u32", from_u32 to_u32 from_u32_opt to_u32_opt,
              from_u32 try_from_u32 from_u32_truncated as_u32 try_as_u32 as_u32_truncated);
-    for_num!(u64, "u64", from_u64, to_u64,
+    for_num!(u64, "u64", from_u64 to_u64 from_u64_opt to_u64_opt,
              from_u64 try_from_u64 from_u64_truncated as_u64 try_as_u64 as_u64_truncated);
-    for_num!(u128, "u128", from_u128, to_u128,
+    for_num!(u128, "u128", from_u128 to_u128 from_u128_opt to_u128_opt,
              from_u128 try_from_u128 from_u128_truncated as_u128 try_as_u128 as_u128_truncated);
-    for_num!(usize, "usize", from_usize, to_usize,
+    for_num!(usize, "usize", from_usize to_usize from_usize_opt to_usize_opt,
              from_usize try_from_usize from_usize_truncated
              as_usize try_as_usize as_usize_truncated);
 }
@@ -573,7 +646,7 @@ impl <T: EnumSetType> From<T> for EnumSet<T> {
 
 impl <T: EnumSetType> PartialEq<T> for EnumSet<T> {
     fn eq(&self, other: &T) -> bool {
-        self.__enumset_underlying == EnumSet::<T>::mask(other.enum_into_u32())
+        self.__enumset_underlying == EnumSet::only(*other).__enumset_underlying
     }
 }
 impl <T: EnumSetType + Debug> Debug for EnumSet<T> {
@@ -630,15 +703,14 @@ impl <T: EnumSetType> Iterator for EnumSetIter<T> {
         while self.1 < EnumSet::<T>::bit_width() {
             let bit = self.1;
             self.1 += 1;
-            if self.0.has_bit(bit) {
+            if self.0.__enumset_underlying.has_bit(bit) {
                 return unsafe { Some(T::enum_from_u32(bit)) }
             }
         }
         None
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let left_mask = !EnumSet::<T>::partial_bits(self.1);
-        let left = (self.0.__enumset_underlying & left_mask).count_ones() as usize;
+        let left = self.0.__enumset_underlying.count_remaining_ones(self.1);
         (left, Some(left))
     }
 }

@@ -23,7 +23,6 @@ serde = ["serde2", "enumset_derive/serde"]
 
 [dependencies]
 enumset_derive = { version = "0.5.0", path = "../enumset_derive" }
-num-traits = { version = "0.2", default-features = false }
 serde2 = { package = "serde", version = "1.0.91", default-features = false, optional = true }
 
 [dev-dependencies]
