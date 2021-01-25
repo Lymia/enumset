@@ -4,10 +4,9 @@ extern crate proc_macro;
 
 use darling::*;
 use proc_macro::TokenStream;
-use proc_macro2::{TokenStream as SynTokenStream, Literal};
+use proc_macro2::{TokenStream as SynTokenStream, Literal, Span};
 use std::collections::HashSet;
 use syn::{*, Result, Error};
-use syn::export::Span;
 use syn::spanned::Spanned;
 use quote::*;
 

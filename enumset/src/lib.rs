@@ -593,6 +593,8 @@ impl <T: EnumSetType> Iterator for EnumSetIter<T> {
     }
 }
 
+impl<T: EnumSetType> ExactSizeIterator for EnumSetIter<T> {}
+
 impl<T: EnumSetType> Extend<T> for EnumSet<T> {
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         iter.into_iter().for_each(|v| { self.insert(v); });

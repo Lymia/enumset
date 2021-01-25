@@ -196,9 +196,11 @@ macro_rules! test_enum {
             let mut itr = set.iter();
             for idx in 0 .. count {
                 assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                assert_eq!(itr.len(), count-idx);
                 assert!(itr.next().is_some());
             }
             assert_eq!(itr.size_hint(), (0, Some(0)));
+            assert_eq!(itr.len(), 0);
         }
         #[test]
         fn test_iter_size_hint() {

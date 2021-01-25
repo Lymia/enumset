@@ -1,3 +1,6 @@
+# Version 1.0.1 (2020-08-09)
+* Implemented `ExactSizeIterator` for `EnumSetIter`.
+
 # Version 1.0.0 (2020-04-06)
 
 ## Breaking Changes
