@@ -1,3 +1,7 @@
+# Version 1.0.2 (2021-01-25)
+* Fixed critical error compiling on newer versions of `syn` caused by a
+  mistaken import from a private module.
+
 # Version 1.0.1 (2020-08-09)
 * Implemented `ExactSizeIterator` for `EnumSetIter`.
 
