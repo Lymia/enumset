@@ -5,7 +5,8 @@ matrix:
     - rust: stable
     - rust: beta
     - rust: nightly
-    - rust: 1.31.0
+    # TODO: This is temporarily disabled until I have time to investigate what's up with byteorder in 1.31.0
+    #- rust: 1.31.0
 
 script:
   - cd "${TRAVIS_BUILD_DIR}/enumset"
