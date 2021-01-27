@@ -1,3 +1,8 @@
+# Version 1.0.3 (2021-01-27)
+* (This version contains no code changes.)
+* Redirected badges in the README to point at travis-ci.com instead of .org
+* Added `README.md`, and the license files to the crate distribution.
+
 # Version 1.0.2 (2021-01-25)
 * Fixed critical error compiling on newer versions of `syn` caused by a
   mistaken import from a private module.
