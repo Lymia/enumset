@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "1.0.3"
+version = "1.0.4"
 authors = ["Alissa Rao <lymia@lymiahugs.com>"]
 edition = "2018"
 
@@ -22,7 +22,7 @@ maintenance = { status = "actively-developed" }
 serde = ["serde2", "enumset_derive/serde"]
 
 [dependencies]
-enumset_derive = { version = "0.5.2", path = "../enumset_derive" }
+enumset_derive = { version = "0.5.3", path = "../enumset_derive" }
 serde2 = { package = "serde", version = "1.0.91", default-features = false, optional = true }
 
 [dev-dependencies]

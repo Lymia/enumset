@@ -1,3 +1,7 @@
+# Version 1.0.4 (2021-02-07)
+* Fixes a bug that caused `enumset_derive` to require an import of `EnumSet`
+  in the scope to function.
+
 # Version 1.0.3 (2021-01-27)
 * (This version contains no code changes.)
 * Redirected badges in the README to point at travis-ci.com instead of .org
