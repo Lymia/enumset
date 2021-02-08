@@ -467,8 +467,8 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                                  the `enumset` crate's procedural macro. It should not be used \
                                  directly. Use `EnumSet::only` instead.")]
             #[doc(hidden)]
-            pub const fn __impl_enumset_internal__const_only(self) -> EnumSet<#name> {
-                EnumSet { __priv_repr: #self_as_repr_mask }
+            pub const fn __impl_enumset_internal__const_only(self) -> #enumset::EnumSet<#name> {
+                #enumset::EnumSet { __priv_repr: #self_as_repr_mask }
             }
 
             /// Creates a new enumset with this variant added.
@@ -477,9 +477,9 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                                  directly. Use the `|` operator instead.")]
             #[doc(hidden)]
             pub const fn __impl_enumset_internal__const_merge(
-                self, chain: EnumSet<#name>,
-            ) -> EnumSet<#name> {
-                EnumSet { __priv_repr: chain.__priv_repr | #self_as_repr_mask }
+                self, chain: #enumset::EnumSet<#name>,
+            ) -> #enumset::EnumSet<#name> {
+                #enumset::EnumSet { __priv_repr: chain.__priv_repr | #self_as_repr_mask }
             }
         }
 
