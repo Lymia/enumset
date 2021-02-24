@@ -1,3 +1,8 @@
+# Version 1.0.5 (2021-02-24)
+* Implemented `core::iter::Sum` for `EnumSet<T>`.
+* Properly acknowledge that the minimum required Rust version is actually 1.34+
+  and not 1.31+. An retroactive changelog entry has been added to 1.0.0.
+
 # Version 1.0.4 (2021-02-07)
 * Fixes a bug that caused `enumset_derive` to require an import of `EnumSet`
   in the scope to function.
@@ -25,6 +30,7 @@
 * `EnumSet::bit_width` and `EnumSet::variant_count` now return a `u32` instead
   of a `u8` for future-proofing.
 * Removed `nightly` feature flag, as it is no longer required.
+* Minimum required Rust version is now 1.34+.
 
 ## New features
 * Added a series of functions like `as_u128`/`from_u128` for other unsigned
