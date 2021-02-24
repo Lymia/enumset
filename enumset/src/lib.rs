@@ -81,7 +81,7 @@ use core::cmp::Ordering;
 use core::fmt;
 use core::fmt::{Debug, Formatter};
 use core::hash::{Hash, Hasher};
-use core::iter::FromIterator;
+use core::iter::{FromIterator, Sum};
 use core::ops::*;
 
 #[doc(hidden)]
@@ -460,6 +460,26 @@ impl <T: EnumSetType> IntoIterator for EnumSet<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
+    }
+}
+impl <T: EnumSetType> Sum for EnumSet<T> {
+    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+        iter.fold(EnumSet::empty(), |a, v| a | v)
+    }
+}
+impl <'a, T: EnumSetType> Sum<&'a EnumSet<T>> for EnumSet<T> {
+    fn sum<I: Iterator<Item=&'a Self>>(iter: I) -> Self {
+        iter.fold(EnumSet::empty(), |a, v| a | *v)
+    }
+}
+impl <T: EnumSetType> Sum<T> for EnumSet<T> {
+    fn sum<I: Iterator<Item=T>>(iter: I) -> Self {
+        iter.fold(EnumSet::empty(), |a, v| a | v)
+    }
+}
+impl <'a, T: EnumSetType> Sum<&'a T> for EnumSet<T> {
+    fn sum<I: Iterator<Item=&'a T>>(iter: I) -> Self {
+        iter.fold(EnumSet::empty(), |a, v| a | *v)
     }
 }
 

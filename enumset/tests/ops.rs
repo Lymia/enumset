@@ -324,6 +324,23 @@ macro_rules! test_enum {
         }
 
         #[test]
+        fn sum_test() {
+            let target = $e::A | $e::B | $e::D | $e::E | $e::G | $e::H;
+
+            let list_a = [$e::A | $e::B, $e::D | $e::E, $e::G | $e::H];
+            let sum_a: EnumSet<$e> = list_a.iter().map(|x| *x).sum();
+            assert_eq!(target, sum_a);
+            let sum_b: EnumSet<$e> = list_a.iter().sum();
+            assert_eq!(target, sum_b);
+
+            let list_b = [$e::A, $e::B, $e::D, $e::E, $e::G, $e::H];
+            let sum_c: EnumSet<$e> = list_b.iter().map(|x| *x).sum();
+            assert_eq!(target, sum_c);
+            let sum_d: EnumSet<$e> = list_b.iter().sum();
+            assert_eq!(target, sum_d);
+        }
+
+        #[test]
         fn check_size() {
             assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
         }
