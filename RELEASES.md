@@ -1,3 +1,6 @@
+# Version 1.0.6 (2021-02-27)
+* Fix an unneeded warning in the output for `enum_set!` for a single value.
+
 # Version 1.0.5 (2021-02-24)
 * Implemented `core::iter::Sum` for `EnumSet<T>`.
 * Properly acknowledge that the minimum required Rust version is actually 1.34+
