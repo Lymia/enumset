@@ -673,7 +673,10 @@ macro_rules! enum_set {
         $crate::EnumSet { __priv_repr: 0 }
     };
     ($value:path $(|)*) => {
-        $value.__impl_enumset_internal__const_only()
+        {
+            #[allow(deprecated)] let value = $value.__impl_enumset_internal__const_only();
+            value
+        }
     };
     ($value:path | $($rest:path)|* $(|)*) => {
         {
