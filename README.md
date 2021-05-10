@@ -4,6 +4,7 @@
 [![Latest Version](https://img.shields.io/crates/v/enumset.svg)](https://crates.io/crates/enumset)
 ![Requires rustc 1.34+](https://img.shields.io/badge/rustc-1.34+-red.svg)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/enumset)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLymia%2Fenumset.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FLymia%2Fenumset?ref=badge_shield)
 
 A library for defining enums that can be used in compact bit sets.
 It supports enums up to 128 variants, and has a macro to use these sets in constants.
@@ -20,6 +21,9 @@ This project is licensed under either of
    http://opensource.org/licenses/MIT)
 
 at your option.
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLymia%2Fenumset.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FLymia%2Fenumset?ref=badge_large)
 
 ### Contribution
 
