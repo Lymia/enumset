@@ -561,6 +561,7 @@ impl <T: EnumSetType + Debug> Debug for EnumSet<T> {
     }
 }
 
+#[allow(clippy::derive_hash_xor_eq)] // This impl exists to change trait bounds only.
 impl <T: EnumSetType> Hash for EnumSet<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.__priv_repr.hash(state)
