@@ -34,7 +34,7 @@ error: serialize_repr cannot be smaller than bitset.
 41 | #[derive(EnumSetType)]
    |          ^^^^^^^^^^^
    |
-   = note: this error originates in a derive macro (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the derive macro `EnumSetType` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: `#[derive(EnumSetType)]` may only be used on enums
   --> $DIR/variants.rs:48:1
