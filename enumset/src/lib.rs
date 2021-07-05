@@ -213,6 +213,7 @@ pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate { }
 /// instead serialized as a list of enum variants. This requires your enum type implement
 /// [`Serialize`] and [`Deserialize`]. Note that this is a breaking change
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct EnumSet<T: EnumSetType> {
     #[doc(hidden)]
     /// This is public due to the [`enum_set!`] macro.
