@@ -30,6 +30,7 @@ pub trait EnumSetTypeRepr :
     fn count_ones(&self) -> u32;
     fn count_remaining_ones(&self, cursor: u32) -> usize;
     fn leading_zeros(&self) -> u32;
+    fn trailing_zeros(&self) -> u32;
 
     fn and_not(&self, other: Self) -> Self;
 
@@ -81,6 +82,7 @@ macro_rules! prim {
 
             fn count_ones(&self) -> u32 { (*self).count_ones() }
             fn leading_zeros(&self) -> u32 { (*self).leading_zeros() }
+            fn trailing_zeros(&self) -> u32 { (*self).trailing_zeros() }
 
             fn and_not(&self, other: Self) -> Self { (*self) & !other }
 
