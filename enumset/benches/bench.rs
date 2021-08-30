@@ -138,5 +138,11 @@ fn iterate<T: EnumSetType>(set: EnumSet<T>) {
     }
 }
 
-criterion_group!(benches, benchmark);
+criterion_group! {
+    name = benches;
+    config = Criterion::default()
+        .measurement_time(std::time::Duration::from_secs(30))
+        .sample_size(5000);
+    targets = benchmark
+}
 criterion_main!(benches);
