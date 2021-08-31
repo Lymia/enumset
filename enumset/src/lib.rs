@@ -354,7 +354,7 @@ impl <T: EnumSetType> EnumSet<T> {
     /// Note that iterator invalidation is impossible as the iterator contains a copy of this type,
     /// rather than holding a reference to it.
     pub fn iter(&self) -> EnumSetIter<T> {
-        EnumSetIter(*self)
+        EnumSetIter::new(*self)
     }
 }
 
@@ -595,21 +595,28 @@ impl <'de, T: EnumSetType> Deserialize<'de> for EnumSet<T> {
 
 /// The iterator used by [`EnumSet`]s.
 #[derive(Clone, Debug)]
-pub struct EnumSetIter<T: EnumSetType>(EnumSet<T>);
+pub struct EnumSetIter<T: EnumSetType> {
+    set: EnumSet<T>,
+}
+impl <T: EnumSetType> EnumSetIter<T> {
+    fn new(set: EnumSet<T>) -> EnumSetIter<T> {
+        EnumSetIter { set }
+    }
+}
 impl <T: EnumSetType> Iterator for EnumSetIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.0.is_empty() {
+        if self.set.is_empty() {
             None
         } else {
-            let bit = self.0.__priv_repr.trailing_zeros();
-            self.0.__priv_repr.remove_bit(bit);
+            let bit = self.set.__priv_repr.trailing_zeros();
+            self.set.__priv_repr.remove_bit(bit);
             unsafe { Some(T::enum_from_u32(bit)) }
         }
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let left = self.0.len();
+        let left = self.set.len();
         (left, Some(left))
     }
 }
