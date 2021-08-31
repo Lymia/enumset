@@ -1,7 +1,7 @@
 # Version 1.0.7 (2021-07-05)
 * Added the `#[repr(transparent)]` flag to `EnumSet<T>` to allow for safe usage
   in FFI code. Note that invalid bits being set in the bitset causes UB, so
-  this should be done with care.
+  this should be done with care. (Thanks @Riey)
 
 # Version 1.0.6 (2021-02-27)
 * Fix an unneeded warning in the output for `enum_set!` for a single value.
@@ -22,10 +22,10 @@
 
 # Version 1.0.2 (2021-01-25)
 * Fixed critical error compiling on newer versions of `syn` caused by a
-  mistaken import from a private module.
+  mistaken import from a private module. (Thanks @ocboogie)
 
 # Version 1.0.1 (2020-08-09)
-* Implemented `ExactSizeIterator` for `EnumSetIter`.
+* Implemented `ExactSizeIterator` for `EnumSetIter`. (Thanks @dmarcuse)
 
 # Version 1.0.0 (2020-04-06)
 
@@ -48,7 +48,7 @@
 * Added variants of `as_u128`/`from_u128` that truncate unknown bits instead
   of panicking.
 * Implemented `Extend<EnumSet<T>>` and `FromIterator<EnumSet<T>>` for
-  `EnumSet<T>`.
+  `EnumSet<T>`. (Thanks @manuthambi)
 * Added an `#[enumset(crate_name = "renamed_enumset")]` annotation for
   handling renamed crates.
 
@@ -72,7 +72,7 @@
 * Fixed a bug preventing empty enums and enums with one value from compiling.
 
 # Version 0.4.1 (2019-09-27)
-* Fixed bug in `EnumSetIter::size_hint`.
+* Fixed bug in `EnumSetIter::size_hint`. (Thanks @manuthambi)
 
 # Version 0.4.0 (2019-05-06)
 * Removed outdated macros and attributes.
@@ -96,6 +96,7 @@
 
 # Version 0.3.16 (2019-02-04)
 * Added `Default` implementation for `EnumSet<T>` that returns an empty map.
+  (Thanks @boxdot)
 
 # Version 0.3.15 (2019-01-08)
 * Added optional `serde` support.
