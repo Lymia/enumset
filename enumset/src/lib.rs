@@ -222,16 +222,19 @@ pub struct EnumSet<T: EnumSetType> {
 }
 impl <T: EnumSetType> EnumSet<T> {
     // Returns all bits valid for the enum
+    #[inline(always)]
     fn all_bits() -> T::Repr {
         T::ALL_BITS
     }
 
     /// Creates an empty `EnumSet`.
+    #[inline(always)]
     pub fn new() -> Self {
         EnumSet { __priv_repr: T::Repr::empty() }
     }
 
     /// Returns an `EnumSet` containing a single element.
+    #[inline(always)]
     pub fn only(t: T) -> Self {
         let mut set = Self::new();
         set.insert(t);
@@ -241,11 +244,13 @@ impl <T: EnumSetType> EnumSet<T> {
     /// Creates an empty `EnumSet`.
     ///
     /// This is an alias for [`EnumSet::new`].
+    #[inline(always)]
     pub fn empty() -> Self {
         Self::new()
     }
 
     /// Returns an `EnumSet` containing all valid variants of the enum.
+    #[inline(always)]
     pub fn all() -> Self {
         EnumSet { __priv_repr: Self::all_bits() }
     }
@@ -255,6 +260,7 @@ impl <T: EnumSetType> EnumSet<T> {
     ///
     /// This is the same as [`EnumSet::variant_count`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
+    #[inline(always)]
     pub fn bit_width() -> u32 {
         T::Repr::WIDTH - T::ALL_BITS.leading_zeros()
     }
@@ -263,62 +269,75 @@ impl <T: EnumSetType> EnumSet<T> {
     ///
     /// This is the same as [`EnumSet::bit_width`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
+    #[inline(always)]
     pub fn variant_count() -> u32 {
         T::ALL_BITS.count_ones()
     }
 
     /// Returns the number of elements in this set.
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.__priv_repr.count_ones() as usize
     }
     /// Returns `true` if the set contains no elements.
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.__priv_repr.is_empty()
     }
     /// Removes all elements from the set.
+    #[inline(always)]
     pub fn clear(&mut self) {
         self.__priv_repr = T::Repr::empty()
     }
 
     /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
     /// checking for an empty intersection.
+    #[inline(always)]
     pub fn is_disjoint(&self, other: Self) -> bool {
         (*self & other).is_empty()
     }
     /// Returns `true` if the set is a superset of another, i.e., `self` contains at least all the
     /// values in `other`.
+    #[inline(always)]
     pub fn is_superset(&self, other: Self) -> bool {
         (*self & other).__priv_repr == other.__priv_repr
     }
     /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all
     /// the values in `self`.
+    #[inline(always)]
     pub fn is_subset(&self, other: Self) -> bool {
         other.is_superset(*self)
     }
 
     /// Returns a set containing any elements present in either set.
+    #[inline(always)]
     pub fn union(&self, other: Self) -> Self {
         EnumSet { __priv_repr: self.__priv_repr | other.__priv_repr }
     }
     /// Returns a set containing every element present in both sets.
+    #[inline(always)]
     pub fn intersection(&self, other: Self) -> Self {
         EnumSet { __priv_repr: self.__priv_repr & other.__priv_repr }
     }
     /// Returns a set containing element present in `self` but not in `other`.
+    #[inline(always)]
     pub fn difference(&self, other: Self) -> Self {
         EnumSet { __priv_repr: self.__priv_repr.and_not(other.__priv_repr) }
     }
     /// Returns a set containing every element present in either `self` or `other`, but is not
     /// present in both.
+    #[inline(always)]
     pub fn symmetrical_difference(&self, other: Self) -> Self {
         EnumSet { __priv_repr: self.__priv_repr ^ other.__priv_repr }
     }
     /// Returns a set containing all enum variants not in this set.
+    #[inline(always)]
     pub fn complement(&self) -> Self {
         EnumSet { __priv_repr: !self.__priv_repr & Self::all_bits() }
     }
 
     /// Checks whether this set contains a value.
+    #[inline(always)]
     pub fn contains(&self, value: T) -> bool {
         self.__priv_repr.has_bit(value.enum_into_u32())
     }
@@ -328,12 +347,14 @@ impl <T: EnumSetType> EnumSet<T> {
     /// If the set did not have this value present, `true` is returned.
     ///
     /// If the set did have this value present, `false` is returned.
+    #[inline(always)]
     pub fn insert(&mut self, value: T) -> bool {
         let contains = !self.contains(value);
         self.__priv_repr.add_bit(value.enum_into_u32());
         contains
     }
     /// Removes a value from this set. Returns whether the value was present in the set.
+    #[inline(always)]
     pub fn remove(&mut self, value: T) -> bool {
         let contains = self.contains(value);
         self.__priv_repr.remove_bit(value.enum_into_u32());
@@ -341,10 +362,12 @@ impl <T: EnumSetType> EnumSet<T> {
     }
 
     /// Adds all elements in another set to this one.
+    #[inline(always)]
     pub fn insert_all(&mut self, other: Self) {
         self.__priv_repr = self.__priv_repr | other.__priv_repr
     }
     /// Removes all values in another set from this one.
+    #[inline(always)]
     pub fn remove_all(&mut self, other: Self) {
         self.__priv_repr = self.__priv_repr.and_not(other.__priv_repr);
     }
@@ -375,6 +398,7 @@ macro_rules! conversion_impls {
                      not fit in a `"]
             #[doc = $underlying_str]
             #[doc = "`, this method will panic."]
+            #[inline(always)]
             pub fn $to(&self) -> $underlying {
                 self.$try_to().expect("Bitset will not fit into this type.")
             }
@@ -385,6 +409,7 @@ macro_rules! conversion_impls {
                      not fit in a `"]
             #[doc = $underlying_str]
             #[doc = "`, this method will instead return `None`."]
+            #[inline(always)]
             pub fn $try_to(&self) -> Option<$underlying> {
                 EnumSetTypeRepr::$to_fn_opt(&self.__priv_repr)
             }
@@ -395,6 +420,7 @@ macro_rules! conversion_impls {
                      not fit in a `"]
             #[doc = $underlying_str]
             #[doc = "`, this method will truncate any bits that don't fit."]
+            #[inline(always)]
             pub fn $to_truncated(&self) -> $underlying {
                 EnumSetTypeRepr::$to_fn(&self.__priv_repr)
             }
@@ -403,6 +429,7 @@ macro_rules! conversion_impls {
             #[doc = $underlying_str]
             #[doc = "`.\n\nIf a bit that doesn't correspond to an enum variant is set, this \
                      method will panic."]
+            #[inline(always)]
             pub fn $from(bits: $underlying) -> Self {
                 Self::$try_from(bits).expect("Bitset contains invalid variants.")
             }
@@ -411,6 +438,7 @@ macro_rules! conversion_impls {
             #[doc = $underlying_str]
             #[doc = "`.\n\nIf a bit that doesn't correspond to an enum variant is set, this \
                      method will return `None`."]
+            #[inline(always)]
             pub fn $try_from(bits: $underlying) -> Option<Self> {
                 let bits = T::Repr::$from_fn_opt(bits);
                 let mask = Self::all().__priv_repr;
@@ -424,6 +452,7 @@ macro_rules! conversion_impls {
             #[doc = "Constructs a bitset from a `"]
             #[doc = $underlying_str]
             #[doc = "`, ignoring invalid variants."]
+            #[inline(always)]
             pub fn $from_truncated(bits: $underlying) -> Self {
                 let mask = Self::all().$to_truncated();
                 let bits = <T::Repr as EnumSetTypeRepr>::$from_fn(bits & mask);
@@ -486,45 +515,53 @@ impl <'a, T: EnumSetType> Sum<&'a T> for EnumSet<T> {
 
 impl <T: EnumSetType, O: Into<EnumSet<T>>> Sub<O> for EnumSet<T> {
     type Output = Self;
+    #[inline(always)]
     fn sub(self, other: O) -> Self::Output {
         self.difference(other.into())
     }
 }
 impl <T: EnumSetType, O: Into<EnumSet<T>>> BitAnd<O> for EnumSet<T> {
     type Output = Self;
+    #[inline(always)]
     fn bitand(self, other: O) -> Self::Output {
         self.intersection(other.into())
     }
 }
 impl <T: EnumSetType, O: Into<EnumSet<T>>> BitOr<O> for EnumSet<T> {
     type Output = Self;
+    #[inline(always)]
     fn bitor(self, other: O) -> Self::Output {
         self.union(other.into())
     }
 }
 impl <T: EnumSetType, O: Into<EnumSet<T>>> BitXor<O> for EnumSet<T> {
     type Output = Self;
+    #[inline(always)]
     fn bitxor(self, other: O) -> Self::Output {
         self.symmetrical_difference(other.into())
     }
 }
 
 impl <T: EnumSetType, O: Into<EnumSet<T>>> SubAssign<O> for EnumSet<T> {
+    #[inline(always)]
     fn sub_assign(&mut self, rhs: O) {
         *self = *self - rhs;
     }
 }
 impl <T: EnumSetType, O: Into<EnumSet<T>>> BitAndAssign<O> for EnumSet<T> {
+    #[inline(always)]
     fn bitand_assign(&mut self, rhs: O) {
         *self = *self & rhs;
     }
 }
 impl <T: EnumSetType, O: Into<EnumSet<T>>> BitOrAssign<O> for EnumSet<T> {
+    #[inline(always)]
     fn bitor_assign(&mut self, rhs: O) {
         *self = *self | rhs;
     }
 }
 impl <T: EnumSetType, O: Into<EnumSet<T>>> BitXorAssign<O> for EnumSet<T> {
+    #[inline(always)]
     fn bitxor_assign(&mut self, rhs: O) {
         *self = *self ^ rhs;
     }
@@ -532,6 +569,7 @@ impl <T: EnumSetType, O: Into<EnumSet<T>>> BitXorAssign<O> for EnumSet<T> {
 
 impl <T: EnumSetType> Not for EnumSet<T> {
     type Output = Self;
+    #[inline(always)]
     fn not(self) -> Self::Output {
         self.complement()
     }
