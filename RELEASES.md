@@ -1,3 +1,6 @@
+# Version 1.0.8 (2021-11-04)
+* Optimized `EnumSet` iteration. (Thanks @MinusKelvin)
+
 # Version 1.0.7 (2021-07-05)
 * Added the `#[repr(transparent)]` flag to `EnumSet<T>` to allow for safe usage
   in FFI code. Note that invalid bits being set in the bitset causes UB, so
