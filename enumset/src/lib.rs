@@ -143,7 +143,12 @@ use crate::repr::EnumSetTypeRepr;
 /// annotation to the enum.
 ///
 /// The custom derive for `EnumSetType` automatically implements [`Copy`], [`Clone`], [`Eq`], and
-/// [`PartialEq`] on the enum. These are required for the [`EnumSet`] to function.
+/// [`PartialEq`] on the enum. These are required for the [`EnumSet`] to function. These automatic
+/// implementations can be disabled by adding an `#[enumset(no_super_impls)]` annotation to
+/// the enum, but they must still be implemented. Disabling the automatic implementations can be
+/// useful if, for example, you are using a code generator that already derives these traits. Note
+/// that the `PartialEq` implementation, if not derived, **must** produce the same results as a
+/// derived implementation would, or else `EnumSet` will not work correctly.
 ///
 /// In addition, if you have renamed the `enumset` crate in your crate, you can use the
 /// `#[enumset(crate_name = "enumset2")]` attribute to tell the custom derive to use that name

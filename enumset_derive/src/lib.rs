@@ -20,6 +20,7 @@ fn error<T>(span: Span, message: &str) -> Result<T> {
 #[darling(attributes(enumset), default)]
 struct EnumsetAttrs {
     no_ops: bool,
+    no_super_impls: bool,
     serialize_as_list: bool,
     serialize_deny_unknown: bool,
     #[darling(default)]
@@ -63,6 +64,8 @@ struct EnumSetInfo {
 
     /// Avoid generating operator overloads on the enum type.
     no_ops: bool,
+    /// Avoid generating implementations for `Clone`, `Copy`, `Eq`, and `PartialEq`.
+    no_super_impls: bool,
     /// Serialize the enum as a list.
     serialize_as_list: bool,
     /// Disallow unknown bits while deserializing the enum.
@@ -82,6 +85,7 @@ impl EnumSetInfo {
             used_variant_names: HashSet::new(),
             used_discriminants: HashSet::new(),
             no_ops: attrs.no_ops,
+            no_super_impls: attrs.no_super_impls,
             serialize_as_list: attrs.serialize_as_list,
             serialize_deny_unknown: attrs.serialize_deny_unknown
         }
@@ -438,6 +442,25 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         quote! { 1 << self as #repr }
     };
 
+    let super_impls = if info.no_super_impls {
+        quote! {}
+    } else {
+        quote! {
+            impl #core::cmp::PartialEq for #name {
+                fn eq(&self, other: &Self) -> bool {
+                    #eq_impl
+                }
+            }
+            impl #core::cmp::Eq for #name { }
+            impl #core::clone::Clone for #name {
+                fn clone(&self) -> Self {
+                    *self
+                }
+            }
+            impl #core::marker::Copy for #name { }
+        }
+    };
+
     quote! {
         unsafe impl #enumset::__internal::EnumSetTypePrivate for #name {
             type Repr = #repr;
@@ -448,18 +471,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
 
         unsafe impl #enumset::EnumSetType for #name { }
 
-        impl #core::cmp::PartialEq for #name {
-            fn eq(&self, other: &Self) -> bool {
-                #eq_impl
-            }
-        }
-        impl #core::cmp::Eq for #name { }
-        impl #core::clone::Clone for #name {
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
-        impl #core::marker::Copy for #name { }
+        #super_impls
 
         impl #name {
             /// Creates a new enumset with only this variant.
