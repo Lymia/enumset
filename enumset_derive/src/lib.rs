@@ -6,6 +6,7 @@ use darling::*;
 use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as SynTokenStream, Literal, Span};
 use std::collections::HashSet;
+use proc_macro_crate::FoundCrate;
 use syn::{*, Result, Error};
 use syn::spanned::Spanned;
 use quote::*;
@@ -242,7 +243,16 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     let name = &info.name;
     let enumset = match &info.crate_name {
         Some(crate_name) => quote!(::#crate_name),
-        None => quote!(::enumset),
+        None => {
+            let crate_name = proc_macro_crate::crate_name("enumset");
+            match crate_name {
+                Ok(FoundCrate::Name(name)) => {
+                    let ident = Ident::new(&name, Span::call_site());
+                    quote!(::#ident)
+                }
+                _ => quote!(::enumset),
+            }
+        },
     };
     let typed_enumset = quote!(#enumset::EnumSet<#name>);
     let core = quote!(#enumset::__internal::core_export);
