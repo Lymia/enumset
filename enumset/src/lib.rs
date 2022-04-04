@@ -223,8 +223,21 @@ pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate { }
 /// An efficient set type for enums.
 ///
 /// It is implemented using a bitset stored using the smallest integer that can fit all bits
-/// in the underlying enum. In general, an enum variant with a numeric value of `n` is stored in
+/// in the underlying enum. In general, an enum variant with a discriminator of `n` is stored in
 /// the nth least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
+///
+/// # Numeric representation
+///
+/// `EnumSet` is internally implemented using integer types, and as such can be easily converted
+/// from and to numbers.
+///
+/// Each bit of the underlying integer corresponds to at most one particular enum variant. If the
+/// corresponding bit for a variant is set, it present in the set. Bits that do not correspond to
+/// any variant are always unset.
+///
+/// By default, each enum variant is stored in a bit corresponding to its discriminator. An enum
+/// variant with a discriminator of `n` is stored in the `n + 1`th least significant bit
+/// (corresponding to a mask of e.g. `1 << enum as u32`).
 ///
 /// # Serialization
 ///
@@ -239,13 +252,13 @@ pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate { }
 /// for serialization. This can be important for avoiding unintentional breaking changes when
 /// `EnumSet`s are serialized with formats like `bincode`.
 ///
-/// By default, unknown bits are ignored and silently removed from the bitset. To override this
+/// By default, unknown bits are ignored and silently removed from the bitset. To override thris
 /// behavior, you can add a `#[enumset(serialize_deny_unknown)]` attribute. This will cause
 /// deserialization to fail if an invalid bit is set.
 ///
 /// In addition, the `#[enumset(serialize_as_list)]` attribute causes the `EnumSet` to be
 /// instead serialized as a list of enum variants. This requires your enum type implement
-/// [`Serialize`] and [`Deserialize`]. Note that this is a breaking change
+/// [`Serialize`] and [`Deserialize`]. Note that this is a breaking change.
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct EnumSet<T: EnumSetType> {
@@ -406,7 +419,8 @@ impl <T: EnumSetType> EnumSet<T> {
         self.__priv_repr = self.__priv_repr.and_not(other.__priv_repr);
     }
 
-    /// Creates an iterator over the values in this set.
+    /// Iterates the contents of the set in order from the least significant bit to the most
+    /// significant bit.
     ///
     /// Note that iterator invalidation is impossible as the iterator contains a copy of this type,
     /// rather than holding a reference to it.
@@ -431,7 +445,8 @@ macro_rules! conversion_impls {
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "`, this method will panic."]
+            #[doc = "` or contains bits that do not correspond to an enum variant, this method \
+                     will panic."]
             #[inline(always)]
             pub fn $to(&self) -> $underlying {
                 self.$try_to().expect("Bitset will not fit into this type.")
@@ -442,7 +457,8 @@ macro_rules! conversion_impls {
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "`, this method will instead return `None`."]
+            #[doc = "` or contains bits that do not correspond to an enum variant, this method \
+                     will instead return `None`."]
             #[inline(always)]
             pub fn $try_to(&self) -> Option<$underlying> {
                 EnumSetTypeRepr::$to_fn_opt(&self.__priv_repr)
@@ -453,7 +469,8 @@ macro_rules! conversion_impls {
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "`, this method will truncate any bits that don't fit."]
+            #[doc = "`, this method will truncate any bits that don't fit or do not correspond \
+                     to an enum variant."]
             #[inline(always)]
             pub fn $to_truncated(&self) -> $underlying {
                 EnumSetTypeRepr::$to_fn(&self.__priv_repr)
