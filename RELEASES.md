@@ -1,3 +1,15 @@
+# Version 1.0.9 (2022-04-04)
+* Disable unused default features for the `darling` crate. (Thanks @glandium)
+* Add a new `#[enumset(no_super_impls)]` feature which prevents
+  `#[derive(EnumSetType)]` from automatically generating implementations of
+  `Copy`, `Clone`, `Eq`, or `PartialEq`. (Thanks @ahcodedthat)
+* Suppressed several clippy warnings.
+* Implemented `DoubleEndedIterator` for `EnumSetIter`.
+* `#[derive(EnumSetType)]` now uses `proc-macro-crate` to find the path of the
+  `enumset` crate instead of relying on the user to manually specify it, 
+  making it easier to use when the crate has been renamed via cargo.
+* Minimum required Rust version is now 1.36+, due to updates in dependencies.
+
 # Version 1.0.8 (2021-11-04)
 * Optimized `EnumSet` iteration. (Thanks @MinusKelvin)
 
