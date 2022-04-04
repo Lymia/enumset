@@ -693,6 +693,7 @@ impl <T: EnumSetType> EnumSetIter<T> {
         EnumSetIter { set }
     }
 }
+
 impl <T: EnumSetType> Iterator for EnumSetIter<T> {
     type Item = T;
 
@@ -708,6 +709,18 @@ impl <T: EnumSetType> Iterator for EnumSetIter<T> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         let left = self.set.len();
         (left, Some(left))
+    }
+}
+
+impl <T: EnumSetType> DoubleEndedIterator for EnumSetIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.set.is_empty() {
+            None
+        } else {
+            let bit = T::Repr::WIDTH - 1 - self.set.__priv_repr.leading_zeros();
+            self.set.__priv_repr.remove_bit(bit);
+            unsafe { Some(T::enum_from_u32(bit)) }
+        }
     }
 }
 

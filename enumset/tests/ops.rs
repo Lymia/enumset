@@ -206,10 +206,14 @@ macro_rules! test_enum {
             let set_a = $e::A | $e::B | $e::E;
             let vec_a: Vec<_> = set_a.iter().collect();
             assert_eq!(vec_a, &[$e::A, $e::B, $e::E]);
+            let vec_a_rev: Vec<_> = set_a.iter().rev().collect();
+            assert_eq!(vec_a_rev, &[$e::E, $e::B, $e::A]);
 
-            let set_a = $e::B | $e::D | $e::G;
-            let vec_a: Vec<_> = set_a.iter().collect();
-            assert_eq!(vec_a, &[$e::B, $e::D, $e::G]);
+            let set_b = $e::B | $e::C | $e::D | $e::G;
+            let vec_b: Vec<_> = set_b.iter().collect();
+            assert_eq!(vec_b, &[$e::B, $e::C, $e::D, $e::G]);
+            let vec_b_rev: Vec<_> = set_b.iter().rev().collect();
+            assert_eq!(vec_b_rev, &[$e::G, $e::D, $e::C, $e::B]);
         }
 
         fn check_iter_size_hint(set: EnumSet<$e>) {
