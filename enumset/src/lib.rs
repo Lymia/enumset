@@ -18,7 +18,8 @@
 //! }
 //! ```
 //!
-//! For more information on more advanced use cases, see the documentation for [`EnumSetType`].
+//! For more information on more advanced use cases, see the documentation for
+//! [`#[derive(EnumSetType)]`](./derive.EnumSetType.html).
 //!
 //! # Working with EnumSets
 //!
@@ -75,8 +76,6 @@
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
 //! ```
 
-pub use enumset_derive::EnumSetType;
-
 use core::cmp::Ordering;
 use core::fmt;
 use core::fmt::{Debug, Formatter};
@@ -127,35 +126,53 @@ use crate::__internal::EnumSetTypePrivate;
 mod repr;
 use crate::repr::EnumSetTypeRepr;
 
-/// The trait used to define enum types that may be used with [`EnumSet`].
+/// The procedural macro used to derive [`EnumSetType`], and allow enums to be used with
+/// [`EnumSet`].
 ///
-/// This trait should be implemented using `#[derive(EnumSetType)]`. Its internal structure is
-/// not stable, and may change at any time.
+/// It may be used with any enum with no data fields, at most 127 variants, and no variant
+/// discriminators larger than 127.
 ///
-/// # Custom Derive
+/// # Additional Impls
 ///
-/// Any C-like enum is supported, as long as there are no more than 128 variants in the enum,
-/// and no variant discriminator is larger than 127.
+/// In addition to the implementation of `EnumSetType`, this procedural macro creates multiple
+/// other impls that are either required for the macro to work, or make the procedural macro more
+/// ergonomic to use.
 ///
-/// The custom derive for [`EnumSetType`] automatically creates implementations of [`PartialEq`],
-/// [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] allowing the enum to be used as
-/// if it were an [`EnumSet`] in expressions. This can be disabled by adding an `#[enumset(no_ops)]`
-/// annotation to the enum.
+/// A full list of traits implemented as is follows:
 ///
-/// The custom derive for `EnumSetType` automatically implements [`Copy`], [`Clone`], [`Eq`], and
-/// [`PartialEq`] on the enum. These are required for the [`EnumSet`] to function. These automatic
-/// implementations can be disabled by adding an `#[enumset(no_super_impls)]` annotation to
-/// the enum, but they must still be implemented. Disabling the automatic implementations can be
-/// useful if, for example, you are using a code generator that already derives these traits. Note
-/// that the `PartialEq` implementation, if not derived, **must** produce the same results as a
-/// derived implementation would, or else `EnumSet` will not work correctly.
+/// * [`Copy`], [`Clone`], [`Eq`], [`PartialEq`] implementations are created to allow `EnumSet`
+///   to function properly. These automatic implementations may be suppressed using
+///   `#[enumset(no_super_impls)]`, but these traits must still be implemented in another way.
+/// * [`PartialEq`], [`Sub`], [`BitAnd`], [`BitOr`], [`BitXor`], and [`Not`] implementations are
+///   created to allow the crate to be used more ergonomically in expressions. These automatic
+///   implementations may be suppressed using `#[enumset(no_ops)]`.
 ///
-/// In addition, if you have renamed the `enumset` crate in your crate, you can use the
-/// `#[enumset(crate_name = "enumset2")]` attribute to tell the custom derive to use that name
-/// instead.
+/// # Options
 ///
-/// Attributes controlling the serialization of an `EnumSet` are documented in
-/// [its documentation](./struct.EnumSet.html#serialization).
+/// Options are given with `#[enumset(foo)]` annotations attached to the same enum as the derive.
+/// Multiple options may be given in the same annotation using the `#[enumset(foo, bar)]` syntax.
+///
+/// A full list of options is as follows:
+///
+/// * `#[enumset(no_super_impls)]` prevents the derive from creating implementations required for
+///   [`EnumSet`] to function. When this attribute is specified, implementations of [`Copy`],
+///   [`Clone`], [`Eq`], and [`PartialEq`]. This can be useful if you are using a code generator
+///   that already derives these traits. These impls should function identically to the
+///   automatically derived versions, or unintentional behavior may be a result.
+/// * `#[enumset(no_ops)` prevents the derive from implementing any operator traits.
+/// * `#[enumset(crate_name = "enumset2")]` may be used to change the name of the `enumset` crate
+///   used in the generated code, if you have renamed the crate via cargo options.
+///
+/// When the `serde` feature is used, the following features may also be specified. These options
+/// may be used (with no effect) when building without the feature enabled:
+///
+/// * `#[enumset(serialize_repr = "u8")]` may be used to specify the integer type used to serialize
+///   the underlying bitset.
+/// * `#[enumset(serialize_as_list)]` may be used to serialize the bitset as a list of enum
+///   variants instead of an integer. This requires [`Deserialize`] and [`Serialize`] be
+///   implemented on the enum.
+/// * `#[enumset(serialize_deny_unknown)]` causes the generated deserializer to return an error
+///   for unknown bits instead of silently ignoring them.
 ///
 /// # Examples
 ///
@@ -189,6 +206,15 @@ use crate::repr::EnumSetTypeRepr;
 ///    A, B, C, D, E, F, G,
 /// }
 /// ```
+pub use enumset_derive::EnumSetType;
+
+/// The trait used to define enum types that may be used with [`EnumSet`].
+///
+/// This trait must be impelmented using `#[derive(EnumSetType)]`, is not public API, and its
+/// internal structure may change at any time with no warning.
+///
+/// For full documentation on the procedural derive and its options, see
+/// [`#[derive(EnumSetType)]`](./derive.EnumSetType.html).
 pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate { }
 
 /// An efficient set type for enums.

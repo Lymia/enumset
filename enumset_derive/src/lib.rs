@@ -499,7 +499,6 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     }
 }
 
-/// A wrapper that parses the input enum.
 #[proc_macro_derive(EnumSetType, attributes(enumset))]
 pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
