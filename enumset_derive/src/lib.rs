@@ -452,6 +452,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                 }
             }
             impl #core::cmp::Eq for #name { }
+            #[allow(clippy::expl_impl_clone_on_copy)]
             impl #core::clone::Clone for #name {
                 fn clone(&self) -> Self {
                     *self

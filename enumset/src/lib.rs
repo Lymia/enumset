@@ -1,6 +1,9 @@
 #![no_std]
 #![forbid(missing_docs)]
 
+// The safety requirement is "use the procedural derive".
+#![allow(clippy::missing_safety_doc)]
+
 //! A library for defining enums that can be used in compact bit sets. It supports enums up to 128
 //! variants, and has a macro to use these sets in constants.
 //!
