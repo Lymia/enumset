@@ -164,8 +164,8 @@ use crate::repr::EnumSetTypeRepr;
 ///   automatically derived versions, or unintentional behavior may be a result.
 /// * `#[enumset(no_ops)` prevents the derive from implementing any operator traits.
 /// * `#[enumset(crate_name = "enumset2")]` may be used to change the name of the `enumset` crate
-///   used in the generated code. By default enumset parses `Cargo.toml` to determine the name of
-///   the crate, or falls back to `enumset` if it cannot be parsed.
+///   used in the generated code. When the `std` feature is enabled, enumset parses `Cargo.toml`
+///   to determine the name of the crate, and this flag is unnecessary.
 ///
 /// When the `serde` feature is used, the following features may also be specified. These options
 /// may be used (with no effect) when building without the feature enabled:
