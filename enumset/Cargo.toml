@@ -20,6 +20,8 @@ maintenance = { status = "actively-developed" }
 
 [features]
 serde = ["serde2", "enumset_derive/serde"]
+alloc = []
+std = ["alloc", "enumset_derive/proc-macro-crate"]
 
 [dependencies]
 enumset_derive = { version = "0.5.6", path = "../enumset_derive" }
