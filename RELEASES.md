@@ -1,4 +1,11 @@
-# Version 1.0.9 (2022-04-04)
+# Version 1.0.10 (2022-04-05)
+* The `proc-macro-crate` support has been locked behind the `std` flag and
+  version `1.0.9` has been yanked due to a regression that causes enumset to
+  fail to compile on `#[no_std]` platforms in programs that also use `serde`.
+* Introduced new `std` and `alloc` feature flags. These have no current use
+  beyond the previous change, but will be used in the future.
+
+# Version 1.0.9 (2022-04-04) [YANKED]
 * Disable unused default features for the `darling` crate. (Thanks @glandium)
 * Add a new `#[enumset(no_super_impls)]` feature which prevents
   `#[derive(EnumSetType)]` from automatically generating implementations of
