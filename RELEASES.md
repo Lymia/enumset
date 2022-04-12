@@ -1,3 +1,13 @@
+# Version 1.0.11 (2022-04-12)
+* Added support for explicitly specifying the internal representation of
+  `EnumSet<T>` using the `#[enumset(repr = "...")]` annotation.
+  (Thanks @ahcodedthat)
+* Added new functions for directly converting an EnumSet to and from its
+  internal representation, when it is explicitly specified.
+  (Thanks @ahcodedthat)
+* Added new `from_*_unchecked` functions that unsafely convert a value into
+  an `EnumSet<T>` without checking if only valid bits are set.
+
 # Version 1.0.10 (2022-04-05)
 * The `proc-macro-crate` support has been locked behind the `std` flag and
   version `1.0.9` has been yanked due to a regression that causes enumset to
