@@ -178,7 +178,7 @@ use crate::repr::EnumSetTypeRepr;
 /// may be used (with no effect) when building without the feature enabled:
 ///
 /// * `#[enumset(serialize_repr = "u8")]` may be used to specify the integer type used to serialize
-///   the underlying bitset.
+///   the underlying bitset. Any type allowed in the `repr` option may be used in this option.
 /// * `#[enumset(serialize_as_list)]` may be used to serialize the bitset as a list of enum
 ///   variants instead of an integer. This requires [`Deserialize`] and [`Serialize`] be
 ///   implemented on the enum.
