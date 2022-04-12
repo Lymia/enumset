@@ -1,14 +1,14 @@
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
 extern crate proc_macro;
 
 use darling::*;
 use proc_macro::TokenStream;
-use proc_macro2::{TokenStream as SynTokenStream, Literal, Span};
-use std::{collections::HashSet, fmt::Display};
-use syn::{*, Result, Error};
-use syn::spanned::Spanned;
+use proc_macro2::{Literal, Span, TokenStream as SynTokenStream};
 use quote::*;
+use std::{collections::HashSet, fmt::Display};
+use syn::spanned::Spanned;
+use syn::{Error, Result, *};
 
 /// Helper function for emitting compile errors.
 fn error<T>(span: Span, message: impl Display) -> Result<T> {
@@ -81,7 +81,9 @@ impl EnumSetInfo {
             name: input.ident.clone(),
             crate_name: attrs.crate_name.map(|x| Ident::new(&x, Span::call_site())),
             explicit_mem_repr: attrs.repr.map(|x| Ident::new(&x, Span::call_site())),
-            explicit_serde_repr: attrs.serialize_repr.map(|x| Ident::new(&x, Span::call_site())),
+            explicit_serde_repr: attrs
+                .serialize_repr
+                .map(|x| Ident::new(&x, Span::call_site())),
             has_signed_repr: false,
             has_large_repr: false,
             variants: Vec::new(),
@@ -92,7 +94,7 @@ impl EnumSetInfo {
             no_ops: attrs.no_ops,
             no_super_impls: attrs.no_super_impls,
             serialize_as_list: attrs.serialize_as_list,
-            serialize_deny_unknown: attrs.serialize_deny_unknown
+            serialize_deny_unknown: attrs.serialize_deny_unknown,
         }
     }
 
@@ -115,7 +117,7 @@ impl EnumSetInfo {
                 self.has_large_repr = true;
                 Ok(())
             }
-            _ => error(attr_span, "Unsupported repr.")
+            _ => error(attr_span, "Unsupported repr."),
         }
     }
     /// Adds a variant to the enumset.
@@ -171,10 +173,8 @@ impl EnumSetInfo {
             if discriminant > self.max_discrim {
                 self.max_discrim = discriminant;
             }
-            self.variants.push(EnumSetValue {
-                name: variant.ident.clone(),
-                variant_repr: discriminant,
-            });
+            self.variants
+                .push(EnumSetValue { name: variant.ident.clone(), variant_repr: discriminant });
             self.used_variant_names.insert(variant.ident.to_string());
             self.used_discriminants.insert(discriminant);
 
@@ -195,7 +195,7 @@ impl EnumSetInfo {
                 "u128" => self.max_discrim >= 128,
                 _ => error(
                     Span::call_site(),
-                    "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for serde_repr."
+                    "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for serde_repr.",
                 )?,
             };
             if is_overflowed {
@@ -212,7 +212,7 @@ impl EnumSetInfo {
                 "u128" => self.max_discrim >= 128,
                 _ => error(
                     Span::call_site(),
-                    "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for repr."
+                    "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for repr.",
                 )?,
             };
             if is_overflowed {
@@ -286,7 +286,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             {
                 quote!(::enumset)
             }
-        },
+        }
     };
     let typed_enumset = quote!(#enumset::EnumSet<#name>);
     let core = quote!(#enumset::__internal::core_export);
@@ -335,7 +335,6 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             }
         }
     };
-
 
     #[cfg(feature = "serde")]
     let serde = quote!(#enumset::__internal::serde);
@@ -392,7 +391,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                 }
             }
         } else {
-            quote! { }
+            quote! {}
         };
         quote! {
             fn serialize<S: #serde::Serializer>(
@@ -413,7 +412,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     };
 
     #[cfg(not(feature = "serde"))]
-    let serde_ops = quote! { };
+    let serde_ops = quote! {};
 
     let is_uninhabited = info.variants.is_empty();
     let is_zst = info.variants.len() == 1;
@@ -441,9 +440,13 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         let variant_value: Vec<_> = info.variants.iter().map(|x| x.variant_repr).collect();
 
         let const_field: Vec<_> = ["IS_U8", "IS_U16", "IS_U32", "IS_U64", "IS_U128"]
-            .iter().map(|x| Ident::new(x, Span::call_site())).collect();
+            .iter()
+            .map(|x| Ident::new(x, Span::call_site()))
+            .collect();
         let int_type: Vec<_> = ["u8", "u16", "u32", "u64", "u128"]
-            .iter().map(|x| Ident::new(x, Span::call_site())).collect();
+            .iter()
+            .map(|x| Ident::new(x, Span::call_site()))
+            .collect();
 
         quote! {
             fn enum_into_u32(self) -> u32 {
