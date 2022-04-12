@@ -185,39 +185,32 @@ impl EnumSetInfo {
     }
     /// Validate the enumset type.
     fn validate(&self) -> Result<()> {
+        fn do_check(ty: &str, max_discrim: u32, what: &str) -> Result<()> {
+            let is_overflowed = match ty {
+                "u8" => max_discrim >= 8,
+                "u16" => max_discrim >= 16,
+                "u32" => max_discrim >= 32,
+                "u64" => max_discrim >= 64,
+                "u128" => max_discrim >= 128,
+                _ => error(
+                    Span::call_site(),
+                    format!("Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for {what}."),
+                )?,
+            };
+            if is_overflowed {
+                error(Span::call_site(), format!("{what} cannot be smaller than bitset."))?;
+            }
+            Ok(())
+        }
+
         // Check if all bits of the bitset can fit in the serialization representation.
         if let Some(explicit_serde_repr) = &self.explicit_serde_repr {
-            let is_overflowed = match explicit_serde_repr.to_string().as_str() {
-                "u8" => self.max_discrim >= 8,
-                "u16" => self.max_discrim >= 16,
-                "u32" => self.max_discrim >= 32,
-                "u64" => self.max_discrim >= 64,
-                "u128" => self.max_discrim >= 128,
-                _ => error(
-                    Span::call_site(),
-                    "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for serde_repr.",
-                )?,
-            };
-            if is_overflowed {
-                error(Span::call_site(), "serialize_repr cannot be smaller than bitset.")?;
-            }
+            do_check(&explicit_serde_repr.to_string(), self.max_discrim, "serialize_repr")?;
         }
+
         // Check if all bits of the bitset can fit in the memory representation, if one was given.
         if let Some(explicit_mem_repr) = &self.explicit_mem_repr {
-            let is_overflowed = match explicit_mem_repr.to_string().as_str() {
-                "u8" => self.max_discrim >= 8,
-                "u16" => self.max_discrim >= 16,
-                "u32" => self.max_discrim >= 32,
-                "u64" => self.max_discrim >= 64,
-                "u128" => self.max_discrim >= 128,
-                _ => error(
-                    Span::call_site(),
-                    "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for repr.",
-                )?,
-            };
-            if is_overflowed {
-                error(Span::call_site(), "repr cannot be smaller than bitset.")?;
-            }
+            do_check(&explicit_mem_repr.to_string(), self.max_discrim, "repr")?;
         }
         Ok(())
     }
