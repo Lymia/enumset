@@ -194,11 +194,14 @@ impl EnumSetInfo {
                 "u128" => max_discrim >= 128,
                 _ => error(
                     Span::call_site(),
-                    format!("Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for {what}."),
+                    format!(
+                        "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for {}.",
+                        what
+                    ),
                 )?,
             };
             if is_overflowed {
-                error(Span::call_site(), format!("{what} cannot be smaller than bitset."))?;
+                error(Span::call_site(), format!("{} cannot be smaller than bitset.", what))?;
             }
             Ok(())
         }
