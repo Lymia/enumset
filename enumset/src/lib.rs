@@ -326,7 +326,7 @@ pub unsafe trait EnumSetTypeWithRepr:
 /// ```
 ///
 /// When an `EnumSet<T>` is received via FFI, all bits that don't correspond to an enum variant
-/// of `T` must be set to 0. Behavior is **undefined** if any of these bits are set to 1.
+/// of `T` must be set to `0`. Behavior is **undefined** if any of these bits are set to `1`.
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct EnumSet<T: EnumSetType> {
@@ -520,7 +520,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// # Safety
     ///
     /// All bits in the provided parameter `bits` that don't correspond to an enum variant of
-    /// `T` must be set to 0. Behavior is **undefined** if any of these bits are set to 1.
+    /// `T` must be set to `0`. Behavior is **undefined** if any of these bits are set to `1`.
     #[inline(always)]
     pub unsafe fn from_repr_unchecked(bits: <T as EnumSetTypeWithRepr>::Repr) -> Self
     where T: EnumSetTypeWithRepr {
@@ -577,7 +577,7 @@ macro_rules! conversion_impls {
         $(for_num!(
             $underlying:ty, $underlying_str:expr,
             $from_fn:ident $to_fn:ident $from_fn_opt:ident $to_fn_opt:ident,
-            $from:ident $try_from:ident $from_truncated:ident
+            $from:ident $try_from:ident $from_truncated:ident $from_unchecked:ident,
             $to:ident $try_to:ident $to_truncated:ident
         );)*
     ) => {
@@ -651,22 +651,47 @@ macro_rules! conversion_impls {
                 let bits = <T::Repr as EnumSetTypeRepr>::$from_fn(bits & mask);
                 EnumSet { __priv_repr: bits }
             }
+
+            #[doc = "Constructs a bitset from a `"]
+            #[doc = $underlying_str]
+            #[doc = "`, without checking for invalid bits."]
+            ///
+            /// # Safety
+            ///
+            /// All bits in the provided parameter `bits` that don't correspond to an enum variant
+            /// of `T` must be set to `0`. Behavior is **undefined** if any of these bits are set
+            /// to `1`.
+            #[inline(always)]
+            pub unsafe fn $from_unchecked(bits: $underlying) -> Self {
+                EnumSet { __priv_repr: <T::Repr as EnumSetTypeRepr>::$from_fn(bits) }
+            }
         )*}
     }
 }
 conversion_impls! {
-    for_num!(u8, "u8", from_u8 to_u8 from_u8_opt to_u8_opt,
-             from_u8 try_from_u8 from_u8_truncated as_u8 try_as_u8 as_u8_truncated);
-    for_num!(u16, "u16", from_u16 to_u16 from_u16_opt to_u16_opt,
-             from_u16 try_from_u16 from_u16_truncated as_u16 try_as_u16 as_u16_truncated);
-    for_num!(u32, "u32", from_u32 to_u32 from_u32_opt to_u32_opt,
-             from_u32 try_from_u32 from_u32_truncated as_u32 try_as_u32 as_u32_truncated);
-    for_num!(u64, "u64", from_u64 to_u64 from_u64_opt to_u64_opt,
-             from_u64 try_from_u64 from_u64_truncated as_u64 try_as_u64 as_u64_truncated);
-    for_num!(u128, "u128", from_u128 to_u128 from_u128_opt to_u128_opt,
-             from_u128 try_from_u128 from_u128_truncated as_u128 try_as_u128 as_u128_truncated);
-    for_num!(usize, "usize", from_usize to_usize from_usize_opt to_usize_opt,
-             from_usize try_from_usize from_usize_truncated
+    for_num!(u8, "u8",
+             from_u8 to_u8 from_u8_opt to_u8_opt,
+             from_u8 try_from_u8 from_u8_truncated from_u8_unchecked,
+             as_u8 try_as_u8 as_u8_truncated);
+    for_num!(u16, "u16",
+             from_u16 to_u16 from_u16_opt to_u16_opt,
+             from_u16 try_from_u16 from_u16_truncated from_u16_unchecked,
+             as_u16 try_as_u16 as_u16_truncated);
+    for_num!(u32, "u32",
+             from_u32 to_u32 from_u32_opt to_u32_opt,
+             from_u32 try_from_u32 from_u32_truncated from_u32_unchecked,
+             as_u32 try_as_u32 as_u32_truncated);
+    for_num!(u64, "u64",
+             from_u64 to_u64 from_u64_opt to_u64_opt,
+             from_u64 try_from_u64 from_u64_truncated from_u64_unchecked,
+             as_u64 try_as_u64 as_u64_truncated);
+    for_num!(u128, "u128",
+             from_u128 to_u128 from_u128_opt to_u128_opt,
+             from_u128 try_from_u128 from_u128_truncated from_u128_unchecked,
+             as_u128 try_as_u128 as_u128_truncated);
+    for_num!(usize, "usize",
+             from_usize to_usize from_usize_opt to_usize_opt,
+             from_usize try_from_usize from_usize_truncated from_usize_unchecked,
              as_usize try_as_usize as_usize_truncated);
 }
 
