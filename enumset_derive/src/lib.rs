@@ -5,13 +5,13 @@ extern crate proc_macro;
 use darling::*;
 use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as SynTokenStream, Literal, Span};
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 use syn::{*, Result, Error};
 use syn::spanned::Spanned;
 use quote::*;
 
 /// Helper function for emitting compile errors.
-fn error<T>(span: Span, message: &str) -> Result<T> {
+fn error<T>(span: Span, message: impl Display) -> Result<T> {
     Err(Error::new(span, message))
 }
 
@@ -21,6 +21,8 @@ fn error<T>(span: Span, message: &str) -> Result<T> {
 struct EnumsetAttrs {
     no_ops: bool,
     no_super_impls: bool,
+    #[darling(default)]
+    repr: Option<String>,
     serialize_as_list: bool,
     serialize_deny_unknown: bool,
     #[darling(default)]
@@ -44,6 +46,8 @@ struct EnumSetInfo {
     name: Ident,
     /// The crate name to use.
     crate_name: Option<Ident>,
+    /// The numeric type to represent the `EnumSet` as in memory.
+    explicit_mem_repr: Option<Ident>,
     /// The numeric type to serialize the enum as.
     explicit_serde_repr: Option<Ident>,
     /// Whether the underlying repr of the enum supports negative values.
@@ -76,6 +80,7 @@ impl EnumSetInfo {
         EnumSetInfo {
             name: input.ident.clone(),
             crate_name: attrs.crate_name.map(|x| Ident::new(&x, Span::call_site())),
+            explicit_mem_repr: attrs.repr.map(|x| Ident::new(&x, Span::call_site())),
             explicit_serde_repr: attrs.serialize_repr.map(|x| Ident::new(&x, Span::call_site())),
             has_signed_repr: false,
             has_large_repr: false,
@@ -197,12 +202,31 @@ impl EnumSetInfo {
                 error(Span::call_site(), "serialize_repr cannot be smaller than bitset.")?;
             }
         }
+        // Check if all bits of the bitset can fit in the memory representation, if one was given.
+        if let Some(explicit_mem_repr) = &self.explicit_mem_repr {
+            let is_overflowed = match explicit_mem_repr.to_string().as_str() {
+                "u8" => self.max_discrim >= 8,
+                "u16" => self.max_discrim >= 16,
+                "u32" => self.max_discrim >= 32,
+                "u64" => self.max_discrim >= 64,
+                "u128" => self.max_discrim >= 128,
+                _ => error(
+                    Span::call_site(),
+                    "Only `u8`, `u16`, `u32`, `u64` and `u128` are supported for repr."
+                )?,
+            };
+            if is_overflowed {
+                error(Span::call_site(), "repr cannot be smaller than bitset.")?;
+            }
+        }
         Ok(())
     }
 
     /// Computes the underlying type used to store the enumset.
     fn enumset_repr(&self) -> SynTokenStream {
-        if self.max_discrim <= 7 {
+        if let Some(explicit_mem_repr) = &self.explicit_mem_repr {
+            explicit_mem_repr.to_token_stream()
+        } else if self.max_discrim <= 7 {
             quote! { u8 }
         } else if self.max_discrim <= 15 {
             quote! { u16 }
@@ -482,6 +506,16 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         }
     };
 
+    let impl_with_repr = if info.explicit_mem_repr.is_some() {
+        quote! {
+            unsafe impl #enumset::EnumSetTypeWithRepr for #name {
+                type Repr = #repr;
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     quote! {
         unsafe impl #enumset::__internal::EnumSetTypePrivate for #name {
             type Repr = #repr;
@@ -492,6 +526,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
 
         unsafe impl #enumset::EnumSetType for #name { }
 
+        #impl_with_repr
         #super_impls
 
         impl #name {
