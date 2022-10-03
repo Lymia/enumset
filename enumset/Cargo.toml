@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "1.0.11"
+version = "1.0.12"
 authors = ["Alissa Rao <lymia@lymiahugs.com>"]
 edition = "2018"
 
@@ -24,12 +24,12 @@ alloc = []
 std = ["alloc", "enumset_derive/proc-macro-crate"]
 
 [dependencies]
-enumset_derive = { version = "0.6.0", path = "../enumset_derive" }
-serde2 = { package = "serde", version = "1.0.91", default-features = false, optional = true }
+enumset_derive = { version = "0.6.1", path = "../enumset_derive" }
+serde2 = { package = "serde", version = "1", default-features = false, optional = true }
 
 [dev-dependencies]
-bincode = { version = "1.0", features = ["i128"] }
-serde_derive = "1.0.91"
-serde_json = "1.0.39"
-trybuild = "1.0.24"
-rustversion = "1.0.2"
+bincode = { version = "1", features = ["i128"] }
+serde_derive = "1"
+serde_json = "1"
+trybuild = "1"
+rustversion = "1"

@@ -1,3 +1,7 @@
+# Version 1.0.12 (2022-10-02)
+* Updated darling version to reduce compile times when combined with other
+  crates. (Thanks @AlexTMjugador)
+
 # Version 1.0.11 (2022-04-12)
 * Added support for explicitly specifying the internal representation of
   `EnumSet<T>` using the `#[enumset(repr = "...")]` annotation.
