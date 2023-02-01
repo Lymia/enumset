@@ -24,6 +24,7 @@ struct EnumsetAttrs {
     #[darling(default)]
     repr: Option<String>,
     serialize_as_list: bool,
+    serialize_as_map: bool,
     serialize_deny_unknown: bool,
     #[darling(default)]
     serialize_repr: Option<String>,
@@ -72,6 +73,8 @@ struct EnumSetInfo {
     no_super_impls: bool,
     /// Serialize the enum as a list.
     serialize_as_list: bool,
+    /// Serialize the enum as a map.
+    serialize_as_map: bool,
     /// Disallow unknown bits while deserializing the enum.
     serialize_deny_unknown: bool,
 }
@@ -94,6 +97,7 @@ impl EnumSetInfo {
             no_ops: attrs.no_ops,
             no_super_impls: attrs.no_super_impls,
             serialize_as_list: attrs.serialize_as_list,
+            serialize_as_map: attrs.serialize_as_map,
             serialize_deny_unknown: attrs.serialize_deny_unknown,
         }
     }
@@ -373,6 +377,45 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                     }
                 }
                 de.deserialize_seq(Visitor)
+            }
+        }
+    } else if info.serialize_as_map {
+        let expecting_str = format!("a map from {} to bool", name);
+        quote! {
+            fn serialize<S: #serde::Serializer>(
+                set: #enumset::EnumSet<#name>, ser: S,
+            ) -> #core::result::Result<S::Ok, S::Error> {
+                use #serde::ser::SerializeMap;
+                let mut map = ser.serialize_map(#core::prelude::v1::Some(set.len()))?;
+                for bit in set {
+                    map.serialize_entry(&bit, &true)?;
+                }
+                map.end()
+            }
+            fn deserialize<'de, D: #serde::Deserializer<'de>>(
+                de: D,
+            ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
+                struct Visitor;
+                impl <'de> #serde::de::Visitor<'de> for Visitor {
+                    type Value = #enumset::EnumSet<#name>;
+                    fn expecting(
+                        &self, formatter: &mut #core::fmt::Formatter,
+                    ) -> #core::fmt::Result {
+                        write!(formatter, #expecting_str)
+                    }
+                    fn visit_map<A>(
+                        mut self, mut map: A,
+                    ) -> #core::result::Result<Self::Value, A::Error> where
+                        A: #serde::de::MapAccess<'de>
+                    {
+                        let mut accum = #enumset::EnumSet::<#name>::new();
+                        while let #core::prelude::v1::Some((val, true)) = map.next_entry::<#name, bool>()? {
+                            accum |= val;
+                        }
+                        #core::prelude::v1::Ok(accum)
+                    }
+                }
+                de.deserialize_map(Visitor)
             }
         }
     } else {

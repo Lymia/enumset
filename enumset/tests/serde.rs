@@ -16,6 +16,13 @@ pub enum ListEnum {
     A, B, C, D, E, F, G, H,
 }
 
+#[derive(Serialize, Deserialize, EnumSetType, Debug)]
+#[enumset(serialize_as_map)]
+#[serde(crate="serde2")]
+pub enum MapEnum {
+    A, B, C, D, E, F, G, H,
+}
+
 #[derive(EnumSetType, Debug)]
 #[enumset(serialize_repr = "u128")]
 pub enum ReprEnum {
@@ -77,14 +84,19 @@ fn test_deny_unknown() {
 fn test_json_reprs() {
     assert_eq!(ListEnum::A | ListEnum::C | ListEnum::F,
                serde_json::from_str::<EnumSet<ListEnum>>(r#"["A","C","F"]"#).unwrap());
+    assert_eq!(MapEnum::A | MapEnum::C | MapEnum::F,
+               serde_json::from_str::<EnumSet<MapEnum>>(r#"{"A":true,"C":true,"F":true}"#).unwrap());
     assert_eq!(ReprEnum::A | ReprEnum::C | ReprEnum::D,
                serde_json::from_str::<EnumSet<ReprEnum>>("13").unwrap());
     assert_eq!(r#"["A","C","F"]"#,
                serde_json::to_string(&(ListEnum::A | ListEnum::C | ListEnum::F)).unwrap());
+    assert_eq!(r#"{"A":true,"C":true,"F":true}"#,
+               serde_json::to_string(&(MapEnum::A | MapEnum::C | MapEnum::F)).unwrap());
     assert_eq!("13",
                serde_json::to_string(&(ReprEnum::A | ReprEnum::C | ReprEnum::D)).unwrap());
 }
 
 tests!(list_enum, serde_test_simple!(ListEnum, !0));
+tests!(map_enum, serde_test_simple!(MapEnum, !0));
 tests!(repr_enum, serde_test!(ReprEnum, 16));
 tests!(deny_unknown_enum, serde_test_simple!(DenyUnknownEnum, 16));
