@@ -1,5 +1,5 @@
-mod primitive;
 mod array;
+mod primitive;
 
 use core::fmt::Debug;
 use core::hash::Hash;

@@ -12,7 +12,7 @@ impl<const N: usize> ArrayRepr<N> {
     }
 }
 
-impl <const N: usize> BitAnd for ArrayRepr<N> {
+impl<const N: usize> BitAnd for ArrayRepr<N> {
     type Output = Self;
     fn bitand(mut self, rhs: Self) -> Self::Output {
         for i in 0..N {
@@ -21,7 +21,7 @@ impl <const N: usize> BitAnd for ArrayRepr<N> {
         self
     }
 }
-impl <const N: usize> BitOr for ArrayRepr<N> {
+impl<const N: usize> BitOr for ArrayRepr<N> {
     type Output = Self;
     fn bitor(mut self, rhs: Self) -> Self::Output {
         for i in 0..N {
@@ -30,7 +30,7 @@ impl <const N: usize> BitOr for ArrayRepr<N> {
         self
     }
 }
-impl <const N: usize> BitXor for ArrayRepr<N> {
+impl<const N: usize> BitXor for ArrayRepr<N> {
     type Output = Self;
     fn bitxor(mut self, rhs: Self) -> Self::Output {
         for i in 0..N {
@@ -39,7 +39,7 @@ impl <const N: usize> BitXor for ArrayRepr<N> {
         self
     }
 }
-impl <const N: usize> Not for ArrayRepr<N> {
+impl<const N: usize> Not for ArrayRepr<N> {
     type Output = Self;
     fn not(mut self) -> Self::Output {
         for i in 0..N {
@@ -49,7 +49,7 @@ impl <const N: usize> Not for ArrayRepr<N> {
     }
 }
 
-impl <const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
+impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     const WIDTH: u32 = N as u32 * 64;
 
     fn is_empty(&self) -> bool {
@@ -178,7 +178,7 @@ impl <const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     fn to_u64_opt(&self) -> Option<u64> {
         for i in 1..N {
             if self.0[i] != 0 {
-                return None
+                return None;
             }
         }
         Some(self.to_u64())
@@ -186,7 +186,7 @@ impl <const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     fn to_u128_opt(&self) -> Option<u128> {
         for i in 2..N {
             if self.0[i] != 0 {
-                return None
+                return None;
             }
         }
         Some(self.to_u128())

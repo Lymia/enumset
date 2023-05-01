@@ -4,7 +4,7 @@ error: `#[derive(EnumSetType)]` currently only supports discriminants up to 127.
 5 |     Variant = 128,
   |     ^^^^^^^^^^^^^
 
-error: Enum set discriminants must be `u32`s. (larger discrimiants are still unsupported with reprs that allow them.)
+error: Enum set discriminants must fit into `u32`.
   --> tests/compile-fail/variants.rs:11:15
    |
 11 |     Variant = 0x100000000,
@@ -16,7 +16,7 @@ error: `#[derive(EnumSetType)]` currently only supports enums up to 128 variants
 22 |     _113, _114, _115, _116, _117, _118, _119, _120, _121, _122, _123, _124, _125, _126, _127, _128,
    |                                                                                               ^^^^
 
-error: Enum set discriminants must be `u32`s.
+error: Enum set discriminants must fit into `u32`.
   --> tests/compile-fail/variants.rs:27:5
    |
 27 |     Variant = -1,
@@ -28,7 +28,7 @@ error: `#[derive(EnumSetType)]` can only be used on fieldless enums.
 38 |     Variant(u32),
    |     ^^^^^^^^^^^^
 
-error: serialize_repr cannot be smaller than bitset.
+error: `serialize_repr` is too small to contain the largest discriminant.
   --> tests/compile-fail/variants.rs:41:10
    |
 41 | #[derive(EnumSetType)]
@@ -44,7 +44,7 @@ error: `#[derive(EnumSetType)]` may only be used on enums
 50 | | }
    | |_^
 
-error: repr cannot be smaller than bitset.
+error: `repr` is too small to contain the largest discriminant.
   --> tests/compile-fail/variants.rs:52:10
    |
 52 | #[derive(EnumSetType)]
