@@ -6,14 +6,18 @@ jobs:
   build:
     strategy:
       matrix:
-        rustver: ["stable", "beta", "nightly", "1.56.0"]
+        rustver: ["stable", "beta", "nightly", "1.36.0", "1.56.0"]
         args: ["", "--features serde", "--features alloc", "--features std", "--release --all-features"]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - uses: actions-rs/toolchain@v1
       with:
+        profile: minimal
         toolchain: ${{ matrix.rustver }}
+    - uses: actions-rs/cargo@v1
+      with:
+        command: version
     - uses: actions-rs/cargo@v1
       with:
         command: test
