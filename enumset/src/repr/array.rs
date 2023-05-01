@@ -77,7 +77,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     }
     fn leading_zeros(&self) -> u32 {
         let mut accum = 0;
-        for i in 0..N {
+        for i in (0..N).rev() {
             if self.0[i] != 0 {
                 return accum + self.0[i].leading_zeros();
             }
@@ -87,7 +87,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     }
     fn trailing_zeros(&self) -> u32 {
         let mut accum = 0;
-        for i in (0..N).rev() {
+        for i in 0..N {
             if self.0[i] != 0 {
                 return accum + self.0[i].trailing_zeros();
             }
