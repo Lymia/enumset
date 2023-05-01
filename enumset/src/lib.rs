@@ -179,9 +179,12 @@ use crate::repr::EnumSetTypeRepr;
 ///
 /// * `#[enumset(serialize_repr = "u8")]` may be used to specify the integer type used to serialize
 ///   the underlying bitset. Any type allowed in the `repr` option may be used in this option.
-/// * `#[enumset(serialize_as_list)]` may be used to serialize the bitset as a list of enum
-///   variants instead of an integer. This requires [`Deserialize`] and [`Serialize`] be
-///   implemented on the enum.
+/// * `#[enumset(serialize_as_list)]` may be used to serialize the set as a list of enum variants
+///   instead of an integer. This requires [`Deserialize`] and [`Serialize`] be implemented on the
+///   enum.
+/// * `#[enumset(serialize_as_map)]` may be used to serialize the set as a map of enum variants to
+///   boolean values. A element is considered present in the set if the boolean value is `true`.
+///   This requires [`Deserialize`] and [`Serialize`] be implemented on the enum.
 /// * `#[enumset(serialize_deny_unknown)]` causes the generated deserializer to return an error
 ///   for unknown bits instead of silently ignoring them.
 ///
