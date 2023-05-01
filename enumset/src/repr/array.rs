@@ -5,7 +5,7 @@ use core::ops::*;
 ///
 /// `N` **must** be `2` or higher, or else logic errors will occur.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
-pub struct ArrayRepr<const N: usize>([u64; N]);
+pub struct ArrayRepr<const N: usize>(pub [u64; N]);
 impl<const N: usize> ArrayRepr<N> {
     fn split_bit(bit: u32) -> (usize, u32) {
         (bit as usize / 64, bit % 64)

@@ -1,5 +1,5 @@
 #![no_std]
-#![forbid(missing_docs)]
+#![deny(missing_docs)]
 // The safety requirement is "use the procedural derive".
 #![allow(clippy::missing_safety_doc)]
 
@@ -85,15 +85,16 @@ use core::hash::{Hash, Hasher};
 use core::iter::{FromIterator, Sum};
 use core::ops::*;
 
-#[doc(hidden)]
 /// Everything in this module is internal API and may change at any time.
+#[doc(hidden)]
 pub mod __internal {
-    use super::*;
+    // TODO: WHY IS THIS NOT NEEDED??
+    //use crate::{EnumSet, EnumSetType};
 
     /// A reexport of core to allow our macros to be generic to std vs core.
     pub use ::core as core_export;
 
-    /// A reexport of serde so there is no requirement to depend on serde.
+    /// A reexport of serde so our users don't have to also have a serde dependency.
     #[cfg(feature = "serde")]
     pub use serde2 as serde;
 
@@ -121,7 +122,10 @@ pub mod __internal {
         fn deserialize<'de, D: serde::Deserializer<'de>>(de: D) -> Result<EnumSet<Self>, D::Error>
         where Self: EnumSetType;
     }
+
+    pub use crate::repr::{ArrayRepr, EnumSetTypeRepr};
 }
+
 #[cfg(feature = "serde")]
 use crate::__internal::serde;
 use crate::__internal::EnumSetTypePrivate;

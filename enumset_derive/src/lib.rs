@@ -108,25 +108,6 @@ struct EnumSetValue {
     variant_repr: u32,
 }
 
-/// The data structure used to manipulate bit sets in the procedural macro
-struct UnderlyingBitSet(Vec<u64>);
-impl UnderlyingBitSet {
-    /// Creates a new bit set
-    fn new() -> Self {
-        UnderlyingBitSet(vec![0])
-    }
-
-    /// Sets a bit in the bit set
-    fn set_bit(&mut self, bit: u32) {
-        let word = bit as usize / 64;
-        let bit = bit % 64;
-        while self.0.len() < word {
-            self.0.push(0);
-        }
-        self.0[word] &= 1 << bit;
-    }
-}
-
 /// Stores information about the enum set type.
 #[allow(dead_code)]
 struct EnumSetInfo {
@@ -163,7 +144,10 @@ impl EnumSetInfo {
     fn new(input: &DeriveInput, attrs: &EnumsetAttrs) -> EnumSetInfo {
         EnumSetInfo {
             name: input.ident.clone(),
-            crate_name: attrs.crate_name.as_ref().map(|x| Ident::new(x, Span::call_site())),
+            crate_name: attrs
+                .crate_name
+                .as_ref()
+                .map(|x| Ident::new(x, Span::call_site())),
             explicit_internal_repr: None,
             internal_repr_force_array: false,
             explicit_serde_repr: None,
@@ -247,13 +231,8 @@ impl EnumSetInfo {
 
             // Validate the discriminant.
             let discriminant = self.cur_discrim;
-            if discriminant >= 128 {
-                let message = if self.variants.len() <= 127 {
-                    "`#[derive(EnumSetType)]` currently only supports discriminants up to 127."
-                } else {
-                    "`#[derive(EnumSetType)]` currently only supports enums up to 128 variants."
-                };
-                error(variant.span(), message)?;
+            if discriminant >= 0xFFFFFFC0 {
+                error(variant.span(), "Maximum discriminant allowed is `0xFFFFFFBF`.")?;
             }
             if self.used_discriminants.contains(&discriminant) {
                 error(variant.span(), "Duplicated enum discriminant.")?;
@@ -287,7 +266,7 @@ impl EnumSetInfo {
                     x if x < 64 && !self.internal_repr_force_array => InternalRepr::U64,
                     // TODO: Temporary code path before array support is added properly.
                     x if x < 128 && !self.internal_repr_force_array => InternalRepr::U128,
-                    x => InternalRepr::Array((x as usize + 1) / 64),
+                    x => InternalRepr::Array((x as usize + 63) / 64),
                 }
             }
         }
@@ -329,13 +308,16 @@ impl EnumSetInfo {
     }
 
     /// Returns a bitmask of all variants in the set.
-    fn all_variants(&self) -> u128 {
-        let mut accum = 0u128;
+    fn variant_map(&self) -> Vec<u64> {
+        let mut vec = vec![0];
         for variant in &self.variants {
-            assert!(variant.variant_repr <= 127);
-            accum |= 1u128 << variant.variant_repr as u128;
+            let (idx, bit) = (variant.variant_repr as usize / 64, variant.variant_repr % 64);
+            while idx >= vec.len() {
+                vec.push(0);
+            }
+            vec[idx] |= 1u64 << bit;
         }
-        accum
+        vec
     }
 }
 
@@ -368,6 +350,9 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     };
     let typed_enumset = quote!(#enumset::EnumSet<#name>);
     let core = quote!(#enumset::__internal::core_export);
+    let internal = quote!(#enumset::__internal);
+    #[cfg(feature = "serde")]
+    let serde = quote!(#enumset::__internal::serde);
 
     let repr = match info.internal_repr() {
         InternalRepr::U8 => quote! { u8 },
@@ -375,9 +360,28 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         InternalRepr::U32 => quote! { u32 },
         InternalRepr::U64 => quote! { u64 },
         InternalRepr::U128 => quote! { u128 },
-        InternalRepr::Array(_) => todo!("not yet implemented"),
+        InternalRepr::Array(size) => quote! { #internal::ArrayRepr<{ #size }> },
     };
-    let all_variants = Literal::u128_unsuffixed(info.all_variants());
+    let variant_map = info.variant_map();
+    let all_variants = match info.internal_repr() {
+        InternalRepr::U8 | InternalRepr::U16 | InternalRepr::U32 | InternalRepr::U64 => {
+            let lit = Literal::u64_unsuffixed(variant_map[0]);
+            quote! { #lit }
+        }
+        InternalRepr::U128 => {
+            let lit = Literal::u128_unsuffixed(
+                variant_map[0] as u128 | variant_map.get(1).map_or(0, |x| (*x as u128) << 64),
+            );
+            quote! { #lit }
+        }
+        InternalRepr::Array(size) => {
+            let mut new = Vec::new();
+            for i in 0..size {
+                new.push(Literal::u64_unsuffixed(*variant_map.get(i).unwrap_or(&0)));
+            }
+            quote! { #internal::ArrayRepr::<{ #size }>([#(#new,)*]) }
+        }
+    };
 
     let ops = if info.no_ops {
         quote! {}
@@ -422,20 +426,19 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     };
 
     #[cfg(feature = "serde")]
-    let serde = quote!(#enumset::__internal::serde);
-
-    #[cfg(feature = "serde")]
     let serde_repr = info.serde_repr();
 
     #[cfg(feature = "serde")]
     let serde_ops = match serde_repr {
         SerdeRepr::U8 | SerdeRepr::U16 | SerdeRepr::U32 | SerdeRepr::U64 | SerdeRepr::U128 => {
-            let serialize_repr = match serde_repr {
-                SerdeRepr::U8 => quote! { u8 },
-                SerdeRepr::U16 => quote! { u16 },
-                SerdeRepr::U32 => quote! { u32 },
-                SerdeRepr::U64 => quote! { u64 },
-                SerdeRepr::U128 => quote! { u128 },
+            let (serialize_repr, from_opt, as_opt) = match serde_repr {
+                SerdeRepr::U8 => (quote! { u8 }, quote! { from_u8_opt }, quote! { as_u8_opt }),
+                SerdeRepr::U16 => (quote! { u16 }, quote! { from_u16_opt }, quote! { as_u16_opt }),
+                SerdeRepr::U32 => (quote! { u32 }, quote! { from_u32_opt }, quote! { as_u32_opt }),
+                SerdeRepr::U64 => (quote! { u64 }, quote! { from_u64_opt }, quote! { as_u64_opt }),
+                SerdeRepr::U128 => {
+                    (quote! { u128 }, quote! { from_u128_opt }, quote! { as_u128_opt })
+                }
                 _ => unreachable!(),
             };
             let check_unknown = if info.serialize_deny_unknown {
@@ -460,9 +463,14 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                     de: D,
                 ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
                     let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
+                    let value =
+                        match <#repr as #enumset::__internal::EnumSetTypeRepr>::#from_opt(value) {
+                            Some(x) => x,
+                            None => #core::unreachable!();
+                        };
                     #check_unknown
                     #core::prelude::v1::Ok(#enumset::EnumSet {
-                        __priv_repr: (value & #all_variants) as #repr,
+                        __priv_repr: value & #all_variants,
                     })
                 }
             }
@@ -624,13 +632,6 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         quote!((*self as u32) == (*other as u32))
     };
 
-    // used in the enum_set! macro `const fn`s.
-    let self_as_repr_mask = if is_uninhabited {
-        quote! { 0 } // impossible anyway
-    } else {
-        quote! { 1 << self as #repr }
-    };
-
     let super_impls = if info.no_super_impls {
         quote! {}
     } else {
@@ -661,8 +662,88 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         quote! {}
     };
 
+    let inherent_impl_blocks = match info.internal_repr() {
+        InternalRepr::U8
+        | InternalRepr::U16
+        | InternalRepr::U32
+        | InternalRepr::U64
+        | InternalRepr::U128 => {
+            let self_as_repr_mask = if is_uninhabited {
+                quote! { 0 } // impossible anyway
+            } else {
+                quote! { 1 << self as #repr }
+            };
+
+            quote! {
+                impl #name {
+                    /// Creates a new enumset with only this variant.
+                    #[deprecated(note = "This method is an internal implementation detail \
+                                         generated by the `enumset` crate's procedural macro. It \
+                                         should not be used directly. Use `EnumSet::only` \
+                                         instead.")]
+                    #[doc(hidden)]
+                    pub const fn __impl_enumset_internal__const_only(
+                        self,
+                    ) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet { __priv_repr: #self_as_repr_mask }
+                    }
+
+                    /// Creates a new enumset with this variant added.
+                    #[deprecated(note = "This method is an internal implementation detail \
+                                         generated by the `enumset` crate's procedural macro. It \
+                                         should not be used directly. Use the `|` operator \
+                                         instead.")]
+                    #[doc(hidden)]
+                    pub const fn __impl_enumset_internal__const_merge(
+                        self, chain: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet { __priv_repr: chain.__priv_repr | #self_as_repr_mask }
+                    }
+                }
+            }
+        }
+        InternalRepr::Array(size) => {
+            quote! {
+                impl #name {
+                    /// Creates a new enumset with only this variant.
+                    #[deprecated(note = "This method is an internal implementation detail \
+                                         generated by the `enumset` crate's procedural macro. It \
+                                         should not be used directly. Use `EnumSet::only` \
+                                         instead.")]
+                    #[doc(hidden)]
+                    pub const fn __impl_enumset_internal__const_only(
+                        self,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut set = #enumset::EnumSet::<#name> {
+                            __priv_repr: #internal::ArrayRepr::<{ #size }>([0; #size]),
+                        };
+                        let bit = self as u32;
+                        let (idx, bit) = (bit as usize / 64, bit % 64);
+                        set.__priv_repr.0[idx] |= 1u64 << bit;
+                        set
+                    }
+
+                    /// Creates a new enumset with this variant added.
+                    #[deprecated(note = "This method is an internal implementation detail \
+                                         generated by the `enumset` crate's procedural macro. It \
+                                         should not be used directly. Use the `|` operator \
+                                         instead.")]
+                    #[doc(hidden)]
+                    pub const fn __impl_enumset_internal__const_merge(
+                        self, mut chain: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let bit = self as u32;
+                        let (idx, bit) = (bit as usize / 64, bit % 64);
+                        chain.__priv_repr.0[idx] |= 1u64 << bit;
+                        chain
+                    }
+                }
+            }
+        }
+    };
+
     quote! {
-        unsafe impl #enumset::__internal::EnumSetTypePrivate for #name {
+        unsafe impl #internal::EnumSetTypePrivate for #name {
             type Repr = #repr;
             const ALL_BITS: Self::Repr = #all_variants;
             #into_impl
@@ -673,28 +754,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
 
         #impl_with_repr
         #super_impls
-
-        impl #name {
-            /// Creates a new enumset with only this variant.
-            #[deprecated(note = "This method is an internal implementation detail generated by \
-                                 the `enumset` crate's procedural macro. It should not be used \
-                                 directly. Use `EnumSet::only` instead.")]
-            #[doc(hidden)]
-            pub const fn __impl_enumset_internal__const_only(self) -> #enumset::EnumSet<#name> {
-                #enumset::EnumSet { __priv_repr: #self_as_repr_mask }
-            }
-
-            /// Creates a new enumset with this variant added.
-            #[deprecated(note = "This method is an internal implementation detail generated by \
-                                 the `enumset` crate's procedural macro. It should not be used \
-                                 directly. Use the `|` operator instead.")]
-            #[doc(hidden)]
-            pub const fn __impl_enumset_internal__const_merge(
-                self, chain: #enumset::EnumSet<#name>,
-            ) -> #enumset::EnumSet<#name> {
-                #enumset::EnumSet { __priv_repr: chain.__priv_repr | #self_as_repr_mask }
-            }
-        }
+        #inherent_impl_blocks
 
         #ops
     }
