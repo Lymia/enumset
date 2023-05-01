@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/Lymia/enumset/actions/workflows/test.yml/badge.svg)](https://github.com/Lymia/enumset/actions/workflows/test.yml)
 [![Latest Version](https://img.shields.io/crates/v/enumset.svg)](https://crates.io/crates/enumset)
-![Requires rustc 1.56+](https://img.shields.io/badge/rustc-1.36+-red.svg)
+![Requires rustc 1.56+](https://img.shields.io/badge/rustc-1.56+-red.svg)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/enumset)
 
 A library for defining enums that can be used in compact bit sets.
