@@ -2,7 +2,7 @@
 name = "enumset"
 version = "1.0.12"
 authors = ["Alissa Rao <lymia@lymiahugs.com>"]
-edition = "2018"
+edition = "2021"
 
 description = "A library for creating compact sets of enums."
 keywords = ["enum", "bitset"]
