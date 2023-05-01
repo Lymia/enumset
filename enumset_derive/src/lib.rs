@@ -204,7 +204,7 @@ impl EnumSetInfo {
             "array" => self.push_explicit_serde_repr(SerdeRepr::Array),
             _ => error(
                 Span::call_site(),
-                format!("`{ty}` is not a valid serialized representation."),
+                format!("`{}` is not a valid serialized representation.", ty),
             ),
         }
     }
@@ -220,7 +220,7 @@ impl EnumSetInfo {
             "array" => self.internal_repr_force_array = true,
             _ => error(
                 Span::call_site(),
-                format!("`{ty}` is not a valid internal enumset representation."),
+                format!("`{}` is not a valid internal enumset representation.", ty),
             )?,
         }
         Ok(())
@@ -468,7 +468,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             }
         }
         SerdeRepr::List => {
-            let expecting_str = format!("a list of {name}");
+            let expecting_str = format!("a list of {}", name);
             quote! {
                 fn serialize<S: #serde::Serializer>(
                     set: #enumset::EnumSet<#name>, ser: S,
@@ -508,7 +508,7 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             }
         }
         SerdeRepr::Map => {
-            let expecting_str = format!("a map from {name} to bool");
+            let expecting_str = format!("a map from {} to bool", name);
             quote! {
                 fn serialize<S: #serde::Serializer>(
                     set: #enumset::EnumSet<#name>, ser: S,
