@@ -1,3 +1,10 @@
+# Version 1.0.13 (2023-05-01)
+* Updated darling to version 0.20 and syn to version 2.0.
+* Added a new `#[enumset(serialize_as_map)]` attribute to allow serializing
+  `EnumSet<T>` as a map of enum variants to boolean values.
+  (Thanks @LizzyFleckenstein03)
+* Minimum required Rust version is now 1.56+, due to updates in dependencies.
+  
 # Version 1.0.12 (2022-10-02)
 * Updated darling version to reduce compile times when combined with other
   crates. (Thanks @AlexTMjugador)
