@@ -618,7 +618,7 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
     } else if let Data::Enum(data) = &input.data {
         let mut info = EnumSetInfo::new(&input, attrs);
         for attr in &input.attrs {
-            if attr.path.is_ident(&Ident::new("repr", Span::call_site())) {
+            if attr.path().is_ident(&Ident::new("repr", Span::call_site())) {
                 let meta: Ident = attr.parse_args()?;
                 info.push_explicit_repr(attr.span(), meta.to_string().as_str())?;
             }
