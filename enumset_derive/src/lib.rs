@@ -409,8 +409,10 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                         A: #serde::de::MapAccess<'de>
                     {
                         let mut accum = #enumset::EnumSet::<#name>::new();
-                        while let #core::prelude::v1::Some((val, true)) = map.next_entry::<#name, bool>()? {
-                            accum |= val;
+                        while let #core::prelude::v1::Some((val, is_present)) = map.next_entry::<#name, bool>()? {
+                            if is_present {
+                                accum |= val;
+                            }
                         }
                         #core::prelude::v1::Ok(accum)
                     }

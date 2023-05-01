@@ -86,6 +86,8 @@ fn test_json_reprs() {
                serde_json::from_str::<EnumSet<ListEnum>>(r#"["A","C","F"]"#).unwrap());
     assert_eq!(MapEnum::A | MapEnum::C | MapEnum::F,
                serde_json::from_str::<EnumSet<MapEnum>>(r#"{"A":true,"C":true,"F":true}"#).unwrap());
+    assert_eq!(MapEnum::A | MapEnum::C | MapEnum::F,
+               serde_json::from_str::<EnumSet<MapEnum>>(r#"{"D":false,"A":true,"E":false,"C":true,"F":true}"#).unwrap());
     assert_eq!(ReprEnum::A | ReprEnum::C | ReprEnum::D,
                serde_json::from_str::<EnumSet<ReprEnum>>("13").unwrap());
     assert_eq!(r#"["A","C","F"]"#,
