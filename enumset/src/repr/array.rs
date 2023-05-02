@@ -211,7 +211,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         if N > O {
             for i in N..O {
                 if self.0[i] != 0 {
-                    return None
+                    return None;
                 }
             }
         }
@@ -236,7 +236,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         if N > out.len() {
             for i in N..out.len() {
                 if self.0[i] != 0 {
-                    return None
+                    return None;
                 }
             }
         }
@@ -254,7 +254,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         if v.len() > N {
             for i in N..v.len() {
                 if v[i] != 0 {
-                    return None
+                    return None;
                 }
             }
         }
