@@ -16,11 +16,6 @@ pub mod __internal {
         repr::{ArrayRepr, EnumSetTypeRepr},
         traits::EnumSetTypePrivate,
     };
-
-    /// Used to mark the empty `enum_set!()` macro as deprecated.
-    #[deprecated = "The empty `enum_set!()` macro is deprecated, because it does not work with \
-                     sets that use an array representation. Use `EnumSet::EMPTY` instead."]
-    pub const fn empty_macro_deprecation() {}
 }
 
 /// Creates a EnumSet literal, which can be used in const contexts.
@@ -49,10 +44,9 @@ pub mod __internal {
 /// ```
 #[macro_export]
 macro_rules! enum_set {
-    ($(|)*) => {{
-        $crate::__internal::empty_macro_deprecation();
-        $crate::EnumSet { __priv_repr: 0 }
-    }};
+    ($(|)*) => {
+        EnumSet::EMPTY
+    };
     ($value:path $(|)*) => {
         {
             #[allow(deprecated)] let value = $value.__impl_enumset_internal__const_only();

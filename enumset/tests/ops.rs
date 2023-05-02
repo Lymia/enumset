@@ -137,14 +137,14 @@ macro_rules! test_enum {
     ($e:ident, $mem_size:expr) => {
         const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
         const CONST_1_SET: EnumSet<$e> = enum_set!($e::A);
-        // TODO: const EMPTY_SET: EnumSet<$e> = enum_set!();
+        const EMPTY_SET: EnumSet<$e> = EnumSet::EMPTY;
         #[test]
         fn const_set() {
             assert_eq!(CONST_SET.len(), 2);
             assert_eq!(CONST_1_SET.len(), 1);
             assert!(CONST_SET.contains($e::A));
             assert!(CONST_SET.contains($e::C));
-            // TODO: assert!(EMPTY_SET.is_empty());
+            assert!(EMPTY_SET.is_empty());
         }
 
         #[test]

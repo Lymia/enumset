@@ -127,19 +127,20 @@ pub struct EnumSet<T: EnumSetType> {
     pub __priv_repr: T::Repr,
 }
 impl<T: EnumSetType> EnumSet<T> {
-    /// An empty `EnumSet`. This is available as a constant for use in constant expressions.
+    /// An empty `EnumSet`.
+    ///
+    /// This is available as a constant for use in constant expressions.
     pub const EMPTY: Self = EnumSet { __priv_repr: T::Repr::EMPTY };
 
-    /// Returns all bits valid for the enum
-    #[inline(always)]
-    fn all_bits() -> T::Repr {
-        T::ALL_BITS
-    }
+    /// An `EnumSet` containing all valid variants of the enum.
+    ///
+    /// This is available as a constant for use in constant expressions.
+    pub const ALL: Self = EnumSet { __priv_repr: T::ALL_BITS };
 
     /// Creates an empty `EnumSet`.
     #[inline(always)]
     pub fn new() -> Self {
-        EnumSet { __priv_repr: T::Repr::EMPTY }
+        Self::EMPTY
     }
 
     /// Returns an `EnumSet` containing a single element.
@@ -155,13 +156,13 @@ impl<T: EnumSetType> EnumSet<T> {
     /// This is an alias for [`EnumSet::new`].
     #[inline(always)]
     pub fn empty() -> Self {
-        Self::new()
+        Self::EMPTY
     }
 
     /// Returns an `EnumSet` containing all valid variants of the enum.
     #[inline(always)]
     pub fn all() -> Self {
-        EnumSet { __priv_repr: Self::all_bits() }
+        Self::ALL
     }
 
     /// Total number of bits used by this type. Note that the actual amount of space used is
@@ -242,7 +243,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// Returns a set containing all enum variants not in this set.
     #[inline(always)]
     pub fn complement(&self) -> Self {
-        EnumSet { __priv_repr: !self.__priv_repr & Self::all_bits() }
+        EnumSet { __priv_repr: !self.__priv_repr & T::ALL_BITS }
     }
 
     /// Checks whether this set contains a value.
