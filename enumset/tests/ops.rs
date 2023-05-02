@@ -74,6 +74,7 @@ pub enum ReprEnum4 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 #[derive(EnumSetType, Debug)]
+#[enumset(serialize_repr = "list")]
 pub enum GiantEnum {
     A = 100, B = 200, C = 300, D = 400, E = 500, F = 600, G = 700, H = 800,
 }

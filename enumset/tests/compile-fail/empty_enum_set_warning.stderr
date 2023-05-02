@@ -1,0 +1,12 @@
+error: use of deprecated function `enumset::__internal::empty_macro_deprecation`: The empty `enum_set!()` macro is deprecated, because it does not work with sets that use an array representation. Use `EnumSet::EMPTY` instead.
+  --> tests/compile-fail/empty_enum_set_warning.rs:11:30
+   |
+11 |     let set: EnumSet<Test> = enum_set!();
+   |                              ^^^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> tests/compile-fail/empty_enum_set_warning.rs:1:9
+   |
+1  | #![deny(deprecated)]
+   |         ^^^^^^^^^^
+   = note: this error originates in the macro `enum_set` (in Nightly builds, run with -Z macro-backtrace for more info)

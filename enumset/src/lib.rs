@@ -88,8 +88,8 @@ use core::ops::*;
 /// Everything in this module is internal API and may change at any time.
 #[doc(hidden)]
 pub mod __internal {
-    // TODO: WHY IS THIS NOT NEEDED??
-    //use crate::{EnumSet, EnumSetType};
+    #[cfg(feature = "serde")]
+    use crate::{EnumSet, EnumSetType};
 
     /// A reexport of core to allow our macros to be generic to std vs core.
     pub use ::core as core_export;
@@ -123,7 +123,13 @@ pub mod __internal {
         where Self: EnumSetType;
     }
 
+    /// Reexports of internal repr types
     pub use crate::repr::{ArrayRepr, EnumSetTypeRepr};
+
+    /// Used to mark the empty `enum_set!()` macro as deprecated.
+    #[deprecated = "The empty `enum_set!()` macro is deprecated, because it does not work with \
+                     sets that use an array representation. Use `EnumSet::EMPTY` instead."]
+    pub const fn empty_macro_deprecation() {}
 }
 
 #[cfg(feature = "serde")]
@@ -343,7 +349,10 @@ pub struct EnumSet<T: EnumSetType> {
     pub __priv_repr: T::Repr,
 }
 impl<T: EnumSetType> EnumSet<T> {
-    // Returns all bits valid for the enum
+    /// An empty `EnumSet`. This is available as a constant for use in constant expressions.
+    pub const EMPTY: Self = EnumSet { __priv_repr: T::Repr::EMPTY };
+
+    /// Returns all bits valid for the enum
     #[inline(always)]
     fn all_bits() -> T::Repr {
         T::ALL_BITS
@@ -352,7 +361,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// Creates an empty `EnumSet`.
     #[inline(always)]
     pub fn new() -> Self {
-        EnumSet { __priv_repr: T::Repr::empty() }
+        EnumSet { __priv_repr: T::Repr::EMPTY }
     }
 
     /// Returns an `EnumSet` containing a single element.
@@ -409,7 +418,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// Removes all elements from the set.
     #[inline(always)]
     pub fn clear(&mut self) {
-        self.__priv_repr = T::Repr::empty()
+        self.__priv_repr = T::Repr::EMPTY;
     }
 
     /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
@@ -959,9 +968,10 @@ impl<T: EnumSetType> FromIterator<EnumSet<T>> for EnumSet<T> {
 /// ```
 #[macro_export]
 macro_rules! enum_set {
-    ($(|)*) => {
+    ($(|)*) => {{
+        $crate::__internal::empty_macro_deprecation();
         $crate::EnumSet { __priv_repr: 0 }
-    };
+    }};
     ($value:path $(|)*) => {
         {
             #[allow(deprecated)] let value = $value.__impl_enumset_internal__const_only();

@@ -1,0 +1,43 @@
+error: `#[repr(usize)]` cannot be used on enumset variants.
+ --> tests/compile-fail/syntax.rs:4:1
+  |
+4 | #[repr(usize)]
+  | ^^^^^^^^^^^^^^
+
+error: `#[derive(EnumSetType)]` cannot be used on enums with type parameters.
+  --> tests/compile-fail/syntax.rs:11:17
+   |
+11 | enum GenericEnum<T> {
+   |                 ^^^
+
+error: `#[derive(EnumSetType)]` may only be used on enums
+  --> tests/compile-fail/syntax.rs:17:1
+   |
+17 | / struct BadItemType {
+18 | |
+19 | | }
+   | |_^
+
+error: Duplicate field `repr`
+  --> tests/compile-fail/syntax.rs:22:24
+   |
+22 | #[enumset(repr = "u8", repr = "u16")]
+   |                        ^^^^^^^^^^^^
+
+error: `abcdef` is not a valid internal enumset representation.
+  --> tests/compile-fail/syntax.rs:28:18
+   |
+28 | #[enumset(repr = "abcdef")]
+   |                  ^^^^^^^^
+
+error: Cannot have multiple attributes that change the serialization repr.
+  --> tests/compile-fail/syntax.rs:34:34
+   |
+34 | #[enumset(serialize_repr = "u8", serialize_as_list)]
+   |                                  ^^^^^^^^^^^^^^^^^
+
+error: `abcdef` is not a valid serialized representation.
+  --> tests/compile-fail/syntax.rs:40:28
+   |
+40 | #[enumset(serialize_repr = "abcdef")]
+   |                            ^^^^^^^^

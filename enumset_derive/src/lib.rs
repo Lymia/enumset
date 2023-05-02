@@ -2,6 +2,7 @@
 
 extern crate proc_macro;
 
+use darling::util::SpannedValue;
 use darling::*;
 use proc_macro::TokenStream;
 use proc_macro2::{Literal, Span, TokenStream as SynTokenStream};
@@ -22,16 +23,16 @@ struct EnumsetAttrs {
     no_ops: bool,
     no_super_impls: bool,
     #[darling(default)]
-    repr: Option<String>,
+    repr: SpannedValue<Option<String>>,
     #[darling(default)]
-    serialize_repr: Option<String>,
+    serialize_repr: SpannedValue<Option<String>>,
     serialize_deny_unknown: bool,
     #[darling(default)]
     crate_name: Option<String>,
 
     // legacy options
-    serialize_as_list: bool, // replaced with serialize_repr
-    serialize_as_map: bool,  // replaced with serialize_repr
+    serialize_as_list: SpannedValue<bool>, // replaced with serialize_repr
+    serialize_as_map: SpannedValue<bool>,  // replaced with serialize_repr
 }
 
 /// The internal representation of an enumset.
@@ -126,6 +127,8 @@ struct EnumSetInfo {
 
     /// The highest encountered variant discriminant.
     max_discrim: u32,
+    /// The span of the highest encountered variant.
+    max_discrim_span: Option<Span>,
     /// The current variant discriminant. Used to track, e.g. `A=10,B,C`.
     cur_discrim: u32,
     /// A list of variant names that are already in use.
@@ -153,6 +156,7 @@ impl EnumSetInfo {
             explicit_serde_repr: None,
             variants: Vec::new(),
             max_discrim: 0,
+            max_discrim_span: None,
             cur_discrim: 0,
             used_variant_names: HashSet::new(),
             used_discriminants: HashSet::new(),
@@ -163,12 +167,9 @@ impl EnumSetInfo {
     }
 
     /// Explicitly sets the serde representation of the enumset.
-    fn push_explicit_serde_repr(&mut self, serde_repr: SerdeRepr) -> Result<()> {
+    fn push_explicit_serde_repr(&mut self, span: Span, serde_repr: SerdeRepr) -> Result<()> {
         if self.explicit_serde_repr.is_some() {
-            error(
-                Span::call_site(),
-                "Cannot have multiple attributes that change te serialization repr.",
-            )
+            error(span, "Cannot have multiple attributes that change the serialization repr.")
         } else {
             self.explicit_serde_repr = Some(serde_repr);
             Ok(())
@@ -176,25 +177,22 @@ impl EnumSetInfo {
     }
 
     /// Explicits sets the serde representation of the enumset from a string.
-    fn push_serialize_repr(&mut self, ty: &str) -> Result<()> {
+    fn push_serialize_repr(&mut self, span: Span, ty: &str) -> Result<()> {
         match ty {
-            "u8" => self.push_explicit_serde_repr(SerdeRepr::U8),
-            "u16" => self.push_explicit_serde_repr(SerdeRepr::U16),
-            "u32" => self.push_explicit_serde_repr(SerdeRepr::U32),
-            "u64" => self.push_explicit_serde_repr(SerdeRepr::U64),
-            "u128" => self.push_explicit_serde_repr(SerdeRepr::U128),
-            "list" => self.push_explicit_serde_repr(SerdeRepr::List),
-            "map" => self.push_explicit_serde_repr(SerdeRepr::Map),
-            "array" => self.push_explicit_serde_repr(SerdeRepr::Array),
-            _ => error(
-                Span::call_site(),
-                format!("`{}` is not a valid serialized representation.", ty),
-            ),
+            "u8" => self.push_explicit_serde_repr(span, SerdeRepr::U8),
+            "u16" => self.push_explicit_serde_repr(span, SerdeRepr::U16),
+            "u32" => self.push_explicit_serde_repr(span, SerdeRepr::U32),
+            "u64" => self.push_explicit_serde_repr(span, SerdeRepr::U64),
+            "u128" => self.push_explicit_serde_repr(span, SerdeRepr::U128),
+            "list" => self.push_explicit_serde_repr(span, SerdeRepr::List),
+            "map" => self.push_explicit_serde_repr(span, SerdeRepr::Map),
+            "array" => self.push_explicit_serde_repr(span, SerdeRepr::Array),
+            _ => error(span, format!("`{}` is not a valid serialized representation.", ty)),
         }
     }
 
     /// Explicitly sets the representation of the enumset from a string.
-    fn push_repr(&mut self, ty: &str) -> Result<()> {
+    fn push_repr(&mut self, span: Span, ty: &str) -> Result<()> {
         match ty {
             "u8" => self.explicit_internal_repr = Some(InternalRepr::U8),
             "u16" => self.explicit_internal_repr = Some(InternalRepr::U16),
@@ -202,10 +200,7 @@ impl EnumSetInfo {
             "u64" => self.explicit_internal_repr = Some(InternalRepr::U64),
             "u128" => self.explicit_internal_repr = Some(InternalRepr::U128),
             "array" => self.internal_repr_force_array = true,
-            _ => error(
-                Span::call_site(),
-                format!("`{}` is not a valid internal enumset representation.", ty),
-            )?,
+            _ => error(span, format!("`{}` is not a valid internal enumset representation.", ty))?,
         }
         Ok(())
     }
@@ -217,15 +212,15 @@ impl EnumSetInfo {
         } else if let Fields::Unit = variant.fields {
             // Parse the discriminant.
             if let Some((_, expr)) = &variant.discriminant {
-                let discriminant_fail_message =
-                    format!("Enum set discriminants must fit into `u32`.",);
                 if let Expr::Lit(ExprLit { lit: Lit::Int(i), .. }) = expr {
                     match i.base10_parse() {
                         Ok(val) => self.cur_discrim = val,
-                        Err(_) => error(expr.span(), &discriminant_fail_message)?,
+                        Err(_) => error(expr.span(), "Enum discriminants must fit into `u32`.")?,
                     }
+                } else if let Expr::Unary(ExprUnary { op: UnOp::Neg(_), .. }) = expr {
+                    error(expr.span(), "Enum discriminants must not be negative.")?;
                 } else {
-                    error(variant.span(), &discriminant_fail_message)?;
+                    error(variant.span(), "Enum discriminants must be literal expressions.")?;
                 }
             }
 
@@ -242,6 +237,7 @@ impl EnumSetInfo {
             self.cur_discrim += 1;
             if discriminant > self.max_discrim {
                 self.max_discrim = discriminant;
+                self.max_discrim_span = Some(variant.span());
             }
             self.variants
                 .push(EnumSetValue { name: variant.ident.clone(), variant_repr: discriminant });
@@ -289,16 +285,25 @@ impl EnumSetInfo {
 
     /// Validate the enumset type.
     fn validate(&self) -> Result<()> {
+        // Gets the span of the maximum value.
+        let largest_discriminant_span = match &self.max_discrim_span {
+            Some(x) => x.clone(),
+            None => Span::call_site(),
+        };
+
         // Check if all bits of the bitset can fit in the memory representation, if one was given.
         if self.internal_repr().supported_variants() <= self.max_discrim as usize {
-            error(Span::call_site(), "`repr` is too small to contain the largest discriminant.")?;
+            error(
+                largest_discriminant_span,
+                "`repr` is too small to contain the largest discriminant.",
+            )?;
         }
 
         // Check if all bits of the bitset can fit in the serialization representation.
         if let Some(supported_variants) = self.serde_repr().supported_variants() {
             if supported_variants <= self.max_discrim as usize {
                 error(
-                    Span::call_site(),
+                    largest_discriminant_span,
                     "`serialize_repr` is too small to contain the largest discriminant.",
                 )?;
             }
@@ -781,20 +786,36 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
     } else if let Data::Enum(data) = &input.data {
         let mut info = EnumSetInfo::new(&input, &attrs);
 
+        // Check enum repr
+        for attr in &input.attrs {
+            if attr.path().is_ident("repr") {
+                let meta: Ident = attr.parse_args()?;
+                match meta.to_string().as_str() {
+                    "C" | "Rust" => {}
+                    "u8" | "u16" | "u32" | "u64" | "u128" => {}
+                    "i8" | "i16" | "i32" | "i64" | "i128" => {}
+                    x => error(
+                        attr.span(),
+                        format!("`#[repr({})]` cannot be used on enumset variants.", x),
+                    )?,
+                }
+            }
+        }
+
         // Parse internal representations
-        if let Some(repr) = &attrs.repr {
-            info.push_repr(repr)?;
+        if let Some(repr) = &*attrs.repr {
+            info.push_repr(attrs.repr.span(), repr)?;
         }
 
         // Parse serialization representations
-        if let Some(serialize_repr) = &attrs.serialize_repr {
-            info.push_serialize_repr(serialize_repr)?;
+        if let Some(serialize_repr) = &*attrs.serialize_repr {
+            info.push_serialize_repr(attrs.serialize_repr.span(), serialize_repr)?;
         }
-        if attrs.serialize_as_list {
-            info.push_explicit_serde_repr(SerdeRepr::List)?;
+        if *attrs.serialize_as_list {
+            info.push_explicit_serde_repr(attrs.serialize_as_list.span(), SerdeRepr::List)?;
         }
-        if attrs.serialize_as_map {
-            info.push_explicit_serde_repr(SerdeRepr::Map)?;
+        if *attrs.serialize_as_map {
+            info.push_explicit_serde_repr(attrs.serialize_as_map.span(), SerdeRepr::Map)?;
         }
 
         // Parse enum variants

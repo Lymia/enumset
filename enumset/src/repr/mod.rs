@@ -23,9 +23,9 @@ pub trait EnumSetTypeRepr :
     Not<Output = Self> +
 {
     const WIDTH: u32;
+    const EMPTY: Self;
 
     fn is_empty(&self) -> bool;
-    fn empty() -> Self;
 
     fn add_bit(&mut self, bit: u32);
     fn remove_bit(&mut self, bit: u32);

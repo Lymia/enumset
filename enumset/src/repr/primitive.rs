@@ -4,14 +4,11 @@ macro_rules! prim {
     ($name:ty, $width:expr) => {
         impl EnumSetTypeRepr for $name {
             const WIDTH: u32 = $width;
+            const EMPTY: Self = 0;
 
             #[inline(always)]
             fn is_empty(&self) -> bool {
                 *self == 0
-            }
-            #[inline(always)]
-            fn empty() -> Self {
-                0
             }
 
             #[inline(always)]

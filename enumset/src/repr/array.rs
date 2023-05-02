@@ -51,12 +51,10 @@ impl<const N: usize> Not for ArrayRepr<N> {
 
 impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     const WIDTH: u32 = N as u32 * 64;
+    const EMPTY: Self = ArrayRepr([0; N]);
 
     fn is_empty(&self) -> bool {
         self.0.iter().all(|x| *x == 0)
-    }
-    fn empty() -> Self {
-        ArrayRepr([0; N])
     }
 
     fn add_bit(&mut self, bit: u32) {
