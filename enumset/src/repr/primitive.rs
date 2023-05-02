@@ -212,6 +212,7 @@ macro_rules! prim {
                     }
                 }
                 #[inline(always)]
+                #[must_use]
                 fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()> {
                     if out.len() == 0 && *self != 0 {
                         None

@@ -78,6 +78,8 @@
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
 //! ```
 
+extern crate alloc;
+
 mod macros;
 
 mod repr;

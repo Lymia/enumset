@@ -196,7 +196,7 @@ conversion_impls! {
 impl<T: EnumSetType> EnumSet<T> {
     /// Returns an `[u64; O]` representing the elements of this set.
     ///
-    /// If the underlying bitset will not fit in a `[u8; O]`, this method will panic.
+    /// If the underlying bitset will not fit in a `[u64; O]`, this method will panic.
     pub fn as_array<const O: usize>(&self) -> [u64; O] {
         self.try_as_array()
             .expect("Bitset will not fit into this type.")
@@ -204,7 +204,7 @@ impl<T: EnumSetType> EnumSet<T> {
 
     /// Returns an `[u64; O]` representing the elements of this set.
     ///
-    /// If the underlying bitset will not fit in a `[u8; O]`, this method will instead return
+    /// If the underlying bitset will not fit in a `[u64; O]`, this method will instead return
     /// `None`.
     pub fn try_as_array<const O: usize>(&self) -> Option<[u64; O]> {
         self.__priv_repr.to_u64_array_opt()
@@ -212,7 +212,7 @@ impl<T: EnumSetType> EnumSet<T> {
 
     /// Returns an `[u64; O]` representing the elements of this set.
     ///
-    /// If the underlying bitset will not fit in a `[u8; O]`, this method will truncate any bits
+    /// If the underlying bitset will not fit in a `[u64; O]`, this method will truncate any bits
     /// that don't fit.
     pub fn as_array_truncated<const O: usize>(&self) -> [u64; O] {
         self.__priv_repr.to_u64_array()
@@ -258,7 +258,38 @@ impl<T: EnumSetType> EnumSet<T> {
         EnumSet { __priv_repr: T::Repr::from_u64_array(bits) }
     }
 
-    // TODO: Conversions to vec/read to slice
+    /// Returns a `Vec<u64>` representing the elements of this set.
+    #[cfg(feature = "alloc")]
+    pub fn to_vec(&self) -> alloc::Vec<u64> {
+        let mut vec = alloc::vec![0; T::Repr::PREFERRED_ARRAY_LEN];
+        self.__priv_repr.to_u64_slice(&mut vec);
+        vec
+    }
+
+    /// Copies the elements of this set into a `&mut [u64]`.
+    ///
+    /// If the underlying bitset will not fit in the provided slice, this method will panic.
+    pub fn copy_into_slice(&self, data: &mut [u64]) {
+        self.try_copy_into_slice(data)
+            .expect("Bitset will not fit into slice.")
+    }
+
+    /// Copies the elements of this set into a `&mut [u64]`.
+    ///
+    /// If the underlying bitset will not fit in the provided slice, this method will return
+    /// `None`. Otherwise, it will return `Some(())`.
+    #[must_use]
+    pub fn try_copy_into_slice(&self, data: &mut [u64]) -> Option<()> {
+        self.__priv_repr.to_u64_slice_opt(data)
+    }
+
+    /// Copies the elements of this set into a `&mut [u64]`.
+    ///
+    /// If the underlying bitset will not fit in the provided slice, this method will truncate any
+    /// bits that don't fit.
+    pub fn copy_into_slice_truncated(&self, data: &mut [u64]) {
+        self.__priv_repr.to_u64_slice(data)
+    }
 
     /// Attempts to constructs a bitset from a `&[u64]`.
     ///

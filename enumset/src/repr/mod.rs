@@ -73,6 +73,7 @@ pub trait EnumSetTypeRepr :
     fn from_u64_array_opt<const O: usize>(v: [u64; O]) -> Option<Self>;
 
     fn to_u64_slice(&self, out: &mut [u64]);
+    #[must_use]
     fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()>;
 
     fn from_u64_slice(v: &[u64]) -> Self;
