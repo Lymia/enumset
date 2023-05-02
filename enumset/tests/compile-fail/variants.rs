@@ -38,11 +38,4 @@ enum ExcessiveReprSize {
     Variant = 0xFFFFFFD0,
 }
 
-#[derive(EnumSetType)]
-enum OkayEnumButCantUseFromRepr {
-    Variant,
-}
-
-fn main() {
-    EnumSet::<OkayEnumButCantUseFromRepr>::from_repr(1);
-}
+fn main() {}

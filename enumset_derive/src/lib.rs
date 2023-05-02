@@ -262,7 +262,7 @@ impl EnumSetInfo {
                     x if x < 64 && !self.internal_repr_force_array => InternalRepr::U64,
                     // TODO: Temporary code path before array support is added properly.
                     x if x < 128 && !self.internal_repr_force_array => InternalRepr::U128,
-                    x => InternalRepr::Array((x as usize + 63) / 64),
+                    x => InternalRepr::Array((x as usize + 64) / 64),
                 }
             }
         }
@@ -792,8 +792,8 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
                 let meta: Ident = attr.parse_args()?;
                 match meta.to_string().as_str() {
                     "C" | "Rust" => {}
-                    "u8" | "u16" | "u32" | "u64" | "u128" => {}
-                    "i8" | "i16" | "i32" | "i64" | "i128" => {}
+                    "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {}
+                    "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {}
                     x => error(
                         attr.span(),
                         format!("`#[repr({})]` cannot be used on enumset variants.", x),

@@ -1,9 +1,3 @@
-error: `#[repr(usize)]` cannot be used on enumset variants.
- --> tests/compile-fail/syntax.rs:4:1
-  |
-4 | #[repr(usize)]
-  | ^^^^^^^^^^^^^^
-
 error: `#[derive(EnumSetType)]` cannot be used on enums with type parameters.
   --> tests/compile-fail/syntax.rs:11:17
    |

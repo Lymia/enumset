@@ -288,7 +288,21 @@ macro_rules! test_enum {
         #[test]
         fn to_from_bits() {
             let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
-            assert_eq!(EnumSet::from_u128(value.as_u128()), value);
+            if EnumSet::<$e>::bit_width() < 128 {
+                assert_eq!(EnumSet::from_u128(value.as_u128()), value);
+            }
+            if EnumSet::<$e>::bit_width() < 64 {
+                assert_eq!(EnumSet::from_u64(value.as_u64()), value);
+            }
+            if EnumSet::<$e>::bit_width() < 32 {
+                assert_eq!(EnumSet::from_u32(value.as_u32()), value);
+            }
+            if EnumSet::<$e>::bit_width() < 16 {
+                assert_eq!(EnumSet::from_u16(value.as_u16()), value);
+            }
+            if EnumSet::<$e>::bit_width() < 8 {
+                assert_eq!(EnumSet::from_u8(value.as_u8()), value);
+            }
         }
 
         #[test]
