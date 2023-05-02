@@ -3,8 +3,8 @@
 // The safety requirement is "use the procedural derive".
 #![allow(clippy::missing_safety_doc)]
 
-//! A library for defining enums that can be used in compact bit sets. It supports enums up to 128
-//! variants, and has a macro to use these sets in constants.
+//! A library for defining enums that can be used in compact bit sets. It supports arbitrarily
+//! large enums, and has very basic support for using them in constants.
 //!
 //! For serde support, enable the `serde` feature.
 //!
@@ -144,8 +144,16 @@ use crate::repr::EnumSetTypeRepr;
 /// The procedural macro used to derive [`EnumSetType`], and allow enums to be used with
 /// [`EnumSet`].
 ///
-/// It may be used with any enum with no data fields, at most 127 variants, and no variant
-/// discriminators larger than 127.
+/// # Limitations
+///
+/// Currently, the following limitations apply to what kinds of enums this macro may be used with:
+///
+/// * The enum must have no data fields in any variant.
+/// * Variant discriminators must be zero or positive.
+/// * No variant discriminator may be larger than `0xFFFFFFBF`. This is chosen to limit problems
+///   involving overflow and similar edge cases.
+/// * Variant discriminators must be defined with integer literals. Expressions like `V = 1 + 1`
+///   are not currently supported.
 ///
 /// # Additional Impls
 ///
@@ -183,18 +191,16 @@ use crate::repr::EnumSetTypeRepr;
 ///   “FFI, Safety and `repr`”][EnumSet#ffi-safety-and-repr]. Allowed types are `u8`, `u16`, `u32`,
 ///   `u64` and `u128`. If this is not used, then the derive macro will choose a type to best fit
 ///   the enum, but there are no guarantees about which type will be chosen.
+/// * `#[enumset(repr = "array")]` forces the `EnumSet` of this type to be backed with an array,
+///   even if all the variants could fit into a primitive numeric type.
 ///
 /// When the `serde` feature is used, the following features may also be specified. These options
 /// may be used (with no effect) when building without the feature enabled:
 ///
-/// * `#[enumset(serialize_repr = "u8")]` may be used to specify the integer type used to serialize
-///   the underlying bitset. Any type allowed in the `repr` option may be used in this option.
-/// * `#[enumset(serialize_as_list)]` may be used to serialize the set as a list of enum variants
-///   instead of an integer. This requires [`Deserialize`] and [`Serialize`] be implemented on the
-///   enum.
-/// * `#[enumset(serialize_as_map)]` may be used to serialize the set as a map of enum variants to
-///   boolean values. A element is considered present in the set if the boolean value is `true`.
-///   This requires [`Deserialize`] and [`Serialize`] be implemented on the enum.
+/// * `#[enumset(serialize_repr = "…")]` may be used to override the way the `EnumSet` is
+///   serialized. Valid options are `u8`, `u16`, `u32`, `u64`, `list`, `map` and `array`. For more
+///   information, see the ["Serialization" section of the `EnumSet` documentation]
+///   (EnumSet#Serialization).
 /// * `#[enumset(serialize_deny_unknown)]` causes the generated deserializer to return an error
 ///   for unknown bits instead of silently ignoring them.
 ///
@@ -276,6 +282,12 @@ pub unsafe trait EnumSetTypeWithRepr:
 /// variant with a discriminator of `n` is stored in the `n + 1`th least significant bit
 /// (corresponding to a mask of e.g. `1 << enum as u32`).
 ///
+/// # Array representation
+///
+/// Sets with more than 128 variants are instead stored with an underlying array of `u64`s. This
+/// is treated as if it was a single large integer. The `n`th least significant bit of this integer
+/// is stored in the `n % 64`th least significant bit of the `n / 64`th element in the array.
+///
 /// # Serialization
 ///
 /// When the `serde` feature is enabled, `EnumSet`s can be serialized and deserialized using
@@ -283,24 +295,32 @@ pub unsafe trait EnumSetTypeWithRepr:
 /// on the enum type. These attributes are valid regardless of whether the `serde` feature
 /// is enabled.
 ///
-/// By default, `EnumSet`s serialize by directly writing out the underlying bitset as an integer
-/// of the smallest type that can fit in the underlying enum. You can add a
-/// `#[enumset(serialize_repr = "u8")]` attribute to your enum to control the integer type used
-/// for serialization. This can be important for avoiding unintentional breaking changes when
-/// `EnumSet`s are serialized with formats like `bincode`.
+/// By default, `EnumSet` is serialized by directly writing out a single integer containing the
+/// numeric representation of the bitset. The integer type used is the smallest one that can fit
+/// the largest variant in the enum. If no integer type is large enough, instead the `EnumSet` is
+/// serialized as an array of `u64`s containing the array representation.
 ///
-/// By default, unknown bits are ignored and silently removed from the bitset. To override thris
+/// The `#[enumset(serialize_repr = "…")]` attribute can be used to override the representation
+/// used. Valid values are as follows:
+///
+/// * `u8`, `u16`, `u32`, `u64`, and `u128` serialize the type as the corresponding integer type.
+/// * `array` serializes the set as an array of `u64`s corresponding to the array representation.
+/// * `list` serializes the set as a list of enum variants. This requires your enum type implement
+///   [`Serialize`] and [`Deserialize`].
+/// * `map` serializes the set as a map of enum variants to booleans. The set contains a value if
+///   the boolean is `true`. This requires your enum type implement `Serialize` and `Deserialize`.
+///
+/// The representation used is determined statically at compile time, and there is currently no
+/// support for reading different formats with the same deserializer.
+///
+/// By default, unknown bits are ignored and silently removed from the bitset. To override this
 /// behavior, you can add a `#[enumset(serialize_deny_unknown)]` attribute. This will cause
 /// deserialization to fail if an invalid bit is set.
 ///
-/// In addition, the `#[enumset(serialize_as_list)]` attribute causes the `EnumSet` to be
-/// instead serialized as a list of enum variants. This requires your enum type implement
-/// [`Serialize`] and [`Deserialize`]. Note that this is a breaking change.
-///
 /// # FFI, Safety and `repr`
 ///
-/// If an enum type `T` is annotated with [`#[enumset(repr = "R")]`][derive@EnumSetType#options],
-/// then several things happen:
+/// If an enum type `T` is annotated with [`#[enumset(repr = "…")]`][derive@EnumSetType#options]
+/// where `…` is a primitive integer type, then several things happen:
 ///
 /// * `T` will implement <code>[EnumSetTypeWithRepr]&lt;Repr = R&gt;</code> in addition to
 ///   [`EnumSetType`].
@@ -597,14 +617,13 @@ macro_rules! conversion_impls {
             $to:ident $try_to:ident $to_truncated:ident
         );)*
     ) => {
-        impl <T : EnumSetType> EnumSet<T> {$(
+        impl<T: EnumSetType> EnumSet<T> {$(
             #[doc = "Returns a `"]
             #[doc = $underlying_str]
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "` or contains bits that do not correspond to an enum variant, this method \
-                     will panic."]
+            #[doc = "`, this method will panic."]
             #[inline(always)]
             pub fn $to(&self) -> $underlying {
                 self.$try_to().expect("Bitset will not fit into this type.")
@@ -615,8 +634,7 @@ macro_rules! conversion_impls {
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "` or contains bits that do not correspond to an enum variant, this method \
-                     will instead return `None`."]
+            #[doc = "`, this method will panic."]
             #[inline(always)]
             pub fn $try_to(&self) -> Option<$underlying> {
                 EnumSetTypeRepr::$to_fn_opt(&self.__priv_repr)
@@ -627,8 +645,7 @@ macro_rules! conversion_impls {
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "`, this method will truncate any bits that don't fit or do not correspond \
-                     to an enum variant."]
+            #[doc = "`, this method will truncate any bits that don't fit."]
             #[inline(always)]
             pub fn $to_truncated(&self) -> $underlying {
                 EnumSetTypeRepr::$to_fn(&self.__priv_repr)
@@ -660,7 +677,7 @@ macro_rules! conversion_impls {
 
             #[doc = "Constructs a bitset from a `"]
             #[doc = $underlying_str]
-            #[doc = "`, ignoring invalid variants."]
+            #[doc = "`, ignoring bits that do not correspond to a variant."]
             #[inline(always)]
             pub fn $from_truncated(bits: $underlying) -> Self {
                 let mask = Self::all().$to_truncated();
@@ -709,6 +726,42 @@ conversion_impls! {
              from_usize to_usize from_usize_opt to_usize_opt,
              from_usize try_from_usize from_usize_truncated from_usize_unchecked,
              as_usize try_as_usize as_usize_truncated);
+}
+
+impl<T: EnumSetType> EnumSet<T> {
+    /// Returns an `[u64; O]` representing the elements of this set.
+    ///
+    /// If the underlying bitset will not fit in a `[u8; O]`, this method will panic.
+    pub fn as_u64_array<const O: usize>(&self) -> [u64; O] {
+        self.try_as_u64_array().expect("Bitset will not fit into this type.")
+    }
+
+    /// Returns an `[u64; O]` representing the elements of this set.
+    ///
+    /// If the underlying bitset will not fit in a `[u8; O]`, this method will instead return
+    /// `None`.
+    pub fn try_as_u64_array<const O: usize>(&self) -> Option<[u64; O]> {
+        self.__priv_repr.to_u64_array_opt()
+    }
+
+    /// Returns an `[u64; O]` representing the elements of this set.
+    ///
+    /// If the underlying bitset will not fit in a `[u8; O]`, this method will truncate any bits
+    /// that don't fit.
+    pub fn as_u64_array_truncated<const O: usize>(&self) -> [u64; O] {
+        self.__priv_repr.to_u64_array()
+    }
+
+    /*
+    fn from_u64_array<const O: usize>(v: [u64; O]) -> Self;
+    fn from_u64_array_opt<const O: usize>(v: [u64; O]) -> Option<Self>;
+
+    fn to_u64_slice(&self, out: &mut [u64]);
+    fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()>;
+
+    fn from_u64_slice(v: &[u64]) -> Self;
+    fn from_u64_slice_opt(v: &[u64]) -> Option<Self>;
+    */
 }
 
 impl<T: EnumSetType> Default for EnumSet<T> {

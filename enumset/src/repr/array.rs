@@ -50,6 +50,7 @@ impl<const N: usize> Not for ArrayRepr<N> {
 }
 
 impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
+    const PREFERRED_ARRAY_LEN: usize = N;
     const WIDTH: u32 = N as u32 * 64;
     const EMPTY: Self = ArrayRepr([0; N]);
 
@@ -198,5 +199,65 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     }
     fn to_usize_opt(&self) -> Option<usize> {
         self.to_u64_opt().and_then(|x| x.to_usize_opt())
+    }
+
+    fn to_u64_array<const O: usize>(&self) -> [u64; O] {
+        let mut array = [0; O];
+        let copy_len = if N < O { N } else { O };
+        array[..copy_len].copy_from_slice(&self.0[..copy_len]);
+        array
+    }
+    fn to_u64_array_opt<const O: usize>(&self) -> Option<[u64; O]> {
+        if N > O {
+            for i in N..O {
+                if self.0[i] != 0 {
+                    return None
+                }
+            }
+        }
+        Some(self.to_u64_array())
+    }
+
+    fn from_u64_array<const O: usize>(v: [u64; O]) -> Self {
+        ArrayRepr(ArrayRepr::<O>(v).to_u64_array::<N>())
+    }
+    fn from_u64_array_opt<const O: usize>(v: [u64; O]) -> Option<Self> {
+        ArrayRepr::<O>(v).to_u64_array_opt::<N>().map(ArrayRepr)
+    }
+
+    fn to_u64_slice(&self, out: &mut [u64]) {
+        let copy_len = if N < out.len() { N } else { out.len() };
+        out[..copy_len].copy_from_slice(&self.0[..copy_len]);
+        for i in copy_len..out.len() {
+            out[i] = 0;
+        }
+    }
+    fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()> {
+        if N > out.len() {
+            for i in N..out.len() {
+                if self.0[i] != 0 {
+                    return None
+                }
+            }
+        }
+        self.to_u64_slice(out);
+        Some(())
+    }
+
+    fn from_u64_slice(v: &[u64]) -> Self {
+        let mut new = ArrayRepr([0; N]);
+        let copy_len = if N < v.len() { N } else { v.len() };
+        new.0[..copy_len].copy_from_slice(&v[..copy_len]);
+        new
+    }
+    fn from_u64_slice_opt(v: &[u64]) -> Option<Self> {
+        if v.len() > N {
+            for i in N..v.len() {
+                if v[i] != 0 {
+                    return None
+                }
+            }
+        }
+        Some(Self::from_u64_slice(v))
     }
 }

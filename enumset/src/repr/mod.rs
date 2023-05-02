@@ -22,6 +22,7 @@ pub trait EnumSetTypeRepr :
     BitXor<Output = Self> +
     Not<Output = Self> +
 {
+    const PREFERRED_ARRAY_LEN: usize;
     const WIDTH: u32;
     const EMPTY: Self;
 
@@ -64,6 +65,18 @@ pub trait EnumSetTypeRepr :
     fn to_u64_opt(&self) -> Option<u64>;
     fn to_u128_opt(&self) -> Option<u128>;
     fn to_usize_opt(&self) -> Option<usize>;
+
+    fn to_u64_array<const O: usize>(&self) -> [u64; O];
+    fn to_u64_array_opt<const O: usize>(&self) -> Option<[u64; O]>;
+
+    fn from_u64_array<const O: usize>(v: [u64; O]) -> Self;
+    fn from_u64_array_opt<const O: usize>(v: [u64; O]) -> Option<Self>;
+
+    fn to_u64_slice(&self, out: &mut [u64]);
+    fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()>;
+
+    fn from_u64_slice(v: &[u64]) -> Self;
+    fn from_u64_slice_opt(v: &[u64]) -> Option<Self>;
 }
 
 pub use array::ArrayRepr;
