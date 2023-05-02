@@ -437,14 +437,12 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
     #[cfg(feature = "serde")]
     let serde_ops = match serde_repr {
         SerdeRepr::U8 | SerdeRepr::U16 | SerdeRepr::U32 | SerdeRepr::U64 | SerdeRepr::U128 => {
-            let (serialize_repr, from_opt, as_opt) = match serde_repr {
-                SerdeRepr::U8 => (quote! { u8 }, quote! { from_u8_opt }, quote! { as_u8_opt }),
-                SerdeRepr::U16 => (quote! { u16 }, quote! { from_u16_opt }, quote! { as_u16_opt }),
-                SerdeRepr::U32 => (quote! { u32 }, quote! { from_u32_opt }, quote! { as_u32_opt }),
-                SerdeRepr::U64 => (quote! { u64 }, quote! { from_u64_opt }, quote! { as_u64_opt }),
-                SerdeRepr::U128 => {
-                    (quote! { u128 }, quote! { from_u128_opt }, quote! { as_u128_opt })
-                }
+            let (serialize_repr, from_fn, to_fn) = match serde_repr {
+                SerdeRepr::U8 => (quote! { u8 }, quote! { from_u8 }, quote! { to_u8 }),
+                SerdeRepr::U16 => (quote! { u16 }, quote! { from_u16 }, quote! { to_u16 }),
+                SerdeRepr::U32 => (quote! { u32 }, quote! { from_u32 }, quote! { to_u32 }),
+                SerdeRepr::U64 => (quote! { u64 }, quote! { from_u64 }, quote! { to_u64 }),
+                SerdeRepr::U128 => (quote! { u128 }, quote! { from_u128 }, quote! { to_u128 }),
                 _ => unreachable!(),
             };
             let check_unknown = if info.serialize_deny_unknown {
@@ -463,18 +461,16 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
                 fn serialize<S: #serde::Serializer>(
                     set: #enumset::EnumSet<#name>, ser: S,
                 ) -> #core::result::Result<S::Ok, S::Error> {
-                    #serde::Serialize::serialize(&(set.__priv_repr as #serialize_repr), ser)
+                    let value =
+                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&set.__priv_repr);
+                    #serde::Serialize::serialize(&value, ser)
                 }
                 fn deserialize<'de, D: #serde::Deserializer<'de>>(
                     de: D,
                 ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
                     let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
-                    let value =
-                        match <#repr as #enumset::__internal::EnumSetTypeRepr>::#from_opt(value) {
-                            Some(x) => x,
-                            None => #core::unreachable!();
-                        };
                     #check_unknown
+                    let value = <#repr as #enumset::__internal::EnumSetTypeRepr>::#from_fn(value);
                     #core::prelude::v1::Ok(#enumset::EnumSet {
                         __priv_repr: value & #all_variants,
                     })
