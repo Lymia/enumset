@@ -3,7 +3,7 @@ use core::ops::*;
 
 /// An implementation of `EnumSetTypeRepr` based on an arbitrary size array.
 ///
-/// `N` **must** be `2` or higher, or else logic errors will occur.
+/// `N` **must** not be `0`, or else everything will break.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct ArrayRepr<const N: usize>(pub [u64; N]);
 impl<const N: usize> ArrayRepr<N> {
@@ -119,7 +119,9 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     fn from_u128(v: u128) -> Self {
         let mut new = Self([0; N]);
         new.0[0] = v as u64;
-        new.0[1] = (v >> 64) as u64;
+        if N != 1 {
+            new.0[1] = (v >> 64) as u64;
+        }
         new
     }
     fn from_usize(v: usize) -> Self {
@@ -139,7 +141,11 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         Some(Self::from_u64(v))
     }
     fn from_u128_opt(v: u128) -> Option<Self> {
-        Some(Self::from_u128(v))
+        if N == 1 && (v >> 64) != 0 {
+            None
+        } else {
+            Some(Self::from_u128(v))
+        }
     }
     fn from_usize_opt(v: usize) -> Option<Self> {
         Some(Self::from_usize(v))
@@ -158,7 +164,8 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         self.0[0]
     }
     fn to_u128(&self) -> u128 {
-        self.0[0] as u128 | ((self.0[0] as u128) << 64)
+        let hi = if N == 1 { 0 } else { (self.0[1] as u128) << 64 };
+        self.0[0] as u128 | hi
     }
     fn to_usize(&self) -> usize {
         self.to_u64().to_usize()

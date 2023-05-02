@@ -78,6 +78,26 @@ pub enum ReprEnum4 {
 pub enum GiantEnum {
     A = 100, B = 200, C = 300, D = 400, E = 500, F = 600, G = 700, H = 800,
 }
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "array")]
+pub enum SmallArrayEnum {
+    A, B, C, D, E, F, G, H
+}
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "array")]
+pub enum MarginalArrayEnumS2 {
+    A, B, C, D, E, F, G, H, Marginal = 64,
+}
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "array")]
+pub enum MarginalArrayEnumS2H {
+    A = 64, B, C, D, E, F, G, H, Marginal = 127,
+}
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "array")]
+pub enum MarginalArrayEnumS3 {
+    A, B, C, D, E, F, G, H, Marginal = 128,
+}
 
 macro_rules! test_variants {
     ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
@@ -405,6 +425,10 @@ tests!(repr_enum_u64, test_enum!(ReprEnum2, 4));
 tests!(repr_enum_isize, test_enum!(ReprEnum3, 4));
 tests!(repr_enum_c, test_enum!(ReprEnum4, 4));
 tests!(giant_enum, test_enum!(GiantEnum, 104));
+tests!(small_array_enum, test_enum!(SmallArrayEnum, 8));
+tests!(marginal_array_enum_s2, test_enum!(MarginalArrayEnumS2, 16));
+tests!(marginal_array_enum_s2h, test_enum!(MarginalArrayEnumS2H, 16));
+tests!(marginal_array_enum_s3, test_enum!(MarginalArrayEnumS3, 24));
 
 #[derive(EnumSetType, Debug)]
 pub enum ThresholdEnum {
