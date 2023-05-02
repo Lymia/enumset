@@ -667,7 +667,7 @@ macro_rules! conversion_impls {
             #[inline(always)]
             pub fn $try_from(bits: $underlying) -> Option<Self> {
                 let bits = T::Repr::$from_fn_opt(bits);
-                let mask = Self::all().__priv_repr;
+                let mask = T::ALL_BITS;
                 bits.and_then(|bits| if bits.and_not(mask).is_empty() {
                     Some(EnumSet { __priv_repr: bits })
                 } else {
@@ -732,15 +732,15 @@ impl<T: EnumSetType> EnumSet<T> {
     /// Returns an `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u8; O]`, this method will panic.
-    pub fn as_u64_array<const O: usize>(&self) -> [u64; O] {
-        self.try_as_u64_array().expect("Bitset will not fit into this type.")
+    pub fn as_array<const O: usize>(&self) -> [u64; O] {
+        self.try_as_array().expect("Bitset will not fit into this type.")
     }
 
     /// Returns an `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u8; O]`, this method will instead return
     /// `None`.
-    pub fn try_as_u64_array<const O: usize>(&self) -> Option<[u64; O]> {
+    pub fn try_as_array<const O: usize>(&self) -> Option<[u64; O]> {
         self.__priv_repr.to_u64_array_opt()
     }
 
@@ -748,20 +748,87 @@ impl<T: EnumSetType> EnumSet<T> {
     ///
     /// If the underlying bitset will not fit in a `[u8; O]`, this method will truncate any bits
     /// that don't fit.
-    pub fn as_u64_array_truncated<const O: usize>(&self) -> [u64; O] {
+    pub fn as_array_truncated<const O: usize>(&self) -> [u64; O] {
         self.__priv_repr.to_u64_array()
     }
 
-    /*
-    fn from_u64_array<const O: usize>(v: [u64; O]) -> Self;
-    fn from_u64_array_opt<const O: usize>(v: [u64; O]) -> Option<Self>;
+    /// Attempts to constructs a bitset from a `[u64; O]`.
+    ///
+    /// If a bit that doesn't correspond to an enum variant is set, this method will panic.
+    pub fn from_array<const O: usize>(v: [u64; O]) -> Self {
+        Self::try_from_array(v).expect("Bitset contains invalid variants.")
+    }
 
-    fn to_u64_slice(&self, out: &mut [u64]);
-    fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()>;
+    /// Attempts to constructs a bitset from a `[u64; O]`.
+    ///
+    /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
+    pub fn try_from_array<const O: usize>(bits: [u64; O]) -> Option<Self> {
+        let bits = T::Repr::from_u64_array_opt::<O>(bits);
+        let mask = T::ALL_BITS;
+        bits.and_then(|bits| if bits.and_not(mask).is_empty() {
+            Some(EnumSet { __priv_repr: bits })
+        } else {
+            None
+        })
+    }
 
-    fn from_u64_slice(v: &[u64]) -> Self;
-    fn from_u64_slice_opt(v: &[u64]) -> Option<Self>;
-    */
+    /// Constructs a bitset from a `[u64; O]`, ignoring bits that do not correspond to a variant.
+    pub fn from_array_truncated<const O: usize>(bits: [u64; O]) -> Self {
+        let bits = T::Repr::from_u64_array(bits) & T::ALL_BITS;
+        EnumSet { __priv_repr: bits }
+    }
+
+    /// Constructs a bitset from a `[u64; O]`, without checking for invalid bits.
+    ///
+    /// # Safety
+    ///
+    /// All bits in the provided parameter `bits` that don't correspond to an enum variant
+    /// of `T` must be set to `0`. Behavior is **undefined** if any of these bits are set
+    /// to `1`.
+    #[inline(always)]
+    pub unsafe fn from_array_unchecked<const O: usize>(bits: [u64; O]) -> Self {
+        EnumSet { __priv_repr: T::Repr::from_u64_array(bits) }
+    }
+
+    // TODO: Conversions to vec/read to slice
+
+    /// Attempts to constructs a bitset from a `&[u64]`.
+    ///
+    /// If a bit that doesn't correspond to an enum variant is set, this method will panic.
+    pub fn from_slice(v: &[u64]) -> Self {
+        Self::try_from_slice(v).expect("Bitset contains invalid variants.")
+    }
+
+    /// Attempts to constructs a bitset from a `&[u64]`.
+    ///
+    /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
+    pub fn try_from_slice(bits: &[u64]) -> Option<Self> {
+        let bits = T::Repr::from_u64_slice_opt(bits);
+        let mask = T::ALL_BITS;
+        bits.and_then(|bits| if bits.and_not(mask).is_empty() {
+            Some(EnumSet { __priv_repr: bits })
+        } else {
+            None
+        })
+    }
+
+    /// Constructs a bitset from a `&[u64]`, ignoring bits that do not correspond to a variant.
+    pub fn from_slice_truncated<const O: usize>(bits: &[u64]) -> Self {
+        let bits = T::Repr::from_u64_slice(bits) & T::ALL_BITS;
+        EnumSet { __priv_repr: bits }
+    }
+
+    /// Constructs a bitset from a `&[u64]`, without checking for invalid bits.
+    ///
+    /// # Safety
+    ///
+    /// All bits in the provided parameter `bits` that don't correspond to an enum variant
+    /// of `T` must be set to `0`. Behavior is **undefined** if any of these bits are set
+    /// to `1`.
+    #[inline(always)]
+    pub unsafe fn from_slice_unchecked<const O: usize>(bits: &[u64]) -> Self {
+        EnumSet { __priv_repr: T::Repr::from_u64_slice(bits) }
+    }
 }
 
 impl<T: EnumSetType> Default for EnumSet<T> {

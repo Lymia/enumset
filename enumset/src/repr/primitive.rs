@@ -190,6 +190,11 @@ macro_rules! prim {
                     } else if O == 1 {
                         Self::from_u64_opt(v[0])
                     } else {
+                        for i in 2..O {
+                            if v[i] != 0 {
+                                return None
+                            }
+                        }
                         Self::from_u128_opt(v[0] as u128 | ((v[1] as u128) << 64))
                     }
                 }
@@ -235,6 +240,11 @@ macro_rules! prim {
                     } else if v.len() == 1 {
                         Self::from_u64_opt(v[0])
                     } else {
+                        for i in 2..v.len() {
+                            if v[i] != 0 {
+                                return None
+                            }
+                        }
                         Self::from_u128_opt(v[0] as u128 | ((v[1] as u128) << 64))
                     }
                 }
