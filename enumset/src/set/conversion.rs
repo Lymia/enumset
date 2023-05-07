@@ -260,7 +260,7 @@ impl<T: EnumSetType> EnumSet<T> {
 
     /// Returns a `Vec<u64>` representing the elements of this set.
     #[cfg(feature = "alloc")]
-    pub fn to_vec(&self) -> alloc::Vec<u64> {
+    pub fn to_vec(&self) -> alloc::vec::Vec<u64> {
         let mut vec = alloc::vec![0; T::Repr::PREFERRED_ARRAY_LEN];
         self.__priv_repr.to_u64_slice(&mut vec);
         vec

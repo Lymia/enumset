@@ -1,9 +1,6 @@
 /// Everything in this module is internal API and may change at any time.
 #[doc(hidden)]
 pub mod __internal {
-    #[cfg(feature = "serde")]
-    use crate::{EnumSet, EnumSetType};
-
     /// A reexport of core to allow our macros to be generic to std vs core.
     pub use ::core as core_export;
 

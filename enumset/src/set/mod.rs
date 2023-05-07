@@ -54,7 +54,7 @@ use {
 /// used. Valid values are as follows:
 ///
 /// * `u8`, `u16`, `u32`, `u64`, and `u128` serialize the type as the corresponding integer type.
-/// * `array` serializes the set as an array of `u64`s corresponding to the array representation.
+/// * `array` serializes the set as an list of `u64`s corresponding to the array representation.
 /// * `list` serializes the set as a list of enum variants. This requires your enum type implement
 ///   [`Serialize`] and [`Deserialize`].
 /// * `map` serializes the set as a map of enum variants to booleans. The set contains a value if
