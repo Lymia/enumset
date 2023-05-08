@@ -22,7 +22,7 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: test
-        args: ${{ matrix.args }}
+        args: -p enumset ${{ matrix.args }}
   build_no_std:
     runs-on: ubuntu-latest
     steps:
