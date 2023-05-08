@@ -833,33 +833,35 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
 
     let mut generated_warnings = SynTokenStream::new();
     for (span, warning) in warnings {
-        let ident = Ident::new(warning, span.clone());
         generated_warnings.extend(quote_spanned! {
-            span =>
-            #internal::#ident();
+            span => {
+                #[deprecated(note = #warning)]
+                #[allow(non_upper_case_globals)]
+                const _w: () = ();
+                let _ = _w;
+            }
         });
     }
 
     quote! {
+        #[automatically_derived]
+        unsafe impl #internal::EnumSetTypePrivate for #name {
+            type Repr = #repr;
+            const ALL_BITS: Self::Repr = #all_variants;
+            #into_impl
+            #serde_ops
+        }
+
+        #[automatically_derived]
+        unsafe impl #enumset::EnumSetType for #name { }
+
+        #impl_with_repr
+        #super_impls
+        #inherent_impl_blocks
+
+        #ops
+
         const _: () = {
-            #[automatically_derived]
-            unsafe impl #internal::EnumSetTypePrivate for #name {
-                type Repr = #repr;
-                const ALL_BITS: Self::Repr = #all_variants;
-                #into_impl
-                #serde_ops
-            }
-
-            #[automatically_derived]
-            unsafe impl #enumset::EnumSetType for #name { }
-
-            #impl_with_repr
-            #super_impls
-            #inherent_impl_blocks
-
-            #ops
-
-            #[allow(unused)]
             fn __enumset_derive__generated_warnings() {
                 #generated_warnings
             }
@@ -918,12 +920,20 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
         }
         if *attrs.serialize_as_map {
             info.explicit_serde_repr = Some(SerdeRepr::Map);
-            warnings.push((attrs.serialize_as_map.span(), "serialize_as_map_deprecation"));
+            warnings.push((
+                attrs.serialize_as_map.span(),
+                "#[enumset(serialize_as_map)] is deprecated. \
+                 Use `#[enumset(serialize_repr = \"map\")]` instead.",
+            ));
         }
         if *attrs.serialize_as_list {
             // in old versions, serialize_as_list will override serialize_as_map
             info.explicit_serde_repr = Some(SerdeRepr::List);
-            warnings.push((attrs.serialize_as_list.span(), "serialize_as_list_deprecation"));
+            warnings.push((
+                attrs.serialize_as_list.span(),
+                "#[enumset(serialize_as_list)] is deprecated. \
+                 Use `#[enumset(serialize_repr = \"list\")]` instead.",
+            ));
         }
 
         // Parse enum variants
