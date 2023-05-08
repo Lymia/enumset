@@ -21,6 +21,7 @@ pub enum SmallEnumExplicitDerive {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 #[derive(EnumSetType, Debug)]
+#[enumset(repr = "u128")]
 pub enum LargeEnum {
     _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
     _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,

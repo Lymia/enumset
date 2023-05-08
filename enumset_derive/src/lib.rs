@@ -251,9 +251,6 @@ impl EnumSetInfo {
                     x if x < 16 && !self.internal_repr_force_array => InternalRepr::U16,
                     x if x < 32 && !self.internal_repr_force_array => InternalRepr::U32,
                     x if x < 64 && !self.internal_repr_force_array => InternalRepr::U64,
-                    // It'd be better to use array for this, but that would break `enum_set!()`.
-                    // Can remove this branch if there's ever a 2.0
-                    x if x < 128 && !self.internal_repr_force_array => InternalRepr::U128,
                     x => InternalRepr::Array((x as usize + 64) / 64),
                 }
             }
