@@ -23,6 +23,10 @@ serde = ["serde2", "enumset_derive/serde"]
 alloc = []
 std = ["alloc", "enumset_derive/proc-macro-crate"]
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [dependencies]
 enumset_derive = { version = "0.7.0", path = "../enumset_derive" }
 serde2 = { package = "serde", version = "1", default-features = false, optional = true }

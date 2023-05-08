@@ -245,15 +245,13 @@ impl EnumSetInfo {
     fn internal_repr(&self) -> InternalRepr {
         match self.explicit_internal_repr {
             Some(x) => x,
-            None => {
-                match self.max_discrim {
-                    x if x < 8 && !self.internal_repr_force_array => InternalRepr::U8,
-                    x if x < 16 && !self.internal_repr_force_array => InternalRepr::U16,
-                    x if x < 32 && !self.internal_repr_force_array => InternalRepr::U32,
-                    x if x < 64 && !self.internal_repr_force_array => InternalRepr::U64,
-                    x => InternalRepr::Array((x as usize + 64) / 64),
-                }
-            }
+            None => match self.max_discrim {
+                x if x < 8 && !self.internal_repr_force_array => InternalRepr::U8,
+                x if x < 16 && !self.internal_repr_force_array => InternalRepr::U16,
+                x if x < 32 && !self.internal_repr_force_array => InternalRepr::U32,
+                x if x < 64 && !self.internal_repr_force_array => InternalRepr::U64,
+                x => InternalRepr::Array((x as usize + 64) / 64),
+            },
         }
     }
 

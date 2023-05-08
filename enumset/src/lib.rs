@@ -2,6 +2,7 @@
 #![deny(missing_docs)]
 // The safety requirement is "use the procedural derive".
 #![allow(clippy::missing_safety_doc)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! A library for defining enums that can be used in compact bit sets. It supports arbitrarily
 //! large enums, and has very basic support for using them in constants.

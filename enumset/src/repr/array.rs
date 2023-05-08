@@ -283,12 +283,7 @@ impl<const N: usize> ArrayIter<N> {
         for i in 0..N {
             new[i] = PrimitiveIter(array.0[i])
         }
-        ArrayIter {
-            data: new,
-            done: false,
-            idx_f: 0,
-            idx_r: N - 1,
-        }
+        ArrayIter { data: new, done: false, idx_f: 0, idx_r: N - 1 }
     }
 }
 
@@ -301,7 +296,7 @@ impl<const N: usize> Iterator for ArrayIter<N> {
         }
         while self.idx_f <= self.idx_r {
             if let Some(x) = self.data[self.idx_f].next() {
-                return Some(self.idx_f as u32 * 64 + x)
+                return Some(self.idx_f as u32 * 64 + x);
             } else {
                 self.idx_f += 1;
             }
@@ -326,10 +321,10 @@ impl<const N: usize> DoubleEndedIterator for ArrayIter<N> {
         }
         while self.idx_f <= self.idx_r {
             if let Some(x) = self.data[self.idx_r].next_back() {
-                return Some(self.idx_r as u32 * 64 + x)
+                return Some(self.idx_r as u32 * 64 + x);
             } else {
                 if self.idx_r == 0 {
-                    break
+                    break;
                 }
                 self.idx_r -= 1;
             }
