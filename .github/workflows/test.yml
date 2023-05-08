@@ -24,6 +24,7 @@ jobs:
         command: test
         args: ${{ matrix.args }}
   build_no_std:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - uses: actions-rs/toolchain@v1
