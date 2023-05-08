@@ -1,0 +1,9 @@
+[package]
+name = "enumset_test_no_std"
+version = "0.0.0"
+edition = "2021"
+
+description = "DO NOT PUBLISH"
+
+[dependencies]
+enumset = { path = "../enumset" }

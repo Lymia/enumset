@@ -23,3 +23,16 @@ jobs:
       with:
         command: test
         args: ${{ matrix.args }}
+  build_no_std:
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        target: thumbv6m-none-eabi
+        default: true
+    - uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --target thumbv6m-none-eabi -p enumset_test_no_std
