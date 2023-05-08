@@ -13,6 +13,14 @@ pub mod __internal {
         repr::{ArrayRepr, EnumSetTypeRepr},
         traits::EnumSetTypePrivate,
     };
+
+    #[deprecated = "#[enumset(serialize_as_list)] is deprecated. Use \
+                    `#[enumset(serialize_repr = \"list\")]` instead."]
+    pub fn serialize_as_list_deprecation() {}
+
+    #[deprecated = "#[enumset(serialize_as_map)] is deprecated. Use \
+                    `#[enumset(serialize_repr = \"list\")]` instead."]
+    pub fn serialize_as_map_deprecation() {}
 }
 
 /// Creates a EnumSet literal, which can be used in const contexts.

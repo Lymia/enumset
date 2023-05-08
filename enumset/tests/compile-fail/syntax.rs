@@ -31,12 +31,6 @@ enum InvalidRepr {
 }
 
 #[derive(EnumSetType)]
-#[enumset(serialize_repr = "u8", serialize_as_list)]
-enum MultipleSerdeReprList {
-    Variant,
-}
-
-#[derive(EnumSetType)]
 #[enumset(serialize_repr = "abcdef")]
 enum InvalidSerdeRepr {
     Variant,

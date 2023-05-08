@@ -24,14 +24,8 @@ error: `abcdef` is not a valid internal enumset representation.
 28 | #[enumset(repr = "abcdef")]
    |                  ^^^^^^^^
 
-error: Cannot have multiple attributes that change the serialization repr.
-  --> tests/compile-fail/syntax.rs:34:34
-   |
-34 | #[enumset(serialize_repr = "u8", serialize_as_list)]
-   |                                  ^^^^^^^^^^^^^^^^^
-
 error: `abcdef` is not a valid serialized representation.
-  --> tests/compile-fail/syntax.rs:40:28
+  --> tests/compile-fail/syntax.rs:34:28
    |
-40 | #[enumset(serialize_repr = "abcdef")]
+34 | #[enumset(serialize_repr = "abcdef")]
    |                            ^^^^^^^^

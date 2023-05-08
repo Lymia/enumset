@@ -166,29 +166,20 @@ impl EnumSetInfo {
         }
     }
 
-    /// Explicitly sets the serde representation of the enumset.
-    fn push_explicit_serde_repr(&mut self, span: Span, serde_repr: SerdeRepr) -> Result<()> {
-        if self.explicit_serde_repr.is_some() {
-            error(span, "Cannot have multiple attributes that change the serialization repr.")
-        } else {
-            self.explicit_serde_repr = Some(serde_repr);
-            Ok(())
-        }
-    }
-
     /// Explicits sets the serde representation of the enumset from a string.
     fn push_serialize_repr(&mut self, span: Span, ty: &str) -> Result<()> {
         match ty {
-            "u8" => self.push_explicit_serde_repr(span, SerdeRepr::U8),
-            "u16" => self.push_explicit_serde_repr(span, SerdeRepr::U16),
-            "u32" => self.push_explicit_serde_repr(span, SerdeRepr::U32),
-            "u64" => self.push_explicit_serde_repr(span, SerdeRepr::U64),
-            "u128" => self.push_explicit_serde_repr(span, SerdeRepr::U128),
-            "list" => self.push_explicit_serde_repr(span, SerdeRepr::List),
-            "map" => self.push_explicit_serde_repr(span, SerdeRepr::Map),
-            "array" => self.push_explicit_serde_repr(span, SerdeRepr::Array),
-            _ => error(span, format!("`{}` is not a valid serialized representation.", ty)),
+            "u8" => self.explicit_serde_repr = Some(SerdeRepr::U8),
+            "u16" => self.explicit_serde_repr = Some(SerdeRepr::U16),
+            "u32" => self.explicit_serde_repr = Some(SerdeRepr::U32),
+            "u64" => self.explicit_serde_repr = Some(SerdeRepr::U64),
+            "u128" => self.explicit_serde_repr = Some(SerdeRepr::U128),
+            "list" => self.explicit_serde_repr = Some(SerdeRepr::List),
+            "map" => self.explicit_serde_repr = Some(SerdeRepr::Map),
+            "array" => self.explicit_serde_repr = Some(SerdeRepr::Array),
+            _ => error(span, format!("`{}` is not a valid serialized representation.", ty))?,
         }
+        Ok(())
     }
 
     /// Explicitly sets the representation of the enumset from a string.
@@ -328,7 +319,7 @@ impl EnumSetInfo {
 }
 
 /// Generates the actual `EnumSetType` impl.
-fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
+fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) -> SynTokenStream {
     let name = &info.name;
 
     let enumset = match &info.crate_name {
@@ -393,36 +384,42 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         quote! {}
     } else {
         quote! {
-            impl <O : Into<#typed_enumset>> #core::ops::Sub<O> for #name {
+            #[automatically_derived]
+            impl<O: Into<#typed_enumset>> #core::ops::Sub<O> for #name {
                 type Output = #typed_enumset;
                 fn sub(self, other: O) -> Self::Output {
                     #enumset::EnumSet::only(self) - other.into()
                 }
             }
-            impl <O : Into<#typed_enumset>> #core::ops::BitAnd<O> for #name {
+            #[automatically_derived]
+            impl<O: Into<#typed_enumset>> #core::ops::BitAnd<O> for #name {
                 type Output = #typed_enumset;
                 fn bitand(self, other: O) -> Self::Output {
                     #enumset::EnumSet::only(self) & other.into()
                 }
             }
-            impl <O : Into<#typed_enumset>> #core::ops::BitOr<O> for #name {
+            #[automatically_derived]
+            impl<O: Into<#typed_enumset>> #core::ops::BitOr<O> for #name {
                 type Output = #typed_enumset;
                 fn bitor(self, other: O) -> Self::Output {
                     #enumset::EnumSet::only(self) | other.into()
                 }
             }
-            impl <O : Into<#typed_enumset>> #core::ops::BitXor<O> for #name {
+            #[automatically_derived]
+            impl<O: Into<#typed_enumset>> #core::ops::BitXor<O> for #name {
                 type Output = #typed_enumset;
                 fn bitxor(self, other: O) -> Self::Output {
                     #enumset::EnumSet::only(self) ^ other.into()
                 }
             }
+            #[automatically_derived]
             impl #core::ops::Not for #name {
                 type Output = #typed_enumset;
                 fn not(self) -> Self::Output {
                     !#enumset::EnumSet::only(self)
                 }
             }
+            #[automatically_derived]
             impl #core::cmp::PartialEq<#typed_enumset> for #name {
                 fn eq(&self, other: &#typed_enumset) -> bool {
                     #enumset::EnumSet::only(*self) == *other
@@ -723,24 +720,29 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         quote! {}
     } else {
         quote! {
+            #[automatically_derived]
             impl #core::cmp::PartialEq for #name {
                 fn eq(&self, other: &Self) -> bool {
                     #eq_impl
                 }
             }
+            #[automatically_derived]
             impl #core::cmp::Eq for #name { }
+            #[automatically_derived]
             #[allow(clippy::expl_impl_clone_on_copy)]
             impl #core::clone::Clone for #name {
                 fn clone(&self) -> Self {
                     *self
                 }
             }
+            #[automatically_derived]
             impl #core::marker::Copy for #name { }
         }
     };
 
     let impl_with_repr = if info.explicit_internal_repr.is_some() {
         quote! {
+            #[automatically_derived]
             unsafe impl #enumset::EnumSetTypeWithRepr for #name {
                 type Repr = #repr;
             }
@@ -762,6 +764,8 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
             };
 
             quote! {
+                #[automatically_derived]
+                #[doc(hidden)]
                 impl #name {
                     /// Creates a new enumset with only this variant.
                     #[deprecated(note = "This method is an internal implementation detail \
@@ -789,6 +793,8 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         }
         InternalRepr::Array(size) => {
             quote! {
+                #[automatically_derived]
+                #[doc(hidden)]
                 impl #name {
                     /// Creates a new enumset with only this variant.
                     #[deprecated(note = "This method is an internal implementation detail \
@@ -825,21 +831,41 @@ fn enum_set_type_impl(info: EnumSetInfo) -> SynTokenStream {
         }
     };
 
+    let mut generated_warnings = SynTokenStream::new();
+    for (span, warning) in warnings {
+        let ident = Ident::new(warning, span.clone());
+        generated_warnings.extend(quote_spanned! {
+            span =>
+            #internal::#ident();
+        });
+    }
+
     quote! {
-        unsafe impl #internal::EnumSetTypePrivate for #name {
-            type Repr = #repr;
-            const ALL_BITS: Self::Repr = #all_variants;
-            #into_impl
-            #serde_ops
-        }
+        const _: () = {
+            #[automatically_derived]
+            unsafe impl #internal::EnumSetTypePrivate for #name {
+                type Repr = #repr;
+                const ALL_BITS: Self::Repr = #all_variants;
+                #into_impl
+                #serde_ops
+            }
 
-        unsafe impl #enumset::EnumSetType for #name { }
+            #[automatically_derived]
+            unsafe impl #enumset::EnumSetType for #name { }
 
-        #impl_with_repr
-        #super_impls
-        #inherent_impl_blocks
+            #impl_with_repr
+            #super_impls
+            #inherent_impl_blocks
 
-        #ops
+            #ops
+
+            #[allow(unused)]
+            fn __enumset_derive__generated_warnings() {
+                #generated_warnings
+            }
+
+            ()
+        };
     }
 }
 
@@ -863,6 +889,7 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
         )
     } else if let Data::Enum(data) = &input.data {
         let mut info = EnumSetInfo::new(&input, &attrs);
+        let mut warnings = Vec::new();
 
         // Check enum repr
         for attr in &input.attrs {
@@ -889,12 +916,14 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
         if let Some(serialize_repr) = &*attrs.serialize_repr {
             info.push_serialize_repr(attrs.serialize_repr.span(), serialize_repr)?;
         }
-        // FIXME: Compatbility - last version allows serialize_as_list + serialize_as_map whoops.
-        if *attrs.serialize_as_list {
-            info.push_explicit_serde_repr(attrs.serialize_as_list.span(), SerdeRepr::List)?;
-        }
         if *attrs.serialize_as_map {
-            info.push_explicit_serde_repr(attrs.serialize_as_map.span(), SerdeRepr::Map)?;
+            info.explicit_serde_repr = Some(SerdeRepr::Map);
+            warnings.push((attrs.serialize_as_map.span(), "serialize_as_map_deprecation"));
+        }
+        if *attrs.serialize_as_list {
+            // in old versions, serialize_as_list will override serialize_as_map
+            info.explicit_serde_repr = Some(SerdeRepr::List);
+            warnings.push((attrs.serialize_as_list.span(), "serialize_as_list_deprecation"));
         }
 
         // Parse enum variants
@@ -906,7 +935,7 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
         info.validate()?;
 
         // Generates the actual `EnumSetType` implementation
-        Ok(enum_set_type_impl(info).into())
+        Ok(enum_set_type_impl(info, warnings).into())
     } else {
         error(input.span(), "`#[derive(EnumSetType)]` may only be used on enums")
     }
