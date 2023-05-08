@@ -82,6 +82,7 @@
 //! assert_eq!(set, Enum::A | Enum::E | Enum::G);
 //! ```
 
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
 mod macros;
