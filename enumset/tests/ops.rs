@@ -226,6 +226,13 @@ macro_rules! test_enum {
         }
 
         #[test]
+        fn empty_iter_test() {
+            for _ in EnumSet::<$e>::new() {
+                panic!("should not happen");
+            }
+        }
+
+        #[test]
         fn iter_ordering_test() {
             let set_a = $e::A | $e::B | $e::E;
             let vec_a: Vec<_> = set_a.iter().collect();
@@ -242,17 +249,34 @@ macro_rules! test_enum {
 
         fn check_iter_size_hint(set: EnumSet<$e>) {
             let count = set.len();
-            let mut itr = set.iter();
-            for idx in 0 .. count {
-                assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
-                assert_eq!(itr.len(), count-idx);
-                assert!(itr.next().is_some());
+
+            // check for forward iteration
+            {
+                let mut itr = set.iter();
+                for idx in 0 .. count {
+                    assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                    assert_eq!(itr.len(), count-idx);
+                    assert!(itr.next().is_some());
+                }
+                assert_eq!(itr.size_hint(), (0, Some(0)));
+                assert_eq!(itr.len(), 0);
             }
-            assert_eq!(itr.size_hint(), (0, Some(0)));
-            assert_eq!(itr.len(), 0);
+
+            // check for backwards iteration
+            {
+                let mut itr = set.iter().rev();
+                for idx in 0 .. count {
+                    assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                    assert_eq!(itr.len(), count-idx);
+                    assert!(itr.next().is_some());
+                }
+                assert_eq!(itr.size_hint(), (0, Some(0)));
+                assert_eq!(itr.len(), 0);
+            }
         }
         #[test]
         fn test_iter_size_hint() {
+            check_iter_size_hint(EnumSet::<$e>::new());
             check_iter_size_hint(EnumSet::<$e>::all());
             let mut set = EnumSet::new();
             set.insert($e::A);

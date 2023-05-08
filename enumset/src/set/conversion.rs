@@ -314,7 +314,7 @@ impl<T: EnumSetType> EnumSet<T> {
     }
 
     /// Constructs a bitset from a `&[u64]`, ignoring bits that do not correspond to a variant.
-    pub fn from_slice_truncated<const O: usize>(bits: &[u64]) -> Self {
+    pub fn from_slice_truncated(bits: &[u64]) -> Self {
         let bits = T::Repr::from_u64_slice(bits) & T::ALL_BITS;
         EnumSet { __priv_repr: bits }
     }
@@ -327,7 +327,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// of `T` must be set to `0`. Behavior is **undefined** if any of these bits are set
     /// to `1`.
     #[inline(always)]
-    pub unsafe fn from_slice_unchecked<const O: usize>(bits: &[u64]) -> Self {
+    pub unsafe fn from_slice_unchecked(bits: &[u64]) -> Self {
         EnumSet { __priv_repr: T::Repr::from_u64_slice(bits) }
     }
 }
