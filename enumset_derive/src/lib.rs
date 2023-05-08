@@ -843,11 +843,15 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
         });
     }
 
+    let bit_width = info.max_discrim + 1;
+    let variant_count = info.variants.len() as u32;
     quote! {
         #[automatically_derived]
         unsafe impl #internal::EnumSetTypePrivate for #name {
             type Repr = #repr;
             const ALL_BITS: Self::Repr = #all_variants;
+            const BIT_WIDTH: u32 = #bit_width;
+            const VARIANT_COUNT: u32 = #variant_count;
             #into_impl
             #serde_ops
         }

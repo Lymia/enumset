@@ -172,7 +172,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
     #[inline(always)]
     pub fn bit_width() -> u32 {
-        T::Repr::WIDTH - T::ALL_BITS.leading_zeros()
+        T::BIT_WIDTH
     }
 
     /// The number of valid variants that this type can contain.
@@ -181,7 +181,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
     #[inline(always)]
     pub fn variant_count() -> u32 {
-        T::ALL_BITS.count_ones()
+        T::VARIANT_COUNT
     }
 
     /// Returns the number of elements in this set.

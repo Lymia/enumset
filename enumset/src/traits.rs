@@ -38,6 +38,10 @@ pub unsafe trait EnumSetTypePrivate {
     type Repr: EnumSetTypeRepr;
     /// A mask of bits that are valid in the bitset.
     const ALL_BITS: Self::Repr;
+    /// The largest bit used in the bitset.
+    const BIT_WIDTH: u32;
+    /// The number of variants in the bitset.
+    const VARIANT_COUNT: u32;
 
     /// Converts an enum of this type into its bit position.
     fn enum_into_u32(self) -> u32;
