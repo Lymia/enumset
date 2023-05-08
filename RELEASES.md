@@ -1,3 +1,7 @@
+# Version 1.1.1 (2023-05-08)
+* Fix issue where `enumset` did not build correctly for no_std programs that
+  did not use `alloc`. (Thanks @shamchak808)
+
 # Version 1.1.0 (2023-05-08)
 * Removed the previous 128 variant limit, allowing for enumsets that are
   backed by an array rather than a single integer.
