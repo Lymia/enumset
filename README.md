@@ -8,6 +8,8 @@
 A library for defining enums that can be used in compact bit sets.
 It supports enums up to 128 variants, and has a macro to use these sets in constants.
 
+Supports `serde` and `#[no_std]` environments.
+
 See [the documentation](https://docs.rs/enumset) for more information.
 
 # License

@@ -1,3 +1,18 @@
+# Version 1.1.0 (2023-05-08)
+* Removed the previous 128 variant limit, allowing for enumsets that are
+  backed by an array rather than a single integer.
+* Added `as_array`, `from_array`, `from_slice`, and `copy_into_slice` 
+  functions to `EnumSet<T>`. In addition, `*_truncated` and `try_*` versions
+  of all these functions exist.
+* Added a `to_vec` function that returns the same data as the array/slice
+  based functions. This requires the `alloc` feature.
+* Added an `EnumSet::<T>::EMPTY` constant to help with initializing empty
+  sets in constant contexts.
+* Deprecated `#[enumset(serialize_as_list)]` in favor of
+  `#[enumset(serialize_repr = "list")]`.
+* Deprecated `#[enumset(serialize_as_map)]` in favor of
+  `#[enumset(serialize_repr = "map")]`.
+
 # Version 1.0.13 (2023-05-01)
 * Updated darling to version 0.20 and syn to version 2.0.
 * Added a new `#[enumset(serialize_as_map)]` attribute to allow serializing

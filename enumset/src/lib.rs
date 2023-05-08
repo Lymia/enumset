@@ -7,7 +7,10 @@
 //! A library for defining enums that can be used in compact bit sets. It supports arbitrarily
 //! large enums, and has very basic support for using them in constants.
 //!
-//! For serde support, enable the `serde` feature.
+//! The following feature flags may be used for this crate:
+//!
+//! * `serde` enables serialization support for [`EnumSet`].
+//! * `alloc` enables functions that require allocation.
 //!
 //! # Defining enums for use with EnumSet
 //!

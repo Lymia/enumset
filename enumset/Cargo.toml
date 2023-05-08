@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "1.0.13"
+version = "1.1.0"
 authors = ["Alissa Rao <lymia@lymiahugs.com>"]
 edition = "2021"
 
@@ -28,7 +28,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-enumset_derive = { version = "0.7.0", path = "../enumset_derive" }
+enumset_derive = { version = "0.8.0", path = "../enumset_derive" }
 serde2 = { package = "serde", version = "1", default-features = false, optional = true }
 
 [dev-dependencies]
