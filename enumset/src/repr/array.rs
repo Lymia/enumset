@@ -1,3 +1,4 @@
+use crate::repr::primitive::PrimitiveIter;
 use crate::repr::EnumSetTypeRepr;
 use core::ops::*;
 
@@ -101,6 +102,11 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
             new.0[i] = self.0[i] & !other.0[i];
         }
         new
+    }
+
+    type Iter = ArrayIter<N>;
+    fn iter(self) -> Self::Iter {
+        ArrayIter::new(self)
     }
 
     fn from_u8(v: u8) -> Self {
@@ -260,5 +266,75 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
             }
         }
         Some(Self::from_u64_slice(v))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ArrayIter<const N: usize> {
+    data: [PrimitiveIter<u64>; N],
+    done: bool,
+    idx_f: usize,
+    idx_r: usize,
+}
+
+impl<const N: usize> ArrayIter<N> {
+    pub fn new(array: ArrayRepr<N>) -> Self {
+        let mut new = [PrimitiveIter(0); N];
+        for i in 0..N {
+            new[i] = PrimitiveIter(array.0[i])
+        }
+        ArrayIter {
+            data: new,
+            done: false,
+            idx_f: 0,
+            idx_r: N - 1,
+        }
+    }
+}
+
+impl<const N: usize> Iterator for ArrayIter<N> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        while self.idx_f <= self.idx_r {
+            if let Some(x) = self.data[self.idx_f].next() {
+                return Some(self.idx_f as u32 * 64 + x)
+            } else {
+                self.idx_f += 1;
+            }
+        }
+        self.done = true;
+        None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let mut sum = 0;
+        for i in self.idx_f..self.idx_r + 1 {
+            sum += self.data[i].0.count_ones() as usize;
+        }
+        (sum, Some(sum))
+    }
+}
+
+impl<const N: usize> DoubleEndedIterator for ArrayIter<N> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        while self.idx_f <= self.idx_r {
+            if let Some(x) = self.data[self.idx_r].next_back() {
+                return Some(self.idx_r as u32 * 64 + x)
+            } else {
+                if self.idx_r == 0 {
+                    break
+                }
+                self.idx_r -= 1;
+            }
+        }
+        self.done = true;
+        None
     }
 }

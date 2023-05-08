@@ -51,6 +51,11 @@ macro_rules! prim {
                     (*self) & !other
                 }
 
+                type Iter = PrimitiveIter<Self>;
+                fn iter(self) -> Self::Iter {
+                    PrimitiveIter(self)
+                }
+
                 #[inline(always)]
                 fn from_u8(v: u8) -> Self {
                     v as $name
@@ -260,3 +265,38 @@ prim!(u16, 16, 1);
 prim!(u32, 32, 1);
 prim!(u64, 64, 1);
 prim!(u128, 128, 2);
+
+#[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
+pub struct PrimitiveIter<T: EnumSetTypeRepr>(pub T);
+
+impl<T: EnumSetTypeRepr> Iterator for PrimitiveIter<T> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0.is_empty() {
+            None
+        } else {
+            let bit = self.0.trailing_zeros();
+            self.0.remove_bit(bit);
+            Some(bit)
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let left = self.0.count_ones() as usize;
+        (left, Some(left))
+    }
+}
+
+impl<T: EnumSetTypeRepr> DoubleEndedIterator for PrimitiveIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.0.is_empty() {
+            None
+        } else {
+            let bit = T::WIDTH - 1 - self.0.leading_zeros();
+            self.0.remove_bit(bit);
+            Some(bit)
+        }
+    }
+}

@@ -5,11 +5,13 @@ use core::iter::Sum;
 /// The iterator used by [`EnumSet`]s.
 #[derive(Clone, Debug)]
 pub struct EnumSetIter<T: EnumSetType> {
-    set: EnumSet<T>,
+    iter: <T::Repr as EnumSetTypeRepr>::Iter,
 }
 impl<T: EnumSetType> EnumSetIter<T> {
     fn new(set: EnumSet<T>) -> EnumSetIter<T> {
-        EnumSetIter { set }
+        EnumSetIter {
+            iter: set.__priv_repr.iter(),
+        }
     }
 }
 
@@ -28,29 +30,16 @@ impl<T: EnumSetType> Iterator for EnumSetIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.set.is_empty() {
-            None
-        } else {
-            let bit = self.set.__priv_repr.trailing_zeros();
-            self.set.__priv_repr.remove_bit(bit);
-            unsafe { Some(T::enum_from_u32(bit)) }
-        }
+        self.iter.next().map(|x| unsafe { T::enum_from_u32(x) })
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let left = self.set.len();
-        (left, Some(left))
+        self.iter.size_hint()
     }
 }
 
 impl<T: EnumSetType> DoubleEndedIterator for EnumSetIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.set.is_empty() {
-            None
-        } else {
-            let bit = T::Repr::WIDTH - 1 - self.set.__priv_repr.leading_zeros();
-            self.set.__priv_repr.remove_bit(bit);
-            unsafe { Some(T::enum_from_u32(bit)) }
-        }
+        self.iter.next_back().map(|x| unsafe { T::enum_from_u32(x) })
     }
 }
 

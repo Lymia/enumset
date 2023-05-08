@@ -9,6 +9,12 @@ use core::ops::*;
 
 /// A trait marking valid underlying bitset storage types and providing the
 /// operations `EnumSet` and related types use.
+///
+/// # Safety
+///
+/// Note that `iter` *MUST* be implemented correctly and only return bits that
+/// are actually set in the representation, or else it will cause undefined
+/// behavior upstream in `EnumSet`.
 pub trait EnumSetTypeRepr :
     // Basic traits used to derive traits
     Copy +
@@ -37,6 +43,9 @@ pub trait EnumSetTypeRepr :
     fn trailing_zeros(&self) -> u32;
 
     fn and_not(&self, other: Self) -> Self;
+
+    type Iter: Iterator<Item = u32> + DoubleEndedIterator + Clone + Debug;
+    fn iter(self) -> Self::Iter;
 
     fn from_u8(v: u8) -> Self;
     fn from_u16(v: u16) -> Self;
