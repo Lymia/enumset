@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(start)]
+#![deny(warnings)]
 
 use core::panic::PanicInfo;
 use enumset::*;
