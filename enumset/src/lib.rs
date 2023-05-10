@@ -1,7 +1,7 @@
 #![no_std]
 #![deny(missing_docs)]
-// The safety requirement is "use the procedural derive".
-#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::missing_safety_doc)] // The safety requirement is "use the procedural derive".
+#![allow(clippy::needless_range_loop)] // range loop style is clearer in most places in enumset
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! A library for defining enums that can be used in compact bit sets. It supports arbitrarily

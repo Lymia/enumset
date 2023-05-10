@@ -255,8 +255,6 @@ macro_rules! prim {
                     }
                 }
             }
-
-            ()
         };
     };
 }

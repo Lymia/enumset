@@ -274,7 +274,7 @@ impl EnumSetInfo {
     fn validate(&self) -> Result<()> {
         // Gets the span of the maximum value.
         let largest_discriminant_span = match &self.max_discrim_span {
-            Some(x) => x.clone(),
+            Some(x) => *x,
             None => Span::call_site(),
         };
 
@@ -864,8 +864,6 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
             fn __enumset_derive__generated_warnings() {
                 #generated_warnings
             }
-
-            ()
         };
     }
 }
