@@ -528,3 +528,30 @@ bits_tests!(test_u128_bits, U128, (), u128,
 bits_tests!(test_usize_bits, U32, (U128), usize,
             as_usize try_as_usize as_usize_truncated
             from_usize try_from_usize from_usize_truncated);
+
+#[cfg(all(feature = "alloc", test))]
+mod alloc_tests {
+    use super::*;
+    #[derive(EnumSetType, Debug)]
+    pub enum DisplayEnum {
+        A, B, C, D
+    }
+    
+    impl core::fmt::Display for DisplayEnum {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", match self {
+                DisplayEnum::A => "A",
+                DisplayEnum::B => "B",
+                DisplayEnum::C => "C",
+                DisplayEnum::D => "D",
+            })?;
+            Ok(())
+        }
+    }
+    
+    #[test]
+    fn test_display() {
+        let target = DisplayEnum::A | DisplayEnum::B | DisplayEnum::D;
+        assert_eq!(format!("{}", target), "(A | B | D)");
+    }
+}
