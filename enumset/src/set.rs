@@ -853,4 +853,23 @@ impl<'a, T: EnumSetType> Sum<&'a T> for EnumSet<T> {
         iter.fold(EnumSet::empty(), |a, v| a | *v)
     }
 }
+
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+impl<T> core::fmt::Display for EnumSet<T>
+where
+    T: core::fmt::Display + EnumSetType,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f,"(")?;
+        for (idx, item) in self.iter().enumerate() {
+            write!(f, "{}", item)?;
+            if idx != self.len() - 1 {
+                write!(f, " | ")?;
+            }
+        }
+        write!(f, ")")?;
+        Ok(())
+    }
+}
 //endregion
