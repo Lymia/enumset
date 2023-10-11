@@ -52,6 +52,7 @@ macro_rules! prim {
                 }
 
                 type Iter = PrimitiveIter<Self>;
+                #[inline]
                 fn iter(self) -> Self::Iter {
                     PrimitiveIter(self)
                 }
