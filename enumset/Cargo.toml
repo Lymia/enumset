@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "1.1.2"
+version = "1.1.3"
 authors = ["Alissa Rao <lymia@lymiahugs.com>"]
 edition = "2021"
 
