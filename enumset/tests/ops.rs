@@ -2,6 +2,7 @@
 
 use enumset::*;
 use std::collections::{HashSet, BTreeSet};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(EnumSetType, Debug)]
 pub enum EmptyEnum { }
@@ -528,3 +529,13 @@ bits_tests!(test_u128_bits, U128, (), u128,
 bits_tests!(test_usize_bits, U32, (U128), usize,
             as_usize try_as_usize as_usize_truncated
             from_usize try_from_usize from_usize_truncated);
+
+impl Display for Enum8 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+#[test]
+fn test_display_impl() {
+    assert_eq!((Enum8::A | Enum8::D | Enum8::H).to_string(), "A | D | H");
+}

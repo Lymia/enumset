@@ -4,6 +4,7 @@ members = [
     "enumset_derive",
     "enumset_test_no_std",
 ]
+resolver = "2"
 
 [profile.release]
 opt-level = 3

@@ -2,7 +2,7 @@ use crate::repr::EnumSetTypeRepr;
 use crate::traits::EnumSetType;
 use crate::EnumSetTypeWithRepr;
 use core::cmp::Ordering;
-use core::fmt::{Debug, Formatter};
+use core::fmt::{Debug, Display, Formatter};
 use core::hash::{Hash, Hasher};
 use core::iter::Sum;
 use core::ops::{
@@ -367,9 +367,11 @@ impl<T: EnumSetType> PartialEq<T> for EnumSet<T> {
         self.__priv_repr == EnumSet::only(*other).__priv_repr
     }
 }
+
 impl<T: EnumSetType + Debug> Debug for EnumSet<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let mut is_first = true;
+        // Note: We don't use `.debug_struct` to avoid splitting lines when using `{:x}`
         f.write_str("EnumSet(")?;
         for v in self.iter() {
             if !is_first {
@@ -379,6 +381,19 @@ impl<T: EnumSetType + Debug> Debug for EnumSet<T> {
             v.fmt(f)?;
         }
         f.write_str(")")?;
+        Ok(())
+    }
+}
+impl<T: EnumSetType + Display> Display for EnumSet<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let mut is_first = true;
+        for v in self.iter() {
+            if !is_first {
+                f.write_str(" | ")?;
+            }
+            is_first = false;
+            v.fmt(f)?;
+        }
         Ok(())
     }
 }
