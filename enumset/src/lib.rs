@@ -153,8 +153,8 @@ pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 ///
 /// * `#[enumset(serialize_repr = "…")]` may be used to override the way the `EnumSet` is
 ///   serialized. Valid options are `u8`, `u16`, `u32`, `u64`, `list`, `map` and `array`. For more
-///   information, see the ["Serialization" section of the `EnumSet` documentation]
-///   (EnumSet#serialization).
+///   information, see the
+///   ["Serialization" section of the `EnumSet` documentation](EnumSet#serialization).
 /// * `#[enumset(serialize_deny_unknown)]` causes the generated deserializer to return an error
 ///   for unknown bits instead of silently ignoring them.
 ///
