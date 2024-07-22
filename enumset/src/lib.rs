@@ -7,10 +7,14 @@
 //! A library for defining enums that can be used in compact bit sets. It supports arbitrarily
 //! large enums, and has very basic support for using them in constants.
 //!
-//! The following feature flags may be used for this crate:
+//! # Cargo Features
 //!
-//! * `serde` enables serialization support for [`EnumSet`].
-//! * `alloc` enables functions that require allocation.
+//! The following cargo features are available for this crate:
+//!
+//! * `serde`: Allows serialization and deserialization of the types in this crate.
+//! * `alloc`: Enables the use of functions that requires an allocator.
+//! * `proc-macro-crate`: Enable the use of the `proc-macro-crate` crate to allow the renaming of
+//!   the `enumset` crate in your user crate. This feature increases the MSRV to 1.69.0
 //!
 //! # Defining enums for use with EnumSet
 //!
@@ -108,15 +112,6 @@ pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 ///   involving overflow and similar edge cases.
 /// * Variant discriminators must be defined with integer literals. Expressions like `V = 1 + 1`
 ///   are not currently supported.
-///
-/// # Cargo Features
-///
-/// The following cargo features are available for this crate:
-///
-/// * `serde`: Allows serialization and deserialization of the types in this crate.
-/// * `alloc`: Enables the use of functions that requires an allocator.
-/// * `proc-macro-crate`: Enable the use of the `proc-macro-crate` crate to allow the renaming of
-///   the `enumset` crate in your user crate. This feature increases the MSRV to 1.69.0
 ///
 /// # Additional Impls
 ///
