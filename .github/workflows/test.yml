@@ -7,7 +7,13 @@ jobs:
     strategy:
       matrix:
         rustver: ["stable", "beta", "nightly"]
-        args: ["", "--features serde", "--features alloc", "--features std", "--release --all-features"]
+        args:
+        - ""
+        - "--features serde"
+        - "--features alloc"
+        - "--features proc-macro-crate"
+        - "--features serde,alloc,proc-macro-crate"
+        - "--release --features serde,alloc,proc-macro-crate"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -59,7 +65,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p enumset --features serde,alloc,proc-crate-macro
+          args: -p enumset --features serde,alloc,proc-macro-crate
 
   test_trybuild:
     runs-on: ubuntu-latest
