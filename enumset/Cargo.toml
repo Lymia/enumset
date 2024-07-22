@@ -25,7 +25,7 @@ alloc = []
 proc-macro-crate = ["enumset_derive/proc-macro-crate"]
 
 # Deprecated features
-std = ["alloc", "enumset_derive/proc-macro-crate"]
+std = ["alloc", "enumset_derive/proc-macro-crate", "enumset_derive/std_deprecation_warning"]
 
 [package.metadata.docs.rs]
 all-features = true

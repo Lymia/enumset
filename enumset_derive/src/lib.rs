@@ -871,16 +871,18 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
 #[proc_macro_derive(EnumSetType, attributes(enumset))]
 pub fn derive_enum_set_type(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
+    let input_span = input.span();
     let attrs: EnumsetAttrs = match EnumsetAttrs::from_derive_input(&input) {
         Ok(attrs) => attrs,
         Err(e) => return e.write_errors().into(),
     };
-    match derive_enum_set_type_0(input, attrs) {
-        Ok(v) => v,
-        Err(e) => e.to_compile_error().into(),
-    }
+    derive_enum_set_type_0(input, attrs, input_span).unwrap_or_else(|e| e.to_compile_error().into())
 }
-fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<TokenStream> {
+fn derive_enum_set_type_0(
+    input: DeriveInput,
+    attrs: EnumsetAttrs,
+    _input_span: Span,
+) -> Result<TokenStream> {
     if !input.generics.params.is_empty() {
         error(
             input.generics.span(),
@@ -930,6 +932,14 @@ fn derive_enum_set_type_0(input: DeriveInput, attrs: EnumsetAttrs) -> Result<Tok
                 attrs.serialize_as_list.span(),
                 "#[enumset(serialize_as_list)] is deprecated. \
                  Use `#[enumset(serialize_repr = \"list\")]` instead.",
+            ));
+        }
+        #[cfg(feature = "std_deprecation_warning")]
+        {
+            warnings.push((
+                _input_span,
+                "feature = \"std\" is depercated. If you rename `enumset`, use \
+                 feature = \"proc-macro-crate\" instead. If you don't, remove the feature.",
             ));
         }
 
