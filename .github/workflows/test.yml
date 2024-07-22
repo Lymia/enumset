@@ -59,7 +59,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p enumset --all-features
+          args: -p enumset --features serde,alloc,proc-crate-macro
 
   test_trybuild:
     runs-on: ubuntu-latest

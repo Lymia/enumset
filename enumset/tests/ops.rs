@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![deny(warnings)]
 
 use enumset::*;
 use std::collections::{HashSet, BTreeSet};

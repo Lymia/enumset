@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 use enumset::*;
 
 macro_rules! read_slice {

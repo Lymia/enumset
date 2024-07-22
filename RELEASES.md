@@ -1,9 +1,8 @@
 # Version 1.1.4 (2024-07-22)
-* `EnumSet::<T>::empty()`, `EnumSet::<T>::all()`, `EnumSet::<T>::bit_width()`,
-  and `EnumSet::<T>::variant_count()` are now usable in const contexts.
-* The `EnumSet::<T>::EMPTY` and `EnumSet::<T>::ALL` consts are deprecated in
-  favor of the newly const `EnumSet::<T>::empty()` and `EnumSet::<T>::all()`
-  functions.
+* The `empty`, `all`, `bit_width`, and `variant_count` functions of
+  `EnumSet<T>` are now const.
+* The `EMPTY` and `ALL` consts of `EnumSet<T>` are deprecated in favor of the
+  `empty` and `all` functions.
 * The `std` feature flag has been deprecated in favor of the new
   `const-proc-macro` feature flag. The feature flag was never used for any
   `std`-specific functionality beyond that crate.

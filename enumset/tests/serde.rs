@@ -1,4 +1,5 @@
 #![cfg(feature = "serde")]
+#![deny(warnings)]
 #![allow(dead_code)]
 
 use enumset::*;

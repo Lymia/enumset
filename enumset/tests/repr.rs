@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 use enumset::*;
 
 #[derive(EnumSetType, Debug)]

@@ -409,6 +409,7 @@ impl<T: EnumSetType> Hash for EnumSet<T> {
         self.__priv_repr.hash(state)
     }
 }
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl<T: EnumSetType> PartialOrd for EnumSet<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.__priv_repr.partial_cmp(&other.__priv_repr)
