@@ -1,3 +1,10 @@
+# Version 1.1.5 (2024-07-22)
+* Add support for using `EnumSet<T>` values in the `enum_set!` macro.
+* Added new `enum_set_union!`, `enum_set_intersection!`,
+  `enum_set_difference!`, `enum_set_complement!` and
+  `enum_set_symmetric_difference!` macros for doing `EnumSet` operations at
+  compile time.
+
 # Version 1.1.4 (2024-07-22)
 * The `empty`, `all`, `bit_width`, and `variant_count` functions of
   `EnumSet<T>` are now const.
