@@ -1,3 +1,18 @@
+# Version 1.1.4 (2024-07-22)
+* `EnumSet::<T>::empty()`, `EnumSet::<T>::all()`, `EnumSet::<T>::bit_width()`,
+  and `EnumSet::<T>::variant_count()` are now usable in const contexts.
+* The `EnumSet::<T>::EMPTY` and `EnumSet::<T>::ALL` consts are deprecated in
+  favor of the newly const `EnumSet::<T>::empty()` and `EnumSet::<T>::all()`
+  functions.
+* The `std` feature flag has been deprecated in favor of the new
+  `const-proc-macro` feature flag. The feature flag was never used for any
+  `std`-specific functionality beyond that crate.
+* Minimum required Rust version is now 1.61+, due to updates in dependencies
+  and to allow additional functions to be `const`.
+* Minimum required Rust version when the `std` or `const-proc-macro` feature
+  flags are enabled is now 1.69+.
+* Minor fixes to documentation. (Thanks @xnuk)
+
 # Version 1.1.3 (2023-10-11)
 * Fix an issue where `EnumSet::iter` was not properly inlined without LTO
   enabled (such as on debug builds). (thanks @Fuuzetsu)

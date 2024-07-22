@@ -180,7 +180,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// This is the same as [`EnumSet::variant_count`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
     #[inline(always)]
-    pub const fn bit_width() -> u32 {
+        pub const fn bit_width() -> u32 {
         T::BIT_WIDTH
     }
 
