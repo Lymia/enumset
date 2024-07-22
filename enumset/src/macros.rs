@@ -52,8 +52,12 @@ macro_rules! enum_set {
     };
     ($value:path | $($rest:path)|* $(|)*) => {
         {
+            #[allow(deprecated)] let helper = $value.__impl_enumset_internal__const_helper();
             #[allow(deprecated)] let value = $value.__impl_enumset_internal__const_only();
-            $(#[allow(deprecated)] let value = $rest.__impl_enumset_internal__const_merge(value);)*
+            $(#[allow(deprecated)] let value = {
+                let new = $rest.__impl_enumset_internal__const_only();
+                helper.merge(value, new)
+            };)*
             value
         }
     };

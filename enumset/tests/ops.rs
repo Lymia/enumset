@@ -14,12 +14,12 @@ pub enum Enum1 {
 }
 
 #[derive(EnumSetType, Debug)]
-pub enum SmallEnum {
+enum SmallEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 #[derive(Clone, Copy, Debug, EnumSetType, Eq, PartialEq)]
 #[enumset(no_super_impls)]
-pub enum SmallEnumExplicitDerive {
+enum SmallEnumExplicitDerive {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 #[derive(EnumSetType, Debug)]
@@ -140,6 +140,9 @@ macro_rules! test_enum {
     ($e:ident, $mem_size:expr) => {
         const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
         const CONST_1_SET: EnumSet<$e> = enum_set!($e::A);
+        const CONST_SET_CHAIN: EnumSet<$e> = enum_set!(CONST_SET | $e::D);
+        const CONST_SET_CHAIN_2: EnumSet<$e> = enum_set!($e::E | CONST_SET);
+        const CONST_SET_CHAIN_3: EnumSet<$e> = enum_set!(CONST_SET_CHAIN | CONST_SET_CHAIN_2);
         const EMPTY_SET: EnumSet<$e> = EnumSet::empty();
         const ALL_SET: EnumSet<$e> = EnumSet::all();
         const VARIANT_COUNT: usize = EnumSet::<$e>::variant_count() as usize;
@@ -148,6 +151,9 @@ macro_rules! test_enum {
         fn const_set() {
             assert_eq!(CONST_SET.len(), 2);
             assert_eq!(CONST_1_SET.len(), 1);
+            assert_eq!(CONST_SET_CHAIN.len(), 3);
+            assert_eq!(CONST_SET_CHAIN_2.len(), 3);
+            assert_eq!(CONST_SET_CHAIN_3.len(), 4);
             assert!(CONST_SET.contains($e::A));
             assert!(CONST_SET.contains($e::C));
             assert!(EMPTY_SET.is_empty());

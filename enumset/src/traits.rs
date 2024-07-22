@@ -34,6 +34,11 @@ pub unsafe trait EnumSetTypeWithRepr:
 
 /// The actual members of EnumSetType. Put here to avoid polluting global namespaces.
 pub unsafe trait EnumSetTypePrivate {
+    /// A helper type used to implement the `enum_set!` macro among other things.
+    type ConstHelper;
+    /// The instance of the `ConstHelper`.
+    const CONST_HELPER_INSTANCE: Self::ConstHelper;
+
     /// The underlying type used to store the bitset.
     type Repr: EnumSetTypeRepr;
     /// A mask of bits that are valid in the bitset.
