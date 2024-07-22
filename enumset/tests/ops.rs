@@ -139,7 +139,10 @@ macro_rules! test_enum {
     ($e:ident, $mem_size:expr) => {
         const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
         const CONST_1_SET: EnumSet<$e> = enum_set!($e::A);
-        const EMPTY_SET: EnumSet<$e> = EnumSet::EMPTY;
+        const EMPTY_SET: EnumSet<$e> = EnumSet::empty();
+        const ALL_SET: EnumSet<$e> = EnumSet::all();
+        const VARIANT_COUNT: usize = EnumSet::<$e>::variant_count() as usize;
+
         #[test]
         fn const_set() {
             assert_eq!(CONST_SET.len(), 2);
@@ -147,6 +150,7 @@ macro_rules! test_enum {
             assert!(CONST_SET.contains($e::A));
             assert!(CONST_SET.contains($e::C));
             assert!(EMPTY_SET.is_empty());
+            assert_eq!(ALL_SET.len(), VARIANT_COUNT);
         }
 
         #[test]

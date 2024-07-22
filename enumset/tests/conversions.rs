@@ -124,7 +124,7 @@ macro_rules! check_simple_conversion {
                 // array tests
                 assert_eq!(($e::A | $e::B | $e::C).as_array_truncated(), 
                            []);
-                assert_eq!(EnumSet::<$e>::EMPTY.as_array_truncated(), 
+                assert_eq!(EnumSet::<$e>::empty().as_array_truncated(),
                            []);
                 assert_eq!(($e::A | $e::B | $e::C).as_array(), 
                            [7]);
@@ -165,7 +165,7 @@ macro_rules! check_simple_conversion {
             #[test]
             fn basic_from_array() {
                 // array tests
-                assert_eq!(EnumSet::<$e>::EMPTY,
+                assert_eq!(EnumSet::<$e>::empty(),
                            EnumSet::<$e>::from_array([]));
                 assert_eq!($e::A | $e::B | $e::C,
                            EnumSet::<$e>::from_array([7]));
@@ -177,7 +177,7 @@ macro_rules! check_simple_conversion {
                            EnumSet::<$e>::from_array([7, 0, 0, 0, 0]));
 
                 // array tests
-                assert_eq!(EnumSet::<$e>::EMPTY,
+                assert_eq!(EnumSet::<$e>::empty(),
                            EnumSet::<$e>::from_slice(&[]));
                 assert_eq!($e::A | $e::B | $e::C,
                            EnumSet::<$e>::from_slice(&[7]));
@@ -192,7 +192,7 @@ macro_rules! check_simple_conversion {
             #[test]
             fn basic_from_array_truncated() {
                 // array tests
-                assert_eq!(EnumSet::<$e>::EMPTY,
+                assert_eq!(EnumSet::<$e>::empty(),
                            EnumSet::<$e>::from_array_truncated([]));
                 assert_eq!($e::A | $e::B | $e::C,
                            EnumSet::<$e>::from_array_truncated([7 | (1 << 31)]));
@@ -204,7 +204,7 @@ macro_rules! check_simple_conversion {
                            EnumSet::<$e>::from_array_truncated([7, 0, 0, 0, 16]));
 
                 // array tests
-                assert_eq!(EnumSet::<$e>::EMPTY,
+                assert_eq!(EnumSet::<$e>::empty(),
                            EnumSet::<$e>::from_slice_truncated(&[]));
                 assert_eq!($e::A | $e::B | $e::C,
                            EnumSet::<$e>::from_slice_truncated(&[7 | (1 << 31)]));

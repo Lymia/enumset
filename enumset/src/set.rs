@@ -131,20 +131,25 @@ pub struct EnumSet<T: EnumSetType> {
 
 //region EnumSet operations
 impl<T: EnumSetType> EnumSet<T> {
+    const EMPTY_REPR: Self = EnumSet { __priv_repr: T::Repr::EMPTY };
+    const ALL_REPR: Self = EnumSet { __priv_repr: T::ALL_BITS };
+
     /// An empty `EnumSet`.
     ///
-    /// This is available as a constant for use in constant expressions.
-    pub const EMPTY: Self = EnumSet { __priv_repr: T::Repr::EMPTY };
+    /// This is deprecated because [`EnumSet::empty`] is now `const`.
+    #[deprecated = "Use `EnumSet::empty()` instead."]
+    pub const EMPTY: Self = Self::EMPTY_REPR;
 
     /// An `EnumSet` containing all valid variants of the enum.
     ///
-    /// This is available as a constant for use in constant expressions.
-    pub const ALL: Self = EnumSet { __priv_repr: T::ALL_BITS };
+    /// This is deprecated because [`EnumSet::all`] is now `const`.
+    #[deprecated = "Use `EnumSet::all()` instead."]
+    pub const ALL: Self = Self::ALL_REPR;
 
     /// Creates an empty `EnumSet`.
     #[inline(always)]
-    pub fn new() -> Self {
-        Self::EMPTY
+    pub const fn new() -> Self {
+        Self::EMPTY_REPR
     }
 
     /// Returns an `EnumSet` containing a single element.
@@ -159,14 +164,14 @@ impl<T: EnumSetType> EnumSet<T> {
     ///
     /// This is an alias for [`EnumSet::new`].
     #[inline(always)]
-    pub fn empty() -> Self {
-        Self::EMPTY
+    pub const fn empty() -> Self {
+        Self::EMPTY_REPR
     }
 
     /// Returns an `EnumSet` containing all valid variants of the enum.
     #[inline(always)]
-    pub fn all() -> Self {
-        Self::ALL
+    pub const fn all() -> Self {
+        Self::ALL_REPR
     }
 
     /// Total number of bits used by this type. Note that the actual amount of space used is
@@ -175,7 +180,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// This is the same as [`EnumSet::variant_count`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
     #[inline(always)]
-    pub fn bit_width() -> u32 {
+    pub const fn bit_width() -> u32 {
         T::BIT_WIDTH
     }
 
@@ -184,7 +189,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// This is the same as [`EnumSet::bit_width`] except in enums with "sparse" variants.
     /// (e.g. `enum Foo { A = 10, B = 20 }`)
     #[inline(always)]
-    pub fn variant_count() -> u32 {
+    pub const fn variant_count() -> u32 {
         T::VARIANT_COUNT
     }
 
