@@ -780,14 +780,43 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
                 #[automatically_derived]
                 #[doc(hidden)]
                 impl __EnumSetConstHelper {
-                    /// Creates a new enumset with this variant added.
-                    pub const fn merge(
+                    pub const fn const_union(
                         &self,
                         chain_a: #enumset::EnumSet<#name>,
                         chain_b: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
                         #enumset::EnumSet {
                             __priv_repr: chain_a.__priv_repr | chain_b.__priv_repr,
+                        }
+                    }
+
+                    pub const fn const_intersection(
+                        &self,
+                        chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet {
+                            __priv_repr: chain_a.__priv_repr & chain_b.__priv_repr,
+                        }
+                    }
+
+                    pub const fn const_symmetric_difference(
+                        &self,
+                        chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet {
+                            __priv_repr: chain_a.__priv_repr ^ chain_b.__priv_repr,
+                        }
+                    }
+
+                    pub const fn const_complement(
+                        &self,
+                        chain: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut all = #enumset::EnumSet::<#name>::all();
+                        #enumset::EnumSet {
+                            __priv_repr: !chain.__priv_repr & all.__priv_repr,
                         }
                     }
                 }
@@ -819,8 +848,7 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
                 #[automatically_derived]
                 #[doc(hidden)]
                 impl __EnumSetConstHelper {
-                    /// Creates a new enumset with this variant added.
-                    pub const fn merge(
+                    pub const fn const_union(
                         &self,
                         mut chain_a: #enumset::EnumSet<#name>,
                         chain_b: #enumset::EnumSet<#name>,
@@ -831,6 +859,46 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
                             i += 1;
                         }
                         chain_a
+                    }
+
+                    pub const fn const_intersection(
+                        &self,
+                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut i = 0;
+                        while i < #size {
+                            chain_a.__priv_repr.0[i] &= chain_b.__priv_repr.0[i];
+                            i += 1;
+                        }
+                        chain_a
+                    }
+
+                    pub const fn const_symmetric_difference(
+                        &self,
+                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut i = 0;
+                        while i < #size {
+                            chain_a.__priv_repr.0[i] ^= chain_b.__priv_repr.0[i];
+                            i += 1;
+                        }
+                        chain_a
+                    }
+
+                    pub const fn const_complement(
+                        &self,
+                        mut chain: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut all = #enumset::EnumSet::<#name>::all();
+                        let mut i = 0;
+                        while i < #size {
+                            let new = !chain.__priv_repr.0[i] & all.__priv_repr.0[i];
+                            chain.__priv_repr.0[i] = new;
+                            i += 1;
+                        }
+                        chain
                     }
                 }
             }

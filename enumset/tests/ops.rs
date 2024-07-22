@@ -143,21 +143,30 @@ macro_rules! test_enum {
         const CONST_SET_CHAIN: EnumSet<$e> = enum_set!(CONST_SET | $e::D);
         const CONST_SET_CHAIN_2: EnumSet<$e> = enum_set!($e::E | CONST_SET);
         const CONST_SET_CHAIN_3: EnumSet<$e> = enum_set!(CONST_SET_CHAIN | CONST_SET_CHAIN_2);
+        const CONST_UNION: EnumSet<$e> = enum_set_union!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
+        const CONST_INTERSECTION: EnumSet<$e> = enum_set_intersection!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
+        const CONST_DIFFERENCE: EnumSet<$e> = enum_set_difference!(CONST_UNION, CONST_SET);
+        const CONST_COMPLEMENT: EnumSet<$e> = enum_set_complement!(CONST_SET);
+        const CONST_SYMMETRIC_DIFFERENCE: EnumSet<$e> = enum_set_symmetric_difference!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
         const EMPTY_SET: EnumSet<$e> = EnumSet::empty();
         const ALL_SET: EnumSet<$e> = EnumSet::all();
         const VARIANT_COUNT: usize = EnumSet::<$e>::variant_count() as usize;
 
         #[test]
         fn const_set() {
-            assert_eq!(CONST_SET.len(), 2);
-            assert_eq!(CONST_1_SET.len(), 1);
-            assert_eq!(CONST_SET_CHAIN.len(), 3);
-            assert_eq!(CONST_SET_CHAIN_2.len(), 3);
-            assert_eq!(CONST_SET_CHAIN_3.len(), 4);
-            assert!(CONST_SET.contains($e::A));
-            assert!(CONST_SET.contains($e::C));
+            assert_eq!(CONST_SET, $e::A | $e::C);
+            assert_eq!(CONST_1_SET, $e::A);
+            assert_eq!(CONST_SET_CHAIN, $e::A | $e::C | $e::D);
+            assert_eq!(CONST_SET_CHAIN_2, $e::A | $e::C | $e::E);
+            assert_eq!(CONST_SET_CHAIN_3, $e::A | $e::C | $e::D | $e::E);
+            assert_eq!(CONST_UNION, $e::A | $e::C | $e::D | $e::E);
+            assert_eq!(CONST_INTERSECTION, $e::A | $e::C);
+            assert_eq!(CONST_COMPLEMENT, !($e::A | $e::C));
+            assert_eq!(CONST_SYMMETRIC_DIFFERENCE, $e::D | $e::E);
+
             assert!(EMPTY_SET.is_empty());
             assert_eq!(ALL_SET.len(), VARIANT_COUNT);
+            assert_eq!(ALL_SET, EnumSet::all());
         }
 
         #[test]
