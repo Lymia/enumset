@@ -15,17 +15,17 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       and $N others
    --> $WORKSPACE/enumset/src/set.rs
     |
-    |     pub fn new() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^
+    |     pub const fn new() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
     |     pub fn only(t: T) -> Self {
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub fn empty() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^
+    |     pub const fn empty() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub fn all() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^
+    |     pub const fn all() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
     = note: the following trait bounds were not satisfied:
             `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
 note: the trait `EnumSetTypeWithRepr` must be implemented
@@ -52,17 +52,17 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       and $N others
    --> $WORKSPACE/enumset/src/set.rs
     |
-    |     pub fn new() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^
+    |     pub const fn new() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
     |     pub fn only(t: T) -> Self {
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub fn empty() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^
+    |     pub const fn empty() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub fn all() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^
+    |     pub const fn all() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
     = note: the following trait bounds were not satisfied:
             `OkayEnumButCantUseFromReprArray: EnumSetTypeWithRepr`
 note: the trait `EnumSetTypeWithRepr` must be implemented
