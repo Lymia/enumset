@@ -13,7 +13,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       enumset::EnumSet::<T>::empty
       enumset::EnumSet::<T>::all
       and $N others
-   --> src/set.rs
+   --> $WORKSPACE/enumset/src/set.rs
     |
     |     pub fn new() -> Self {
     |     ^^^^^^^^^^^^^^^^^^^^
@@ -29,7 +29,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
     = note: the following trait bounds were not satisfied:
             `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
 note: the trait `EnumSetTypeWithRepr` must be implemented
-   --> src/traits.rs
+   --> $WORKSPACE/enumset/src/traits.rs
     |
     | / pub unsafe trait EnumSetTypeWithRepr:
     | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
@@ -50,7 +50,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       enumset::EnumSet::<T>::empty
       enumset::EnumSet::<T>::all
       and $N others
-   --> src/set.rs
+   --> $WORKSPACE/enumset/src/set.rs
     |
     |     pub fn new() -> Self {
     |     ^^^^^^^^^^^^^^^^^^^^
@@ -66,7 +66,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
     = note: the following trait bounds were not satisfied:
             `OkayEnumButCantUseFromReprArray: EnumSetTypeWithRepr`
 note: the trait `EnumSetTypeWithRepr` must be implemented
-   --> src/traits.rs
+   --> $WORKSPACE/enumset/src/traits.rs
     |
     | / pub unsafe trait EnumSetTypeWithRepr:
     | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>

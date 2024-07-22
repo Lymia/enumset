@@ -3,6 +3,7 @@ members = [
     "enumset",
     "enumset_derive",
     "enumset_test_no_std",
+    "enumset_test_trybuild",
 ]
 resolver = "2"
 

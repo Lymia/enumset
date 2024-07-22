@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        rustver: ["stable", "beta", "nightly", "1.56.0"]
+        rustver: ["stable", "beta", "nightly"]
         args: ["", "--features serde", "--features alloc", "--features std", "--release --all-features"]
     runs-on: ubuntu-latest
     steps:
@@ -23,6 +23,62 @@ jobs:
       with:
         command: test
         args: -p enumset ${{ matrix.args }}
+
+  build_msrv:
+    strategy:
+      matrix:
+        args: [ "", "--features serde", "--features alloc", "--release --features serde,alloc" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: "1.61.0"
+          default: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: version
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p enumset ${{ matrix.args }}
+
+  build_msrv_all_features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: "1.69.0"
+          default: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: version
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p enumset --all-features
+
+  test_trybuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          default: true
+          components: clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p enumset_test_trybuild
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -p enumset_test_trybuild
+
   build_no_std:
     runs-on: ubuntu-latest
     steps:

@@ -109,6 +109,15 @@ pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 /// * Variant discriminators must be defined with integer literals. Expressions like `V = 1 + 1`
 ///   are not currently supported.
 ///
+/// # Cargo Features
+///
+/// The following cargo features are available for this crate:
+///
+/// * `serde`: Allows serialization and deserialization of the types in this crate.
+/// * `alloc`: Enables the use of functions that requires an allocator.
+/// * `proc-macro-crate`: Enable the use of the `proc-macro-crate` crate to allow the renaming of
+///   the `enumset` crate in your user crate. This feature increases the MSRV to 1.69.0
+///
 /// # Additional Impls
 ///
 /// In addition to the implementation of `EnumSetType`, this procedural macro creates multiple
