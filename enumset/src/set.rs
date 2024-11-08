@@ -467,7 +467,7 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
     /// In order to use this method, the definition of `T` must have the `#[enumset(repr = "…")]`
     /// annotation.
     #[inline(always)]
-    pub fn as_repr(&self) -> <T as EnumSetTypeWithRepr>::Repr {
+    pub const fn as_repr(&self) -> <T as EnumSetTypeWithRepr>::Repr {
         self.__priv_repr
     }
 
