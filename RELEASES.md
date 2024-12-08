@@ -1,3 +1,6 @@
+# Unreleased
+* `EnumSet::as_repr` is now const. (Thanks @jasonwhite)
+
 # Version 1.1.5 (2024-07-22)
 * Add support for using `EnumSet<T>` values in the `enum_set!` macro.
 * Added new `enum_set_union!`, `enum_set_intersection!`,
