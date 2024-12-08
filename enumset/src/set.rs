@@ -134,18 +134,6 @@ impl<T: EnumSetType> EnumSet<T> {
     const EMPTY_REPR: Self = EnumSet { __priv_repr: T::Repr::EMPTY };
     const ALL_REPR: Self = EnumSet { __priv_repr: T::ALL_BITS };
 
-    /// An empty `EnumSet`.
-    ///
-    /// This is deprecated because [`EnumSet::empty`] is now `const`.
-    #[deprecated = "Use `EnumSet::empty()` instead."]
-    pub const EMPTY: Self = Self::EMPTY_REPR;
-
-    /// An `EnumSet` containing all valid variants of the enum.
-    ///
-    /// This is deprecated because [`EnumSet::all`] is now `const`.
-    #[deprecated = "Use `EnumSet::all()` instead."]
-    pub const ALL: Self = Self::ALL_REPR;
-
     /// Creates an empty `EnumSet`.
     #[inline(always)]
     pub const fn new() -> Self {
@@ -454,6 +442,23 @@ impl<'de, T: EnumSetType> Deserialize<'de> for EnumSet<T> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         T::deserialize(deserializer)
     }
+}
+//endregion
+
+//region Deprecated functions
+/// This impl contains all outdated or deprecated functions.
+impl<T: EnumSetType> EnumSet<T> {
+    /// An empty `EnumSet`.
+    ///
+    /// This is deprecated because [`EnumSet::empty`] is now `const`.
+    #[deprecated = "Use `EnumSet::empty()` instead."]
+    pub const EMPTY: Self = Self::EMPTY_REPR;
+
+    /// An `EnumSet` containing all valid variants of the enum.
+    ///
+    /// This is deprecated because [`EnumSet::all`] is now `const`.
+    #[deprecated = "Use `EnumSet::all()` instead."]
+    pub const ALL: Self = Self::ALL_REPR;
 }
 //endregion
 
