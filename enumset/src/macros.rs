@@ -129,7 +129,7 @@ macro_rules! enum_set_intersection {
 /// # use enumset::*;
 /// #[derive(EnumSetType, Debug)]
 /// enum Enum { A, B, C, D }
-/// 
+///
 /// const SET: EnumSet<Enum> = enum_set!(Enum::B | Enum::C);
 /// const CONST_SET: EnumSet<Enum> = enum_set_complement!(SET);
 /// assert_eq!(CONST_SET, Enum::A | Enum::D);
