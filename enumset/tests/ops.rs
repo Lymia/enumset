@@ -167,6 +167,7 @@ macro_rules! test_enum {
             assert!(EMPTY_SET.is_empty());
             assert_eq!(ALL_SET.len(), VARIANT_COUNT);
             assert_eq!(ALL_SET, EnumSet::all());
+            assert!(ALL_SET.is_all());
         }
 
         #[test]

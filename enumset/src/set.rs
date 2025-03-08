@@ -196,6 +196,11 @@ impl<T: EnumSetType> EnumSet<T> {
     pub fn clear(&mut self) {
         self.__priv_repr = T::Repr::EMPTY;
     }
+    /// Returns `true` if the set contains all the valid variants.
+    #[inline(always)]
+    pub fn is_all(&self) -> bool {
+        self.__priv_repr == T::ALL_BITS
+    }
 
     /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
     /// checking for an empty intersection.
