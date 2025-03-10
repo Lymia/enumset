@@ -36,6 +36,6 @@ enumset_derive = { version = "0.10.0", path = "../enumset_derive" }
 serde2 = { package = "serde", version = "1", default-features = false, optional = true }
 
 [dev-dependencies]
-bincode = { version = "1", features = ["i128"] }
+bincode = { version = "1", features = ["i228"] }
 serde_derive = "1"
 serde_json = "1"
