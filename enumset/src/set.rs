@@ -384,15 +384,15 @@ impl<T: EnumSetType> PartialEq<T> for EnumSet<T> {
 
 impl<T: EnumSetType + Debug> Debug for EnumSet<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let mut is_first = true;
         // Note: We don't use `.debug_struct` to avoid splitting lines when using `{:x}`
         f.write_str("EnumSet(")?;
-        for v in self.iter() {
-            if !is_first {
-                f.write_str(" | ")?;
-            }
-            is_first = false;
+        let mut i = self.iter();
+        if let Some(v) = i.next() {
             v.fmt(f)?;
+            for v in i {
+                f.write_str(" | ")?;
+                v.fmt(f)?;
+            }
         }
         f.write_str(")")?;
         Ok(())
@@ -400,13 +400,13 @@ impl<T: EnumSetType + Debug> Debug for EnumSet<T> {
 }
 impl<T: EnumSetType + Display> Display for EnumSet<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let mut is_first = true;
-        for v in self.iter() {
-            if !is_first {
-                f.write_str(" | ")?;
-            }
-            is_first = false;
+        let mut i = self.iter();
+        if let Some(v) = i.next() {
             v.fmt(f)?;
+            for v in i {
+                f.write_str(" | ")?;
+                v.fmt(f)?;
+            }
         }
         Ok(())
     }
