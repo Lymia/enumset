@@ -64,4 +64,8 @@ pub unsafe trait EnumSetTypePrivate {
     #[cfg(feature = "serde")]
     fn deserialize<'de, D: serde::Deserializer<'de>>(de: D) -> Result<EnumSet<Self>, D::Error>
     where Self: EnumSetType;
+
+    /// Force conversion `EnumSet` from int while reading from SQL result.
+    #[cfg(feature = "diesel")]
+    const DIESEL_TRUNCATE: bool = false;
 }

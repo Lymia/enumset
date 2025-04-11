@@ -21,6 +21,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 serde = ["serde2", "enumset_derive/serde"]
+diesel = ["dep:diesel", "enumset_derive/diesel"]
 alloc = []
 proc-macro-crate = ["enumset_derive/proc-macro-crate"]
 
@@ -34,6 +35,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 enumset_derive = { version = "0.10.0", path = "../enumset_derive" }
 serde2 = { package = "serde", version = "1", default-features = false, optional = true }
+diesel = { version = "2", optional = true }
 
 [dev-dependencies]
 bincode = { version = "1", features = ["i128"] }

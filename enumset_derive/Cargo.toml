@@ -16,6 +16,7 @@ proc-macro = true
 
 [features]
 serde = []
+diesel = []
 std_deprecation_warning = []
 
 [dependencies]
