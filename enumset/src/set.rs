@@ -121,6 +121,8 @@ use {
     doc = "[`Deserialize`]: https://docs.rs/serde/latest/serde/trait.Deserialize.html\n"
 )]
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "diesel", derive(diesel::FromSqlRow, diesel::AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = diesel::sql_types::Integer))]
 #[repr(transparent)]
 pub struct EnumSet<T: EnumSetType> {
     #[doc(hidden)]
@@ -441,6 +443,37 @@ impl<T: EnumSetType> Serialize for EnumSet<T> {
 impl<'de, T: EnumSetType> Deserialize<'de> for EnumSet<T> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         T::deserialize(deserializer)
+    }
+}
+
+#[cfg(feature = "diesel")]
+impl<DB, T> diesel::serialize::ToSql<diesel::sql_types::Integer, DB> for EnumSet<T>
+where
+    T: EnumSetTypeWithRepr<Repr = u32> + Debug,
+    DB: diesel::backend::Backend,
+    i32: diesel::serialize::ToSql<diesel::sql_types::Integer, DB>,
+{
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, DB>,
+    ) -> diesel::serialize::Result {
+        unsafe { &*(&self.__priv_repr as *const _ as *const i32) }.to_sql(out)
+    }
+}
+
+#[cfg(feature = "diesel")]
+impl<DB, T> diesel::deserialize::FromSql<diesel::sql_types::Integer, DB> for EnumSet<T>
+where
+    T: EnumSetTypeWithRepr<Repr = u32>,
+    DB: diesel::backend::Backend,
+    i32: diesel::deserialize::FromSql<diesel::sql_types::Integer, DB>,
+{
+    fn from_sql(bytes: DB::RawValue<'_>) -> diesel::deserialize::Result<Self> {
+        let val = i32::from_sql(bytes)?;
+        Self::try_from_repr(val as u32).ok_or_else(|| {
+            diesel::result::Error::DeserializationError("Bitset contains invalid variants.".into())
+                .into()
+        })
     }
 }
 //endregion
