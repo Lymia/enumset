@@ -21,6 +21,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 serde = ["serde2", "enumset_derive/serde"]
+diesel = ["dep:diesel", "enumset_derive/diesel"]
 alloc = []
 proc-macro-crate = ["enumset_derive/proc-macro-crate"]
 

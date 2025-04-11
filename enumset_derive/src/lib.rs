@@ -27,6 +27,7 @@ struct EnumsetAttrs {
     #[darling(default)]
     serialize_repr: SpannedValue<Option<String>>,
     serialize_deny_unknown: bool,
+    diesel_truncate: bool,
     #[darling(default)]
     crate_name: Option<String>,
 
@@ -144,6 +145,8 @@ struct EnumSetInfo {
     no_super_impls: bool,
     /// Disallow unknown bits while deserializing the enum.
     serialize_deny_unknown: bool,
+    /// Truncate int while converting from SQL.
+    diesel_truncate: bool,
 }
 impl EnumSetInfo {
     fn new(input: &DeriveInput, attrs: &EnumsetAttrs) -> EnumSetInfo {
@@ -166,6 +169,7 @@ impl EnumSetInfo {
             no_ops: attrs.no_ops,
             no_super_impls: attrs.no_super_impls,
             serialize_deny_unknown: attrs.serialize_deny_unknown,
+            diesel_truncate: attrs.diesel_truncate,
         }
     }
 
@@ -646,6 +650,14 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
     #[cfg(not(feature = "serde"))]
     let serde_ops = quote! {};
 
+    let diesel_ops = if cfg!(feature = "diesel") && info.diesel_truncate {
+        quote! {
+            const DIESEL_TRUNCATE: bool = true;
+        }
+    } else {
+        quote! {}
+    };
+
     let is_uninhabited = info.variants.is_empty();
     let is_zst = info.variants.len() == 1;
     let into_impl = if is_uninhabited {
@@ -953,6 +965,7 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
 
                 #into_impl
                 #serde_ops
+                #diesel_ops
             }
 
             #[automatically_derived]

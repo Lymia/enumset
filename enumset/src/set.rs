@@ -470,10 +470,16 @@ where
 {
     fn from_sql(bytes: DB::RawValue<'_>) -> diesel::deserialize::Result<Self> {
         let val = i32::from_sql(bytes)?;
-        Self::try_from_repr(val as u32).ok_or_else(|| {
-            diesel::result::Error::DeserializationError("Bitset contains invalid variants.".into())
+        if T::DIESEL_TRUNCATE {
+            Ok(Self::from_repr_truncated(val as u32))
+        } else {
+            Self::try_from_repr(val as u32).ok_or_else(|| {
+                diesel::result::Error::DeserializationError(
+                    "Bitset contains invalid variants.".into(),
+                )
                 .into()
-        })
+            })
+        }
     }
 }
 //endregion
