@@ -412,6 +412,21 @@ impl<T: EnumSetType + Display> Display for EnumSet<T> {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl<T: EnumSetType + defmt::Format> defmt::Format for EnumSet<T> {
+    fn format(&self, f: defmt::Formatter) {
+        let mut i = self.iter();
+        if let Some(v) = i.next() {
+            v.format(f);
+            let l = defmt::intern!(" | ");
+            for v in i {
+                l.format(f);
+                v.format(f);
+            }
+        }
+    }
+}
+
 #[allow(clippy::derived_hash_with_manual_eq)] // This impl exists to change trait bounds only.
 impl<T: EnumSetType> Hash for EnumSet<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
