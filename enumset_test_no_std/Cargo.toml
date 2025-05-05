@@ -7,6 +7,9 @@ description = "DO NOT PUBLISH"
 publish = false
 
 [dependencies]
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7"
+cortex-m-semihosting = "0.5.0"
 defmt = "1.0.1"
 defmt-semihosting = "0.3.0"
 enumset = { path = "../enumset", features = ["defmt"] }
