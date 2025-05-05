@@ -1,4 +1,5 @@
 #![no_std]
+#![no_main]
 #![deny(warnings)]
 
 use core::panic::PanicInfo;
@@ -11,7 +12,8 @@ pub enum SmallEnum {
     C,
 }
 
-fn main() {
+#[no_mangle]
+fn _start() {
     let e = SmallEnum::A | SmallEnum::B;
     if e.contains(SmallEnum::C) {
         panic!("oh no!");
