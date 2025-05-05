@@ -180,7 +180,7 @@ impl EnumSetInfo {
             "list" => self.explicit_serde_repr = Some(SerdeRepr::List),
             "map" => self.explicit_serde_repr = Some(SerdeRepr::Map),
             "array" => self.explicit_serde_repr = Some(SerdeRepr::Array),
-            _ => error(span, format!("`{}` is not a valid serialized representation.", ty))?,
+            _ => error(span, format!("`{ty}` is not a valid serialized representation."))?,
         }
         Ok(())
     }
@@ -194,7 +194,7 @@ impl EnumSetInfo {
             "u64" => self.explicit_internal_repr = Some(InternalRepr::U64),
             "u128" => self.explicit_internal_repr = Some(InternalRepr::U128),
             "array" => self.internal_repr_force_array = true,
-            _ => error(span, format!("`{}` is not a valid internal enumset representation.", ty))?,
+            _ => error(span, format!("`{ty}` is not a valid internal enumset representation."))?,
         }
         Ok(())
     }
@@ -473,7 +473,7 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
             }
         }
         SerdeRepr::List => {
-            let expecting_str = format!("a list of {}", name);
+            let expecting_str = format!("a list of {name}");
             quote! {
                 fn serialize<S: #serde::Serializer>(
                     set: #enumset::EnumSet<#name>, ser: S,
@@ -513,7 +513,7 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
             }
         }
         SerdeRepr::Map => {
-            let expecting_str = format!("a map from {} to bool", name);
+            let expecting_str = format!("a map from {name} to bool");
             quote! {
                 fn serialize<S: #serde::Serializer>(
                     set: #enumset::EnumSet<#name>, ser: S,
@@ -1004,7 +1004,7 @@ fn derive_enum_set_type_0(
                     "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {}
                     x => error(
                         attr.span(),
-                        format!("`#[repr({})]` cannot be used on enumset variants.", x),
+                        format!("`#[repr({x})]` cannot be used on enumset variants."),
                     )?,
                 }
             }
