@@ -1,4 +1,4 @@
-# Unreleased
+# Version 1.1.6 (2025-05-05)
 * `EnumSet::as_repr` is now const. (Thanks @jasonwhite)
 * Added support for the `defmt` crate via a new feature. (Thanks @katyo)
 
