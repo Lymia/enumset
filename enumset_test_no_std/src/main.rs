@@ -30,17 +30,15 @@ pub fn _start() {
 
 #[panic_handler]
 fn panic_std(_info: &PanicInfo) -> ! {
-    loop {}
+    loop { cortex_m::asm::wfi() }
 }
-
-// defmt-test related
 
 #[defmt::panic_handler]
 fn panic_defmt() -> ! {
-    loop {}
+    loop { cortex_m::asm::wfi() }
 }
 
 #[cortex_m_rt::exception]
 unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
-    loop{}
+    loop { cortex_m::asm::wfi() }
 }
