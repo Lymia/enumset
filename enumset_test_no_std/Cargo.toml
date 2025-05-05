@@ -7,4 +7,6 @@ description = "DO NOT PUBLISH"
 publish = false
 
 [dependencies]
-enumset = { path = "../enumset" }
+defmt = "1.0.1"
+defmt-semihosting = "0.3.0"
+enumset = { path = "../enumset", features = ["defmt"] }

@@ -5,7 +5,9 @@
 use core::panic::PanicInfo;
 use enumset::*;
 
-#[derive(EnumSetType)]
+extern crate defmt_semihosting;
+
+#[derive(EnumSetType, defmt::Format)]
 pub enum SmallEnum {
     A,
     B,
@@ -13,10 +15,11 @@ pub enum SmallEnum {
 }
 
 #[no_mangle]
-fn _start() {
+pub fn _start() {
     let e = SmallEnum::A | SmallEnum::B;
+    defmt::error!("{}", e);
     if e.contains(SmallEnum::C) {
-        panic!("oh no!");
+        core::panic!("oh no!");
     }
 }
 
