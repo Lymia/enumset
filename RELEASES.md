@@ -1,5 +1,6 @@
 # Unreleased
 * `EnumSet::as_repr` is now const. (Thanks @jasonwhite)
+* Added support for the `defmt` crate via a new feature. (Thanks @katyo)
 
 # Version 1.1.5 (2024-07-22)
 * Add support for using `EnumSet<T>` values in the `enum_set!` macro.
