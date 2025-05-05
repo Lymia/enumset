@@ -1,6 +1,7 @@
 #![no_std]
 #![deny(warnings)]
 
+use core::panic::PanicInfo;
 use enumset::*;
 
 #[derive(EnumSetType)]
@@ -15,4 +16,9 @@ fn main() {
     if e.contains(SmallEnum::C) {
         panic!("oh no!");
     }
+}
+
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    loop {}
 }
