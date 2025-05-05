@@ -1,8 +1,6 @@
 #![no_std]
-#![feature(start)]
 #![deny(warnings)]
 
-use core::panic::PanicInfo;
 use enumset::*;
 
 #[derive(EnumSetType)]
@@ -12,16 +10,9 @@ pub enum SmallEnum {
     C,
 }
 
-#[start]
-fn main(_: isize, _: *const *const u8) -> isize {
+fn main() {
     let e = SmallEnum::A | SmallEnum::B;
     if e.contains(SmallEnum::C) {
         panic!("oh no!");
     }
-    0
-}
-
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
 }

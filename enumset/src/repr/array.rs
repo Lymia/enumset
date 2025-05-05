@@ -238,7 +238,6 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
             out[i] = 0;
         }
     }
-    #[must_use]
     fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()> {
         if N > out.len() {
             for i in out.len()..N {
