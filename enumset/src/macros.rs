@@ -42,7 +42,7 @@ pub mod __internal {
 #[macro_export]
 macro_rules! enum_set {
     ($(|)*) => {
-        EnumSet::empty()
+        $crate::EnumSet::empty()
     };
     ($value:path $(|)*) => {
         {
