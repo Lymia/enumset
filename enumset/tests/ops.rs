@@ -559,3 +559,14 @@ impl Display for Enum8 {
 fn test_display_impl() {
     assert_eq!((Enum8::A | Enum8::D | Enum8::H).to_string(), "A | D | H");
 }
+
+mod tests_without_imports {
+    // This deliberately does not use super::* or crate::*
+
+    // The constants below should compile despite not having EnumSet or enumset
+    // in scope.
+
+    const EMPTY: crate::EnumSet<super::SmallEnum> = crate::enum_set!();
+    const CONST_SET: crate::EnumSet<super::SmallEnum> = crate::enum_set!(super::SmallEnum::A | super::SmallEnum::C);
+    const CONST_1_SET: crate::EnumSet<super::SmallEnum> = crate::enum_set!(super::SmallEnum::A);
+}
