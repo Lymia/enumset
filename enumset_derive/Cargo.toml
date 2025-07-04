@@ -15,7 +15,6 @@ license = "MIT/Apache-2.0"
 proc-macro = true
 
 [features]
-serde = []
 std_deprecation_warning = []
 
 [dependencies]

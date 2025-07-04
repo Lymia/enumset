@@ -346,7 +346,6 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
     let typed_enumset = quote!(#enumset::EnumSet<#name>);
     let core = quote!(#enumset::__internal::core_export);
     let internal = quote!(#enumset::__internal);
-    #[cfg(feature = "serde")]
     let serde = quote!(#enumset::__internal::serde);
 
     let repr = match info.internal_repr() {
@@ -426,10 +425,7 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
         }
     };
 
-    #[cfg(feature = "serde")]
     let serde_repr = info.serde_repr();
-
-    #[cfg(feature = "serde")]
     let serde_ops = match serde_repr {
         SerdeRepr::U8 | SerdeRepr::U16 | SerdeRepr::U32 | SerdeRepr::U64 | SerdeRepr::U128 => {
             let (serialize_repr, from_fn, to_fn) = match serde_repr {
@@ -642,9 +638,6 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
             }
         }
     };
-
-    #[cfg(not(feature = "serde"))]
-    let serde_ops = quote! {};
 
     let is_uninhabited = info.variants.is_empty();
     let is_zst = info.variants.len() == 1;
@@ -952,7 +945,10 @@ fn enum_set_type_impl(info: EnumSetInfo, warnings: Vec<(Span, &'static str)>) ->
                 const VARIANT_COUNT: u32 = #variant_count;
 
                 #into_impl
-                #serde_ops
+
+                #internal::__if_serde! {
+                    #serde_ops
+                }
             }
 
             #[automatically_derived]

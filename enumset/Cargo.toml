@@ -20,7 +20,7 @@ travis-ci = { repository = "Lymia/enumset", branch = "master" }
 maintenance = { status = "actively-developed" }
 
 [features]
-serde = ["serde2", "enumset_derive/serde"]
+serde = ["serde2"]
 alloc = []
 proc-macro-crate = ["enumset_derive/proc-macro-crate"]
 
