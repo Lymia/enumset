@@ -13,3 +13,6 @@ cortex-m-semihosting = "0.5.0"
 defmt = "1.0.1"
 defmt-semihosting = "0.3.0"
 enumset = { path = "../enumset", features = ["defmt"] }
+
+[build-dependencies]
+enumset = { path = "../enumset", features = ["serde"] }
