@@ -1,3 +1,10 @@
+# Version 1.1.7 (2025-07-08)
+* Fix hygiene issue where the `enumset_set!` macro with no arguments required
+  `EnumSet` to be imported into the current context. (Thanks @cbiffle)
+* Fix issue where `#[derive(EnumSetType)]` used to cause compile errors when
+  cross-compiling with different flags on the host and target sides.
+  (Thanks @dtolnay)
+
 # Version 1.1.6 (2025-05-05)
 * `EnumSet::as_repr` is now const. (Thanks @jasonwhite)
 * Added support for the `defmt` crate via a new feature. (Thanks @katyo)
