@@ -10,10 +10,7 @@ use core::ops::{
 };
 
 #[cfg(feature = "serde")]
-use {
-    serde2 as serde,
-    serde2::{Deserialize, Serialize},
-};
+use serde::{Deserialize, Serialize};
 
 /// An efficient set type for enums.
 ///

@@ -1,7 +1,7 @@
 use crate::repr::EnumSetTypeRepr;
 
 #[cfg(feature = "serde")]
-use {crate::EnumSet, serde2 as serde};
+use crate::EnumSet;
 
 /// The trait used to define enum types that may be used with [`EnumSet`].
 ///

@@ -1040,6 +1040,13 @@ fn derive_enum_set_type_0(
                  feature = \"proc-macro-crate\" instead. If you don't, remove the feature.",
             ));
         }
+        #[cfg(feature = "serde2_deprecation_warning")]
+        {
+            warnings.push((
+                _input_span,
+                "feature = \"serde2\" was never valid and did nothing. Please remove the feature.",
+            ));
+        }
 
         // Parse enum variants
         for variant in &data.variants {

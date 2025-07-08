@@ -12,14 +12,12 @@ type Result = ();
 
 #[derive(Serialize, Deserialize, EnumSetType, Debug)]
 #[enumset(serialize_repr = "list")]
-#[serde(crate="serde2")]
 pub enum ListEnum {
     A, B, C, D, E, F, G, H,
 }
 
 #[derive(Serialize, Deserialize, EnumSetType, Debug)]
 #[enumset(serialize_repr = "map")]
-#[serde(crate="serde2")]
 pub enum MapEnum {
     A, B, C, D, E, F, G, H,
 }

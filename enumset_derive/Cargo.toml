@@ -16,6 +16,7 @@ proc-macro = true
 
 [features]
 std_deprecation_warning = []
+serde2_deprecation_warning = []
 
 [dependencies]
 darling = { version = "0.20", default-features = false }

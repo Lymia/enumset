@@ -6,7 +6,7 @@ pub mod __internal {
 
     /// A reexport of serde so our users don't have to also have a serde dependency.
     #[cfg(feature = "serde")]
-    pub use serde2 as serde;
+    pub use serde;
 
     /// Reexports of internal types
     pub use crate::{
