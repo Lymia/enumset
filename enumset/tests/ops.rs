@@ -453,6 +453,19 @@ macro_rules! test_enum {
         fn check_size() {
             assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
         }
+
+        #[test]
+        fn from_array() {
+            assert!(EnumSet::<$e>::from([]).is_empty());
+            assert_eq!(
+                EnumSet::<$e>::from([$e::B, $e::E, $e::H]),
+                enum_set!($e::B | $e::E | $e::H)
+            );
+            assert_eq!(
+                EnumSet::<$e>::from([$e::A, $e::B, $e::C]),
+                enum_set!($e::A | $e::B | $e::C)
+            );
+        }
     }
 }
 macro_rules! tests {

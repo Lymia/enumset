@@ -806,6 +806,16 @@ impl<T: EnumSetType> EnumSet<T> {
         EnumSet { __priv_repr: T::Repr::from_u64_slice(bits) }
     }
 }
+
+impl<T: EnumSetType, const N: usize> From<[T; N]> for EnumSet<T> {
+    fn from(value: [T; N]) -> Self {
+        let mut new = EnumSet::new();
+        for elem in value {
+            new.insert(elem);
+        }
+        new
+    }
+}
 //endregion
 
 //region EnumSet iter
@@ -860,6 +870,14 @@ impl<T: EnumSetType> Extend<T> for EnumSet<T> {
     }
 }
 
+impl<'a, T: EnumSetType> Extend<&'a T> for EnumSet<T> {
+    fn extend<I: IntoIterator<Item = &'a T>>(&mut self, iter: I) {
+        iter.into_iter().for_each(|v| {
+            self.insert(*v);
+        });
+    }
+}
+
 impl<T: EnumSetType> FromIterator<T> for EnumSet<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut set = EnumSet::default();
@@ -872,6 +890,14 @@ impl<T: EnumSetType> Extend<EnumSet<T>> for EnumSet<T> {
     fn extend<I: IntoIterator<Item = EnumSet<T>>>(&mut self, iter: I) {
         iter.into_iter().for_each(|v| {
             self.insert_all(v);
+        });
+    }
+}
+
+impl<'a, T: EnumSetType> Extend<&'a EnumSet<T>> for EnumSet<T> {
+    fn extend<I: IntoIterator<Item = &'a EnumSet<T>>>(&mut self, iter: I) {
+        iter.into_iter().for_each(|v| {
+            self.insert_all(*v);
         });
     }
 }
