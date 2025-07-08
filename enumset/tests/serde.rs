@@ -62,8 +62,12 @@ macro_rules! serde_test_simple {
         #[test]
         fn serialize_deserialize_test_bincode() {
             for &value in VALUES {
-                let serialized = bincode::serialize(&value).unwrap();
-                let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+                let serialized = bincode::serde::encode_to_vec(
+                    &value, bincode::config::legacy(),
+                ).unwrap();
+                let deserialized = bincode::serde::decode_from_slice::<EnumSet<$e>, _>(
+                    &serialized, bincode::config::legacy(),
+                ).unwrap().0;
                 assert_eq!(value, deserialized);
                 if $ser_size != !0 {
                     assert_eq!(serialized.len(), $ser_size);
@@ -87,8 +91,12 @@ macro_rules! serde_test {
 
         #[test]
         fn deserialize_all_test() {
-            let serialized = bincode::serialize(&!0u128).unwrap();
-            let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+            let serialized = bincode::serde::encode_to_vec(
+                &!0u128, bincode::config::legacy(),
+            ).unwrap();
+            let deserialized = bincode::serde::decode_from_slice::<EnumSet<$e>, _>(
+                &serialized, bincode::config::legacy(),
+            ).unwrap().0;
             assert_eq!(EnumSet::<$e>::all(), deserialized);
         }
     }
@@ -99,8 +107,12 @@ macro_rules! tests {
 
 #[test]
 fn test_deny_unknown() {
-    let serialized = bincode::serialize(&!0u128).unwrap();
-    let deserialized = bincode::deserialize::<EnumSet<DenyUnknownEnum>>(&serialized);
+    let serialized = bincode::serde::encode_to_vec(
+        &!0u128, bincode::config::legacy(),
+    ).unwrap();
+    let deserialized = bincode::serde::decode_from_slice::<EnumSet<DenyUnknownEnum>, _>(
+        &serialized, bincode::config::legacy(),
+    );
     assert!(deserialized.is_err());
 }
 
