@@ -5,23 +5,24 @@ use enumset::*;
 use std::collections::{HashSet, BTreeSet};
 use std::fmt::{Debug, Display, Formatter};
 
+/// Used to test the degenerate case of an uninhabited enum.
 #[derive(EnumSetType, Debug)]
 pub enum EmptyEnum { }
 
-#[derive(EnumSetType, Debug)]
-pub enum Enum1 {
-    A,
-}
-
+// Test of a relatively typical enum.
 #[derive(EnumSetType, Debug)]
 enum SmallEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+
+// Used to test enums where the required impls are derived manually.
 #[derive(Clone, Copy, Debug, EnumSetType, Eq, PartialEq)]
 #[enumset(no_super_impls)]
 enum SmallEnumExplicitDerive {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+
+// Used to test very large enums.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u128")]
 pub enum LargeEnum {
@@ -35,10 +36,26 @@ pub enum LargeEnum {
     _70,  _71,  _72,  _73,  _74,  _75,  _76,  _77,
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+
+/// Used to test enums with sparse elements.
+#[derive(EnumSetType, Debug)]
+pub enum SparseEnum {
+    A = 0xA, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
+}
+
+/// Used to test the edge case of an enum with a single element.
+#[derive(EnumSetType, Debug)]
+pub enum Enum1 {
+    A,
+}
+
+/// Used to test the edge case of an enum with eight variants (exactly fits in an u8)
 #[derive(EnumSetType, Debug)]
 pub enum Enum8 {
     A, B, C, D, E, F, G, H,
 }
+
+/// Used to test the edge case of an enum with 128 variants (exactly fits in an u128)
 #[derive(EnumSetType, Debug)]
 pub enum Enum128 {
     A, B, C, D, E, F, G, H, _8, _9, _10, _11, _12, _13, _14, _15,
@@ -51,56 +68,70 @@ pub enum Enum128 {
     _110, _111, _112, _113, _114, _115, _116, _117, _118, _119, _120, _121, _122,
     _123, _124,  _125, _126, _127,
 }
-#[derive(EnumSetType, Debug)]
-pub enum SparseEnum {
-    A = 0xA, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
-}
 
+/// Used to test repr on enums.
 #[repr(u32)]
 #[derive(EnumSetType, Debug)]
 pub enum ReprEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+
+/// Used to test repr on enums. (cont)
 #[repr(u64)]
 #[derive(EnumSetType, Debug)]
 pub enum ReprEnum2 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+
+/// Used to test repr on enums. (cont)
 #[repr(isize)]
 #[derive(EnumSetType, Debug)]
 pub enum ReprEnum3 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+
+/// Used to test repr on enums. (cont)
 #[repr(C)]
 #[derive(EnumSetType, Debug)]
 pub enum ReprEnum4 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
+
+/// Used to test massive enums that require arrays to use.
 #[derive(EnumSetType, Debug)]
 pub enum GiantEnum {
     A = 100, B = 200, C = 300, D = 400, E = 500, F = 600, G = 700, H = 800,
 }
+
+/// Used to test enums that are explicitly forced to use the array representation.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
 pub enum SmallArrayEnum {
     A, B, C, D, E, F, G, H
 }
+
+/// Used to test the edge case of an enum exactly one bit larger than a single u64 word
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
 pub enum MarginalArrayEnumS2 {
     A, B, C, D, E, F, G, H, Marginal = 64,
 }
+
+/// Used to test the edge case of an enum that requires two u64 words.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
 pub enum MarginalArrayEnumS2H {
     A = 64, B, C, D, E, F, G, H, Marginal = 127,
 }
+
+/// Used to test the edge case of an enum that requires one more bit than two u64 words.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
 pub enum MarginalArrayEnumS3 {
     A, B, C, D, E, F, G, H, Marginal = 128,
 }
 
+/// Tests that all variants are properly present when `EnumSet::all` is used.
 macro_rules! test_variants {
     ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
         #[test]
@@ -139,21 +170,23 @@ test_variants! { SparseEnum sparse_enum_all_empty
 macro_rules! test_enum {
     ($e:ident, $mem_size:expr) => {
         const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
-        const CONST_1_SET: EnumSet<$e> = enum_set!($e::A);
-        const CONST_SET_CHAIN: EnumSet<$e> = enum_set!(CONST_SET | $e::D);
-        const CONST_SET_CHAIN_2: EnumSet<$e> = enum_set!($e::E | CONST_SET);
-        const CONST_SET_CHAIN_3: EnumSet<$e> = enum_set!(CONST_SET_CHAIN | CONST_SET_CHAIN_2);
-        const CONST_UNION: EnumSet<$e> = enum_set_union!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
-        const CONST_INTERSECTION: EnumSet<$e> = enum_set_intersection!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
-        const CONST_DIFFERENCE: EnumSet<$e> = enum_set_difference!(CONST_UNION, CONST_SET);
-        const CONST_COMPLEMENT: EnumSet<$e> = enum_set_complement!(CONST_SET);
-        const CONST_SYMMETRIC_DIFFERENCE: EnumSet<$e> = enum_set_symmetric_difference!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
-        const EMPTY_SET: EnumSet<$e> = EnumSet::empty();
-        const ALL_SET: EnumSet<$e> = EnumSet::all();
-        const VARIANT_COUNT: usize = EnumSet::<$e>::variant_count() as usize;
 
+        /// Tests that sets created at compiletime using const exprs work as expected.
         #[test]
         fn const_set() {
+            const CONST_1_SET: EnumSet<$e> = enum_set!($e::A);
+            const CONST_SET_CHAIN: EnumSet<$e> = enum_set!(CONST_SET | $e::D);
+            const CONST_SET_CHAIN_2: EnumSet<$e> = enum_set!($e::E | CONST_SET);
+            const CONST_SET_CHAIN_3: EnumSet<$e> = enum_set!(CONST_SET_CHAIN | CONST_SET_CHAIN_2);
+            const CONST_UNION: EnumSet<$e> = enum_set_union!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
+            const CONST_INTERSECTION: EnumSet<$e> = enum_set_intersection!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
+            const CONST_DIFFERENCE: EnumSet<$e> = enum_set_difference!(CONST_UNION, CONST_SET);
+            const CONST_COMPLEMENT: EnumSet<$e> = enum_set_complement!(CONST_SET);
+            const CONST_SYMMETRIC_DIFFERENCE: EnumSet<$e> = enum_set_symmetric_difference!(CONST_SET_CHAIN, CONST_SET_CHAIN_2);
+            const EMPTY_SET: EnumSet<$e> = EnumSet::empty();
+            const ALL_SET: EnumSet<$e> = EnumSet::all();
+            const VARIANT_COUNT: usize = EnumSet::<$e>::variant_count() as usize;
+
             assert_eq!(CONST_SET, $e::A | $e::C);
             assert_eq!(CONST_1_SET, $e::A);
             assert_eq!(CONST_SET_CHAIN, $e::A | $e::C | $e::D);
@@ -169,6 +202,16 @@ macro_rules! test_enum {
             assert_eq!(ALL_SET, EnumSet::all());
         }
 
+        /// Tests that enumsets work in match expressions.
+        #[test]
+        fn match_const_test() {
+            match CONST_SET {
+                CONST_SET => { /* ok */ }
+                _ => panic!("match fell through?"),
+            }
+        }
+
+        // Basic tests to ensure insert/remove operations work properly.
         #[test]
         fn basic_add_remove() {
             let mut set = EnumSet::new();
@@ -189,6 +232,7 @@ macro_rules! test_enum {
             assert!(set.is_empty());
         }
 
+        /// Basic tests to ensure the return status for `insert` is correct.
         #[test]
         fn already_present_element() {
             let mut set = EnumSet::new();
@@ -198,18 +242,21 @@ macro_rules! test_enum {
             assert!(set.insert($e::A));
         }
 
+        /// Basic test to ensure `empty` actually returns an empty set.
         #[test]
         fn empty_is_empty() {
             assert_eq!(EnumSet::<$e>::empty().len(), 0)
         }
 
+        /// Basic test to ensure that the length of the complete set is as expected.
         #[test]
         fn all_len() {
             assert_eq!(EnumSet::<$e>::all().len(), EnumSet::<$e>::variant_count() as usize)
         }
 
+        /// Tests the basic functionality of the iterator tyep.
         #[test]
-        fn iter_test() {
+        fn iter_basic_ops() {
             let mut set = EnumSet::new();
             set.insert($e::A);
             set.insert($e::B);
@@ -247,15 +294,17 @@ macro_rules! test_enum {
             assert_eq!(set, set_5);
         }
 
+        /// Tests that iteration on an empty seti n fact returns nothing.
         #[test]
-        fn empty_iter_test() {
+        fn empty_iter() {
             for _ in EnumSet::<$e>::new() {
                 panic!("should not happen");
             }
         }
 
+        /// Tests that the iterator returns enums in the expected order.
         #[test]
-        fn iter_ordering_test() {
+        fn iter_ordering() {
             let set_a = $e::A | $e::B | $e::E;
             let vec_a: Vec<_> = set_a.iter().collect();
             assert_eq!(vec_a, &[$e::A, $e::B, $e::E]);
@@ -269,35 +318,37 @@ macro_rules! test_enum {
             assert_eq!(vec_b_rev, &[$e::G, $e::D, $e::C, $e::B]);
         }
 
-        fn check_iter_size_hint(set: EnumSet<$e>) {
-            let count = set.len();
-
-            // check for forward iteration
-            {
-                let mut itr = set.iter();
-                for idx in 0 .. count {
-                    assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
-                    assert_eq!(itr.len(), count-idx);
-                    assert!(itr.next().is_some());
-                }
-                assert_eq!(itr.size_hint(), (0, Some(0)));
-                assert_eq!(itr.len(), 0);
-            }
-
-            // check for backwards iteration
-            {
-                let mut itr = set.iter().rev();
-                for idx in 0 .. count {
-                    assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
-                    assert_eq!(itr.len(), count-idx);
-                    assert!(itr.next().is_some());
-                }
-                assert_eq!(itr.size_hint(), (0, Some(0)));
-                assert_eq!(itr.len(), 0);
-            }
-        }
+        /// Tests that the size hint returned by the iterator is correct.
         #[test]
-        fn test_iter_size_hint() {
+        fn iter_size_hint() {
+            fn check_iter_size_hint(set: EnumSet<$e>) {
+                let count = set.len();
+
+                // check for forward iteration
+                {
+                    let mut itr = set.iter();
+                    for idx in 0 .. count {
+                        assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                        assert_eq!(itr.len(), count-idx);
+                        assert!(itr.next().is_some());
+                    }
+                    assert_eq!(itr.size_hint(), (0, Some(0)));
+                    assert_eq!(itr.len(), 0);
+                }
+
+                // check for backwards iteration
+                {
+                    let mut itr = set.iter().rev();
+                    for idx in 0 .. count {
+                        assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                        assert_eq!(itr.len(), count-idx);
+                        assert!(itr.next().is_some());
+                    }
+                    assert_eq!(itr.size_hint(), (0, Some(0)));
+                    assert_eq!(itr.len(), 0);
+                }
+            }
+
             check_iter_size_hint(EnumSet::<$e>::new());
             check_iter_size_hint(EnumSet::<$e>::all());
             let mut set = EnumSet::new();
@@ -307,13 +358,15 @@ macro_rules! test_enum {
             check_iter_size_hint(set);
         }
 
+        /// Check that advanced iterator operations like filter and collect work properly.
         #[test]
-        fn iter_ops_test() {
+        fn iter_advanced_ops_test() {
             let set = $e::A | $e::B | $e::C | $e::E;
             let set2 = set.iter().filter(|&v| v != $e::B).collect::<EnumSet<_>>();
             assert_eq!(set2, $e::A | $e::C | $e::E);
         }
 
+        /// Basic test for arithmetic operators on bitsets.
         #[test]
         fn basic_ops_test() {
             assert_eq!(($e::A | $e::B) | ($e::B | $e::C), $e::A | $e::B | $e::C);
@@ -323,6 +376,7 @@ macro_rules! test_enum {
             assert_eq!($e::A | !$e::A, EnumSet::<$e>::all());
         }
 
+        /// Basic test for mutate-in-place operators on bitsets.
         #[test]
         fn mutable_ops_test() {
             let mut set = $e::A | $e::B;
@@ -337,21 +391,24 @@ macro_rules! test_enum {
             assert_eq!(set, $e::A | $e::E);
         }
 
+        /// Basic test for disjoint/subset checking.
         #[test]
-        fn basic_set_status() {
+        fn test_disjoint_subset() {
             assert!(($e::A | $e::B | $e::C).is_disjoint($e::D | $e::E | $e::F));
             assert!(!($e::A | $e::B | $e::C | $e::D).is_disjoint($e::D | $e::E | $e::F));
             assert!(($e::A | $e::B).is_subset($e::A | $e::B | $e::C));
             assert!(!($e::A | $e::D).is_subset($e::A | $e::B | $e::C));
         }
 
+        /// Basic test that `Debug` returns the expected outupt.
         #[test]
-        fn debug_impl() {
+        fn debug_impl_has_expected_output() {
             assert_eq!(format!("{:?}", $e::A | $e::B | $e::D), "EnumSet(A | B | D)");
         }
 
+        /// Basic test that converting to and from an integer works as expected.
         #[test]
-        fn to_from_bits() {
+        fn to_from_roundtrip() {
             let value = $e::A | $e::C | $e::D | $e::F | $e::E | $e::G;
             if EnumSet::<$e>::bit_width() < 128 {
                 assert_eq!(EnumSet::from_u128(value.as_u128()), value);
@@ -370,25 +427,19 @@ macro_rules! test_enum {
             }
         }
 
+        /// Tests that EnumSet correctly detects conversions containing invalid bits
         #[test]
         #[should_panic]
-        fn too_many_bits() {
+        fn should_panic_on_invalid_bits() {
             if EnumSet::<$e>::variant_count() == 128 {
                 panic!("(test skipped)")
             }
             EnumSet::<$e>::from_u128(!0);
         }
 
+        /// An advanced test to ensure that sets of enumsets work correctly.
         #[test]
-        fn match_const_test() {
-            match CONST_SET {
-                CONST_SET => { /* ok */ }
-                _ => panic!("match fell through?"),
-            }
-        }
-
-        #[test]
-        fn set_test() {
+        fn test_enumset_in_std_sets() {
             const SET_TEST_A: EnumSet<$e> = enum_set!($e::A | $e::B | $e::C);
             const SET_TEST_B: EnumSet<$e> = enum_set!($e::A | $e::B | $e::D);
             const SET_TEST_C: EnumSet<$e> = enum_set!($e::A | $e::B | $e::E);
@@ -432,8 +483,9 @@ macro_rules! test_enum {
             test_set!(tree_set);
         }
 
+        /// An advanced test that summing enumsets in iterators.
         #[test]
-        fn sum_test() {
+        fn sum_iterator_of_enumsets() {
             let target = $e::A | $e::B | $e::D | $e::E | $e::G | $e::H;
 
             let list_a = [$e::A | $e::B, $e::D | $e::E, $e::G | $e::H];
@@ -449,11 +501,13 @@ macro_rules! test_enum {
             assert_eq!(target, sum_d);
         }
 
+        /// Checks that the enumset has the expected size in memory.
         #[test]
         fn check_size() {
             assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
         }
 
+        /// Tests the conversion of const-length arrays to EnumSets.
         #[test]
         fn from_array() {
             assert!(EnumSet::<$e>::from([]).is_empty());
