@@ -1,11 +1,11 @@
-error[E0599]: the function or associated item `from_repr` exists for struct `EnumSet<OkayEnumButCantUseFromRepr>`, but its trait bounds were not satisfied
+error[E0599]: the function or associated item `from_repr` exists for struct `enumset::EnumSet<OkayEnumButCantUseFromRepr>`, but its trait bounds were not satisfied
   --> tests/compile-fail/explicit_repr.rs:15:44
    |
 4  | enum OkayEnumButCantUseFromRepr {
    | ------------------------------- doesn't satisfy `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
 ...
 15 |     EnumSet::<OkayEnumButCantUseFromRepr>::from_repr(1);
-   |                                            ^^^^^^^^^ function or associated item cannot be called on `EnumSet<OkayEnumButCantUseFromRepr>` due to unsatisfied trait bounds
+   |                                            ^^^^^^^^^ function or associated item cannot be called on `enumset::EnumSet<OkayEnumButCantUseFromRepr>` due to unsatisfied trait bounds
    |
 note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRepr>` consider using one of the following associated functions:
       enumset::EnumSet::<T>::new
@@ -13,36 +13,36 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       enumset::EnumSet::<T>::empty
       enumset::EnumSet::<T>::all
       and $N others
-   --> $WORKSPACE/enumset/src/set.rs
-    |
-    |     pub const fn new() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> $WORKSPACE/enumset/src/set.rs
+   |
+   |     pub const fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub fn only(t: T) -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     pub fn only(t: T) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub const fn empty() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     pub const fn empty() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub const fn all() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-    = note: the following trait bounds were not satisfied:
-            `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
+   |     pub const fn all() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: the following trait bounds were not satisfied:
+           `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
 note: the trait `EnumSetTypeWithRepr` must be implemented
-   --> $WORKSPACE/enumset/src/traits.rs
-    |
-    | / pub unsafe trait EnumSetTypeWithRepr:
-    | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
-    | |________________________________________________________________________________^
+  --> $WORKSPACE/enumset/src/traits.rs
+   |
+   | / pub unsafe trait EnumSetTypeWithRepr:
+   | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
+   | |________________________________________________________________________________^
 
-error[E0599]: the function or associated item `from_repr` exists for struct `EnumSet<OkayEnumButCantUseFromReprArray>`, but its trait bounds were not satisfied
+error[E0599]: the function or associated item `from_repr` exists for struct `enumset::EnumSet<OkayEnumButCantUseFromReprArray>`, but its trait bounds were not satisfied
   --> tests/compile-fail/explicit_repr.rs:16:49
    |
 10 | enum OkayEnumButCantUseFromReprArray {
    | ------------------------------------ doesn't satisfy `_: EnumSetTypeWithRepr`
 ...
 16 |     EnumSet::<OkayEnumButCantUseFromReprArray>::from_repr([1]);
-   |                                                 ^^^^^^^^^ function or associated item cannot be called on `EnumSet<OkayEnumButCantUseFromReprArray>` due to unsatisfied trait bounds
+   |                                                 ^^^^^^^^^ function or associated item cannot be called on `enumset::EnumSet<OkayEnumButCantUseFromReprArray>` due to unsatisfied trait bounds
    |
 note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromReprArray>` consider using one of the following associated functions:
       enumset::EnumSet::<T>::new
@@ -50,24 +50,24 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       enumset::EnumSet::<T>::empty
       enumset::EnumSet::<T>::all
       and $N others
-   --> $WORKSPACE/enumset/src/set.rs
-    |
-    |     pub const fn new() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> $WORKSPACE/enumset/src/set.rs
+   |
+   |     pub const fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub fn only(t: T) -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     pub fn only(t: T) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub const fn empty() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     pub const fn empty() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-    |     pub const fn all() -> Self {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-    = note: the following trait bounds were not satisfied:
-            `OkayEnumButCantUseFromReprArray: EnumSetTypeWithRepr`
+   |     pub const fn all() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: the following trait bounds were not satisfied:
+           `OkayEnumButCantUseFromReprArray: EnumSetTypeWithRepr`
 note: the trait `EnumSetTypeWithRepr` must be implemented
-   --> $WORKSPACE/enumset/src/traits.rs
-    |
-    | / pub unsafe trait EnumSetTypeWithRepr:
-    | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
-    | |________________________________________________________________________________^
+  --> $WORKSPACE/enumset/src/traits.rs
+   |
+   | / pub unsafe trait EnumSetTypeWithRepr:
+   | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
+   | |________________________________________________________________________________^
