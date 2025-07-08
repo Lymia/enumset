@@ -142,8 +142,8 @@ pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 ///   automatically derived versions, or unintentional behavior may be a result.
 /// * `#[enumset(no_ops)` prevents the derive from implementing any operator traits.
 /// * `#[enumset(crate_name = "enumset2")]` may be used to change the name of the `enumset` crate
-///   used in the generated code. When the `std` feature is enabled, enumset parses `Cargo.toml`
-///   to determine the name of the crate, and this flag is unnecessary.
+///   used in the generated code. When the `proc-macro-crate` feature is enabled, enumset parses
+///   `Cargo.toml` to determine the name of the crate, and this flag is unnecessary.
 /// * `#[enumset(repr = "u8")]` may be used to specify the in-memory representation of `EnumSet`s
 ///   of this enum type. The effects of this are described in [the `EnumSet` documentation under
 ///   “FFI, Safety and `repr`”][EnumSet#ffi-safety-and-repr]. Allowed types are `u8`, `u16`, `u32`,
