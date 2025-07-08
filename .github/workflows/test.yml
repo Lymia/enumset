@@ -85,7 +85,7 @@ jobs:
           command: clippy
           args: -p enumset_test_trybuild
 
-  build_no_std:
+  test_build_embedded:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

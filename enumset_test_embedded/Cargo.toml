@@ -1,5 +1,5 @@
 [package]
-name = "enumset_test_no_std"
+name = "enumset_test_embedded"
 version = "0.0.0"
 edition = "2021"
 
