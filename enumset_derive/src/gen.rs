@@ -1,3 +1,5 @@
+//! This module handles generating the actual code to allow an enum type to be used as a bitset.
+
 use crate::plan::{EnumSetInfo, InternalRepr, SerdeRepr};
 use proc_macro2::{Literal, Span, TokenStream as SynTokenStream};
 use quote::*;

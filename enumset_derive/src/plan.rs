@@ -1,4 +1,5 @@
-//! This module handles parsing the input enum type, and planning
+//! This module handles parsing the input enum type, and planning the final representation for the
+//! bitset.
 
 use crate::error;
 use darling::util::SpannedValue;
