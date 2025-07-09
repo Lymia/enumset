@@ -33,12 +33,7 @@ pub unsafe trait EnumSetTypeWithRepr:
 }
 
 /// The actual members of EnumSetType. Put here to avoid polluting global namespaces.
-pub unsafe trait EnumSetTypePrivate {
-    /// A helper type used to implement the `enum_set!` macro among other things.
-    type ConstHelper;
-    /// The instance of the `ConstHelper`.
-    const CONST_HELPER_INSTANCE: Self::ConstHelper;
-
+pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper {
     /// The underlying type used to store the bitset.
     type Repr: EnumSetTypeRepr;
     /// A mask of bits that are valid in the bitset.
@@ -64,4 +59,17 @@ pub unsafe trait EnumSetTypePrivate {
     #[cfg(feature = "serde")]
     fn deserialize<'de, D: serde::Deserializer<'de>>(de: D) -> Result<EnumSet<Self>, D::Error>
     where Self: EnumSetType;
+}
+
+/// Retrieves a helper type for constant time operations on `EnumSet`s.
+pub unsafe trait EnumSetConstHelper {
+    /// A helper type used to convert values to EnumSets at compile-time.
+    type ConstInitHelper;
+    /// The instance of the `ConstInitHelper`.
+    const CONST_INIT_HELPER: Self::ConstInitHelper;
+
+    /// A helper type used to implement compile-time operations on enums.
+    type ConstOpHelper;
+    /// The instance of the `ConstOpHelper`.
+    const CONST_OP_HELPER: Self::ConstOpHelper;
 }
