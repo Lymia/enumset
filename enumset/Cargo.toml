@@ -15,6 +15,10 @@ readme = "README.md"
 
 license = "MIT/Apache-2.0"
 
+[[bench]]
+name = "basic_benchmark"
+harness = false
+
 [badges]
 travis-ci = { repository = "Lymia/enumset", branch = "master" }
 maintenance = { status = "actively-developed" }
@@ -38,5 +42,6 @@ defmt = { version = "1", optional = true }
 
 [dev-dependencies]
 bincode = { version = "1", features = ["i128"] }
+criterion = "0.5"
 serde_derive = "1"
 serde_json = "1"
