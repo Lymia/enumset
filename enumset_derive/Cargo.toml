@@ -19,7 +19,7 @@ std_deprecation_warning = []
 serde2_deprecation_warning = []
 
 [dependencies]
-darling = { version = "0.20", default-features = false }
+darling = { version = "0.21", default-features = false }
 syn = "2"
 quote = "1"
 proc-macro2 = "1"
