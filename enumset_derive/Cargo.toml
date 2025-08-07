@@ -6,7 +6,7 @@ edition = "2021"
 
 description = "An internal helper crate for enumset. Not public API."
 
-documentation = "https://lymia.moe/doc/enumset/enumset/"
+documentation = "https://docs.rs/enumset_derive/latest/enumset_derive/"
 repository = "https://github.com/Lymia/enumset"
 
 license = "MIT/Apache-2.0"
@@ -19,7 +19,7 @@ std_deprecation_warning = []
 serde2_deprecation_warning = []
 
 [dependencies]
-darling = { version = "0.20", default-features = false }
+darling = { version = "0.21", default-features = false }
 syn = "2"
 quote = "1"
 proc-macro2 = "1"
