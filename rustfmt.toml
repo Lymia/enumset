@@ -18,5 +18,6 @@ where_single_line = true
 # Ignored paths
 ignore = [
     "enumset/benches",
+    "enumset/examples",
     "enumset/tests",
 ]
