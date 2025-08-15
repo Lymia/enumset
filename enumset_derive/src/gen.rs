@@ -19,7 +19,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
                 let crate_name = proc_macro_crate::crate_name("enumset");
                 match crate_name {
                     Ok(FoundCrate::Name(name)) => {
-                        let ident = Ident::new(&name, Span::call_site());
+                        let ident = proc_macro2::Ident::new(&name, proc_macro2::Span::call_site());
                         quote!(::#ident)
                     }
                     _ => quote!(::enumset),
