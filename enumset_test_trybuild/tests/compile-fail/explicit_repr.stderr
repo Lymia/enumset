@@ -1,7 +1,7 @@
 error[E0599]: the function or associated item `from_repr` exists for struct `enumset::EnumSet<OkayEnumButCantUseFromRepr>`, but its trait bounds were not satisfied
   --> tests/compile-fail/explicit_repr.rs:15:44
    |
-4  | enum OkayEnumButCantUseFromRepr {
+ 4 | enum OkayEnumButCantUseFromRepr {
    | ------------------------------- doesn't satisfy `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
 ...
 15 |     EnumSet::<OkayEnumButCantUseFromRepr>::from_repr(1);
