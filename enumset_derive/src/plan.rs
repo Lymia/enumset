@@ -16,6 +16,8 @@ struct EnumsetAttrs {
     no_ops: bool,
     no_super_impls: bool,
     #[darling(default)]
+    map: SpannedValue<Option<String>>,
+    #[darling(default)]
     repr: SpannedValue<Option<String>>,
     #[darling(default)]
     serialize_repr: SpannedValue<Option<String>>,
@@ -99,7 +101,9 @@ pub struct EnumSetValue {
     /// The name of the variant.
     pub name: Ident,
     /// The discriminant of the variant.
-    pub variant_repr: u32,
+    pub discriminant: u32,
+    /// The bit this variant is stored in.
+    pub variant_bit: u32,
 }
 
 /// Stores information about the enum set type.
@@ -230,8 +234,11 @@ impl EnumSetInfo {
                 self.max_discrim = discriminant;
                 self.max_discrim_span = Some(variant.span());
             }
-            self.variants
-                .push(EnumSetValue { name: variant.ident.clone(), variant_repr: discriminant });
+            self.variants.push(EnumSetValue {
+                name: variant.ident.clone(),
+                discriminant,
+                variant_bit: discriminant,
+            });
             self.used_variant_names.insert(variant.ident.to_string());
             self.used_discriminants.insert(discriminant);
 
@@ -313,13 +320,32 @@ impl EnumSetInfo {
     pub fn variant_map(&self) -> Vec<u64> {
         let mut vec = vec![0];
         for variant in &self.variants {
-            let (idx, bit) = (variant.variant_repr as usize / 64, variant.variant_repr % 64);
+            let (idx, bit) = (variant.variant_bit as usize / 64, variant.variant_bit % 64);
             while idx >= vec.len() {
                 vec.push(0);
             }
             vec[idx] |= 1u64 << bit;
         }
         vec
+    }
+
+    pub fn compact(&mut self) {
+        let old_variants: Vec<_> = self.variants.drain(..).collect();
+        for (i, variant) in old_variants.into_iter().enumerate() {
+            self.variants.push(EnumSetValue {
+                name: variant.name,
+                discriminant: variant.discriminant,
+                variant_bit: i as u32,
+            });
+        }
+        self.max_discrim = (self.variants.len() - 1) as u32;
+    }
+
+    /// Returns whether the variants map 1-to-1 with discriminants.
+    pub fn has_variant_mapping(&self) -> bool {
+        self.variants
+            .iter()
+            .any(|x| x.discriminant != x.variant_bit)
     }
 }
 
@@ -395,6 +421,13 @@ pub fn plan_for_enum(input: DeriveInput) -> syn::Result<EnumSetInfo> {
         // Parse enum variants
         for variant in &data.variants {
             info.push_variant(variant)?;
+        }
+
+        // Compact the enumset if requested
+        match (&*attrs.map).as_ref().map(|x| x.as_str()) {
+            Some("compact") => info.compact(),
+            Some(map) => error(attrs.map.span(), format!("`{map}` is not a valid mapping."))?,
+            None => {}
         }
 
         // Validate the enumset

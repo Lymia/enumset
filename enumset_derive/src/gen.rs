@@ -4,38 +4,58 @@ use crate::plan::{EnumSetInfo, InternalRepr, SerdeRepr};
 use proc_macro2::{Literal, TokenStream as SynTokenStream};
 use quote::*;
 
-/// Generates the actual `EnumSetType` impl.
-pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
-    let name = &info.name;
-    let vis = &info.vis;
+struct Paths {
+    enumset: SynTokenStream,
+    typed_enumset: SynTokenStream,
+    core: SynTokenStream,
+    internal: SynTokenStream,
+    serde: SynTokenStream,
+}
+impl Paths {
+    fn from(info: &EnumSetInfo) -> Paths {
+        let name = &info.name;
+        let enumset = match &info.crate_name {
+            Some(crate_name) => quote!(::#crate_name),
+            None => {
+                #[cfg(feature = "proc-macro-crate")]
+                {
+                    use proc_macro_crate::FoundCrate;
 
-    let enumset = match &info.crate_name {
-        Some(crate_name) => quote!(::#crate_name),
-        None => {
-            #[cfg(feature = "proc-macro-crate")]
-            {
-                use proc_macro_crate::FoundCrate;
-
-                let crate_name = proc_macro_crate::crate_name("enumset");
-                match crate_name {
-                    Ok(FoundCrate::Name(name)) => {
-                        let ident = proc_macro2::Ident::new(&name, proc_macro2::Span::call_site());
-                        quote!(::#ident)
+                    let crate_name = proc_macro_crate::crate_name("enumset");
+                    match crate_name {
+                        Ok(FoundCrate::Name(name)) => {
+                            let ident =
+                                proc_macro2::Ident::new(&name, proc_macro2::Span::call_site());
+                            quote!(::#ident)
+                        }
+                        _ => quote!(::enumset),
                     }
-                    _ => quote!(::enumset),
+                }
+
+                #[cfg(not(feature = "proc-macro-crate"))]
+                {
+                    quote!(::enumset)
                 }
             }
+        };
+        let typed_enumset = quote!(#enumset::EnumSet<#name>);
+        let core = quote!(#enumset::__internal::core_export);
+        let internal = quote!(#enumset::__internal);
+        let serde = quote!(#enumset::__internal::serde);
+        Paths { enumset, typed_enumset, core, internal, serde }
+    }
+}
 
-            #[cfg(not(feature = "proc-macro-crate"))]
-            {
-                quote!(::enumset)
-            }
-        }
-    };
-    let typed_enumset = quote!(#enumset::EnumSet<#name>);
-    let core = quote!(#enumset::__internal::core_export);
-    let internal = quote!(#enumset::__internal);
-    let serde = quote!(#enumset::__internal::serde);
+/// Generates the actual `EnumSetType` impl.
+pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
+    let paths = Paths::from(&info);
+    let name = &info.name;
+    let enumset = &paths.enumset;
+    let typed_enumset = &paths.typed_enumset;
+    let core = &paths.core;
+    let internal = &paths.internal;
+    let serde = &paths.serde;
+    let is_uninhabited = info.variants.is_empty();
 
     let repr = match info.internal_repr() {
         InternalRepr::U8 => quote! { u8 },
@@ -337,77 +357,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     //
     // Implement the core conversion function that maps enum variants to bits.
     //
-    let is_uninhabited = info.variants.is_empty();
-    let is_zst = info.variants.len() == 1;
-    let impl_internal_conversions = if is_uninhabited {
-        quote! {
-            fn enum_into_u32(self) -> u32 {
-                panic!(concat!(stringify!(#name), " is uninhabited."))
-            }
-            unsafe fn enum_from_u32(val: u32) -> Self {
-                panic!(concat!(stringify!(#name), " is uninhabited."))
-            }
-        }
-    } else if is_zst {
-        let variant = &info.variants[0].name;
-        quote! {
-            fn enum_into_u32(self) -> u32 {
-                self as u32
-            }
-            unsafe fn enum_from_u32(val: u32) -> Self {
-                #name::#variant
-            }
-        }
-    } else {
-        // Build a table of branches.
-        let mut names = Vec::new();
-        for i in 0..info.bit_width() {
-            // We create invalid transmutes for invalid branches that will never happen.
-            // While not very safe, this encourages the compiler to generate a transmute.
-            names.push(quote! {{
-                #[cfg(target_endian = "little")]
-                let r = {
-                    let v = #i as u128;
-                    *(&v as *const u128 as *const #name)
-                };
-
-                #[cfg(target_endian = "big")]
-                let r = {
-                    let v = #i as u128;
-                    let offset = #core::mem::size_of::<u128>() - #core::mem::size_of::<#name>();
-                    let v = v << (offset * 8);
-                    *(&v as *const u128 as *const u8 as *const #name)
-                };
-
-                r
-            }});
-        }
-
-        // Fill variants into the table.
-        for variant in &info.variants {
-            let variant_name = &variant.name;
-            names[variant.variant_repr as usize] = quote! { #name::#variant_name };
-        }
-
-        let values = 0..(names.len() as u32);
-
-        quote! {
-            fn enum_into_u32(self) -> u32 {
-                self as u32
-            }
-            unsafe fn enum_from_u32(val: u32) -> Self {
-                // We put these in const fields so the branches they guard aren't generated even
-                // on -O0
-                match val {
-                    // Every valid variant value has an explicit branch. If they get optimized out,
-                    // great. Otherwise, oh well, at least it's safe.
-                    #(#values => #names,)*
-                    // Default case.
-                    _ => #core::hint::unreachable_unchecked(),
-                }
-            }
-        }
-    };
+    let impl_internal_conversions = create_enum_conversions(&info, &paths);
 
     //
     // Generate the code for `Eq` and other similar basic traits.
@@ -459,169 +409,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     //
     // Generate the code for compile-time operations.
     //
-    let impl_const_opers = {
-        let const_impls = match info.internal_repr() {
-            InternalRepr::U8
-            | InternalRepr::U16
-            | InternalRepr::U32
-            | InternalRepr::U64
-            | InternalRepr::U128 => {
-                let value_as_repr_mask = if is_uninhabited {
-                    quote! { 0 } // impossible anyway
-                } else {
-                    quote! { 1 << value as #repr }
-                };
-
-                quote! {
-                    #[automatically_derived]
-                    #[doc(hidden)]
-                    impl __EnumSetInitHelper {
-                        pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
-                            #enumset::EnumSet { __priv_repr: #value_as_repr_mask }
-                        }
-                    }
-
-                    #[automatically_derived]
-                    #[doc(hidden)]
-                    impl __EnumSetOpHelper {
-                        pub const fn const_union(
-                            &self,
-                            chain_a: #enumset::EnumSet<#name>,
-                            chain_b: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            #enumset::EnumSet {
-                                __priv_repr: chain_a.__priv_repr | chain_b.__priv_repr,
-                            }
-                        }
-
-                        pub const fn const_intersection(
-                            &self,
-                            chain_a: #enumset::EnumSet<#name>,
-                            chain_b: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            #enumset::EnumSet {
-                                __priv_repr: chain_a.__priv_repr & chain_b.__priv_repr,
-                            }
-                        }
-
-                        pub const fn const_symmetric_difference(
-                            &self,
-                            chain_a: #enumset::EnumSet<#name>,
-                            chain_b: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            #enumset::EnumSet {
-                                __priv_repr: chain_a.__priv_repr ^ chain_b.__priv_repr,
-                            }
-                        }
-
-                        pub const fn const_complement(
-                            &self,
-                            chain: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            let mut all = #enumset::EnumSet::<#name>::all();
-                            #enumset::EnumSet {
-                                __priv_repr: !chain.__priv_repr & all.__priv_repr,
-                            }
-                        }
-                    }
-                }
-            }
-            InternalRepr::Array(size) => {
-                quote! {
-                    #[automatically_derived]
-                    #[doc(hidden)]
-                    impl __EnumSetInitHelper {
-                        pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
-                            let mut set = #enumset::EnumSet::<#name> {
-                                __priv_repr: #internal::ArrayRepr::<{ #size }>([0; #size]),
-                            };
-                            let bit = value as u32;
-                            let (idx, bit) = (bit as usize / 64, bit % 64);
-                            set.__priv_repr.0[idx] |= 1u64 << bit;
-                            set
-                        }
-                    }
-
-                    #[automatically_derived]
-                    #[doc(hidden)]
-                    impl __EnumSetOpHelper {
-                        pub const fn const_union(
-                            &self,
-                            mut chain_a: #enumset::EnumSet<#name>,
-                            chain_b: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            let mut i = 0;
-                            while i < #size {
-                                chain_a.__priv_repr.0[i] |= chain_b.__priv_repr.0[i];
-                                i += 1;
-                            }
-                            chain_a
-                        }
-
-                        pub const fn const_intersection(
-                            &self,
-                            mut chain_a: #enumset::EnumSet<#name>,
-                            chain_b: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            let mut i = 0;
-                            while i < #size {
-                                chain_a.__priv_repr.0[i] &= chain_b.__priv_repr.0[i];
-                                i += 1;
-                            }
-                            chain_a
-                        }
-
-                        pub const fn const_symmetric_difference(
-                            &self,
-                            mut chain_a: #enumset::EnumSet<#name>,
-                            chain_b: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            let mut i = 0;
-                            while i < #size {
-                                chain_a.__priv_repr.0[i] ^= chain_b.__priv_repr.0[i];
-                                i += 1;
-                            }
-                            chain_a
-                        }
-
-                        pub const fn const_complement(
-                            &self,
-                            mut chain: #enumset::EnumSet<#name>,
-                        ) -> #enumset::EnumSet<#name> {
-                            let mut all = #enumset::EnumSet::<#name>::all();
-                            let mut i = 0;
-                            while i < #size {
-                                let new = !chain.__priv_repr.0[i] & all.__priv_repr.0[i];
-                                chain.__priv_repr.0[i] = new;
-                                i += 1;
-                            }
-                            chain
-                        }
-                    }
-                }
-            }
-        };
-
-        quote! {
-            #[automatically_derived]
-            #[doc(hidden)]
-            #vis struct __EnumSetInitHelper;
-
-            #[automatically_derived]
-            #[doc(hidden)]
-            #vis struct __EnumSetOpHelper;
-
-            #const_impls
-
-            #[automatically_derived]
-            unsafe impl #internal::EnumSetConstHelper for #name {
-                type ConstInitHelper = __EnumSetInitHelper;
-                const CONST_INIT_HELPER: __EnumSetInitHelper = __EnumSetInitHelper;
-                type ConstOpHelper = __EnumSetOpHelper;
-                const CONST_OP_HELPER: __EnumSetOpHelper = __EnumSetOpHelper;
-            }
-        }
-    };
+    let impl_const_opers = create_enum_const_opers(&info, &paths, &repr);
 
     //
     // Generate the actual enumset trait.
@@ -668,5 +456,278 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
                 #generated_warnings
             }
         };
+    }
+}
+
+fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream {
+    let name = &info.name;
+    let core = &paths.core;
+
+    let is_zst = info.variants.len() == 1;
+    if info.variants.is_empty() {
+        quote! {
+            fn enum_into_u32(self) -> u32 {
+                panic!(concat!(stringify!(#name), " is uninhabited."))
+            }
+            unsafe fn enum_from_u32(val: u32) -> Self {
+                panic!(concat!(stringify!(#name), " is uninhabited."))
+            }
+        }
+    } else if is_zst {
+        let variant = &info.variants[0].name;
+        quote! {
+            fn enum_into_u32(self) -> u32 {
+                self as u32
+            }
+            unsafe fn enum_from_u32(val: u32) -> Self {
+                #name::#variant
+            }
+        }
+    } else if !info.has_variant_mapping() {
+        // Build a table of branches.
+        let mut names = Vec::new();
+        for i in 0..info.bit_width() {
+            // We create invalid transmutes for invalid branches that will never happen.
+            // While not very safe, this encourages the compiler to generate a transmute.
+            names.push(quote! {{
+                #[cfg(target_endian = "little")]
+                let r = {
+                    let v = #i as u128;
+                    *(&v as *const u128 as *const #name)
+                };
+
+                #[cfg(target_endian = "big")]
+                let r = {
+                    let v = #i as u128;
+                    let offset = #core::mem::size_of::<u128>() - #core::mem::size_of::<#name>();
+                    let v = v << (offset * 8);
+                    *(&v as *const u128 as *const u8 as *const #name)
+                };
+
+                r
+            }});
+        }
+
+        // Fill variants into the table.
+        for variant in &info.variants {
+            let variant_name = &variant.name;
+            names[variant.discriminant as usize] = quote! { #name::#variant_name };
+        }
+
+        let values = 0..(names.len() as u32);
+
+        quote! {
+            fn enum_into_u32(self) -> u32 {
+                self as u32
+            }
+            unsafe fn enum_from_u32(val: u32) -> Self {
+                // We put these in const fields so the branches they guard aren't generated even
+                // on -O0
+                match val {
+                    // Every valid variant value has an explicit branch. If they get optimized out,
+                    // great. Otherwise, oh well, at least it's safe.
+                    #(#values => #names,)*
+                    // Default case.
+                    _ => #core::hint::unreachable_unchecked(),
+                }
+            }
+        }
+    } else {
+        let variant_bits: Vec<_> = info.variants.iter().map(|x| x.variant_bit).collect();
+        let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
+        quote! {
+            fn enum_into_u32(self) -> u32 {
+                match self {
+                    #(#name::#variant_names => #variant_bits,)*
+                }
+            }
+            unsafe fn enum_from_u32(val: u32) -> Self {
+                match val {
+                    #(#variant_bits => #name::#variant_names,)*
+                    _ => #core::hint::unreachable_unchecked(),
+                }
+            }
+        }
+    }
+}
+
+fn create_enum_const_opers(
+    info: &EnumSetInfo,
+    paths: &Paths,
+    repr: &SynTokenStream,
+) -> SynTokenStream {
+    let name = &info.name;
+    let enumset = &paths.enumset;
+    let internal = &paths.internal;
+    let vis = &info.vis;
+
+    let value_to_bit = if info.variants.is_empty() {
+        quote! { 0 }
+    } else if !info.has_variant_mapping() {
+        quote! { value as u32 }
+    } else {
+        let variant_bits: Vec<_> = info.variants.iter().map(|x| x.variant_bit).collect();
+        let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
+        quote! {
+            match value {
+                #(#name::#variant_names => #variant_bits,)*
+            }
+        }
+    };
+
+    let const_impls = match info.internal_repr() {
+        InternalRepr::U8
+        | InternalRepr::U16
+        | InternalRepr::U32
+        | InternalRepr::U64
+        | InternalRepr::U128 => {
+            quote! {
+                #[automatically_derived]
+                #[doc(hidden)]
+                impl __EnumSetInitHelper {
+                    pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet { __priv_repr: 1 << (#value_to_bit as #repr) }
+                    }
+                }
+
+                #[automatically_derived]
+                #[doc(hidden)]
+                impl __EnumSetOpHelper {
+                    pub const fn const_union(
+                        &self,
+                        chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet {
+                            __priv_repr: chain_a.__priv_repr | chain_b.__priv_repr,
+                        }
+                    }
+
+                    pub const fn const_intersection(
+                        &self,
+                        chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet {
+                            __priv_repr: chain_a.__priv_repr & chain_b.__priv_repr,
+                        }
+                    }
+
+                    pub const fn const_symmetric_difference(
+                        &self,
+                        chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        #enumset::EnumSet {
+                            __priv_repr: chain_a.__priv_repr ^ chain_b.__priv_repr,
+                        }
+                    }
+
+                    pub const fn const_complement(
+                        &self,
+                        chain: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut all = #enumset::EnumSet::<#name>::all();
+                        #enumset::EnumSet {
+                            __priv_repr: !chain.__priv_repr & all.__priv_repr,
+                        }
+                    }
+                }
+            }
+        }
+        InternalRepr::Array(size) => {
+            quote! {
+                #[automatically_derived]
+                #[doc(hidden)]
+                impl __EnumSetInitHelper {
+                    pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
+                        let mut set = #enumset::EnumSet::<#name> {
+                            __priv_repr: #internal::ArrayRepr::<{ #size }>([0; #size]),
+                        };
+                        let bit = #value_to_bit;
+                        let (idx, bit) = (bit as usize / 64, bit % 64);
+                        set.__priv_repr.0[idx] |= 1u64 << bit;
+                        set
+                    }
+                }
+
+                #[automatically_derived]
+                #[doc(hidden)]
+                impl __EnumSetOpHelper {
+                    pub const fn const_union(
+                        &self,
+                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut i = 0;
+                        while i < #size {
+                            chain_a.__priv_repr.0[i] |= chain_b.__priv_repr.0[i];
+                            i += 1;
+                        }
+                        chain_a
+                    }
+
+                    pub const fn const_intersection(
+                        &self,
+                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut i = 0;
+                        while i < #size {
+                            chain_a.__priv_repr.0[i] &= chain_b.__priv_repr.0[i];
+                            i += 1;
+                        }
+                        chain_a
+                    }
+
+                    pub const fn const_symmetric_difference(
+                        &self,
+                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_b: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut i = 0;
+                        while i < #size {
+                            chain_a.__priv_repr.0[i] ^= chain_b.__priv_repr.0[i];
+                            i += 1;
+                        }
+                        chain_a
+                    }
+
+                    pub const fn const_complement(
+                        &self,
+                        mut chain: #enumset::EnumSet<#name>,
+                    ) -> #enumset::EnumSet<#name> {
+                        let mut all = #enumset::EnumSet::<#name>::all();
+                        let mut i = 0;
+                        while i < #size {
+                            let new = !chain.__priv_repr.0[i] & all.__priv_repr.0[i];
+                            chain.__priv_repr.0[i] = new;
+                            i += 1;
+                        }
+                        chain
+                    }
+                }
+            }
+        }
+    };
+
+    quote! {
+        #[automatically_derived]
+        #[doc(hidden)]
+        #vis struct __EnumSetInitHelper;
+
+        #[automatically_derived]
+        #[doc(hidden)]
+        #vis struct __EnumSetOpHelper;
+
+        #const_impls
+
+        #[automatically_derived]
+        unsafe impl #internal::EnumSetConstHelper for #name {
+            type ConstInitHelper = __EnumSetInitHelper;
+            const CONST_INIT_HELPER: __EnumSetInitHelper = __EnumSetInitHelper;
+            type ConstOpHelper = __EnumSetOpHelper;
+            const CONST_OP_HELPER: __EnumSetOpHelper = __EnumSetOpHelper;
+        }
     }
 }

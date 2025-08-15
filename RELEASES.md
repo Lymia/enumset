@@ -1,3 +1,10 @@
+# Unreleased
+* Add `From<[T; N]>`, `Extend<&'a T>`, and `Extend<&'a EnumSet<T>>`
+  implementations to `EnumSet<T>`.
+* Optimizations for sparse bitsets and sets larger than 64 variants.
+* Added a new `#[enumset(map = "...")]` annotation that allows controlling how
+  enum variants are mapped to bits in the underlying bitset. 
+
 # Version 1.1.7 (2025-07-08)
 * Fix hygiene issue where the `enumset_set!` macro with no arguments required
   `EnumSet` to be imported into the current context. (Thanks @cbiffle)

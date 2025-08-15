@@ -131,6 +131,20 @@ pub enum MarginalArrayEnumS3 {
     A, B, C, D, E, F, G, H, Marginal = 128,
 }
 
+/// Used to test enums with sparse elements.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+pub enum CompactEnumA {
+    A = 0xA, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
+}
+
+/// Used to test enums with sparse elements.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact", repr = "u8")]
+pub enum CompactEnumB {
+    A = 2, B = 4, C = 6, D = 8, E = 10, F = 120, G = 180, H = 1000,
+}
+
 /// Tests that all variants are properly present when `EnumSet::all` is used.
 macro_rules! test_variants {
     ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
@@ -165,6 +179,12 @@ test_variants! { LargeEnum large_enum_all_empty
 }
 test_variants! { SparseEnum sparse_enum_all_empty
     A, B, C, D, E, F, G,
+}
+test_variants! { CompactEnumA compact_enum_a_all_empty
+    A, B, C, D, E, F, G, H,
+}
+test_variants! { CompactEnumB compact_enum_b_all_empty
+    A, B, C, D, E, F, G, H,
 }
 
 macro_rules! test_enum {
@@ -569,6 +589,8 @@ tests!(small_array_enum, test_enum!(SmallArrayEnum, 8));
 tests!(marginal_array_enum_s2, test_enum!(MarginalArrayEnumS2, 16));
 tests!(marginal_array_enum_s2h, test_enum!(MarginalArrayEnumS2H, 16));
 tests!(marginal_array_enum_s3, test_enum!(MarginalArrayEnumS3, 24));
+tests!(compact_enum_a, test_enum!(CompactEnumA, 1));
+tests!(compact_enum_b, test_enum!(CompactEnumB, 1));
 
 #[derive(EnumSetType, Debug)]
 pub enum ThresholdEnum {
