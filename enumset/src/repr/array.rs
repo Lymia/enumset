@@ -293,10 +293,13 @@ impl<const N: usize> Iterator for ArrayIter<N> {
         if self.done {
             return None;
         }
-        while self.idx_f <= self.idx_r {
-            if let Some(x) = self.data[self.idx_f].next() {
+        loop {
+            if let Some(x) = unsafe { self.data.get_unchecked_mut(self.idx_f).next() } {
                 return Some(self.idx_f as u32 * 64 + x);
             } else {
+                if self.idx_f == N - 1 || self.idx_f > self.idx_r {
+                    break;
+                }
                 self.idx_f += 1;
             }
         }
@@ -318,11 +321,11 @@ impl<const N: usize> DoubleEndedIterator for ArrayIter<N> {
         if self.done {
             return None;
         }
-        while self.idx_f <= self.idx_r {
-            if let Some(x) = self.data[self.idx_r].next_back() {
+        loop {
+            if let Some(x) = unsafe { self.data.get_unchecked_mut(self.idx_r).next_back() } {
                 return Some(self.idx_r as u32 * 64 + x);
             } else {
-                if self.idx_r == 0 {
+                if self.idx_r == 0 || self.idx_f > self.idx_r {
                     break;
                 }
                 self.idx_r -= 1;
