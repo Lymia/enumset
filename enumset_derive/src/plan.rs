@@ -425,6 +425,7 @@ pub fn plan_for_enum(input: DeriveInput) -> syn::Result<EnumSetInfo> {
 
         // Compact the enumset if requested
         match (&*attrs.map).as_ref().map(|x| x.as_str()) {
+            Some("lsb") => {},
             Some("compact") => info.compact(),
             Some(map) => error(attrs.map.span(), format!("`{map}` is not a valid mapping."))?,
             None => {}

@@ -99,6 +99,9 @@ pub use crate::macros::__internal;
 pub use crate::set::{EnumSet, EnumSetIter};
 pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 
+#[cfg(all(doc, feature = "serde"))]
+use serde::{Serialize, Deserialize};
+
 /// The procedural macro used to derive [`EnumSetType`], and allow enums to be used with
 /// [`EnumSet`].
 ///
@@ -133,34 +136,69 @@ pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 /// Options are given with `#[enumset(foo)]` annotations attached to the same enum as the derive.
 /// Multiple options may be given in the same annotation using the `#[enumset(foo, bar)]` syntax.
 ///
-/// A full list of options is as follows:
+/// A full list of options available is as follows:
 ///
-/// * `#[enumset(no_super_impls)]` prevents the derive from creating implementations required for
-///   [`EnumSet`] to function. When this attribute is specified, implementations of [`Copy`],
-///   [`Clone`], [`Eq`], and [`PartialEq`]. This can be useful if you are using a code generator
-///   that already derives these traits. These impls should function identically to the
-///   automatically derived versions, or unintentional behavior may be a result.
-/// * `#[enumset(no_ops)` prevents the derive from implementing any operator traits.
+/// * `#[enumset(no_super_impls)]` prevents the procedural macro from generating implementations
+///   for the supertraits of `EnumSetType`. When this attribute is specified, implementations of
+///   [`Copy`], [`Clone`], [`Eq`], and [`PartialEq`] must be provided manually. These impls should
+///   function identically to the automatically derived versions, or unintentional behavior may be
+///   a result.
+/// * `#[enumset(no_ops)` prevents the procedural macro from implementing any operator traits.
 /// * `#[enumset(crate_name = "enumset2")]` may be used to change the name of the `enumset` crate
 ///   used in the generated code. When the `proc-macro-crate` feature is enabled, enumset parses
 ///   `Cargo.toml` to determine the name of the crate, and this flag is unnecessary.
-/// * `#[enumset(repr = "u8")]` may be used to specify the in-memory representation of `EnumSet`s
-///   of this enum type. The effects of this are described in [the `EnumSet` documentation under
-///   “FFI, Safety and `repr`”][EnumSet#ffi-safety-and-repr]. Allowed types are `u8`, `u16`, `u32`,
-///   `u64` and `u128`. If this is not used, then the derive macro will choose a type to best fit
-///   the enum, but there are no guarantees about which type will be chosen.
+/// * `#[enumset(map = "…")]` controls how enum variants are mapped to bits in the `EnumSet`. For
+///   more information, see the [Mapping Options](#mapping-options) section.
+/// * `#[enumset(repr = "…")]` is used to control the in-memory representation of `EnumSet`s. For
+///   more information, see the [Representation Options](#representation-options) section.
+///
+/// Additional feature may be specified when the `serde` feature is enabled. These options are
+/// ignored when `serde` is not enabled. For more information, see the
+/// [Serialization Options](#serialization-options) section.
+///
+/// ## Mapping Options
+///
+/// The following options exist to control how enum variants are mapped to bits in an `EnumSet`:
+///
+/// * `#[enumset(map = "lsb")]` maps an enum variant with a discriminator of `n` to the `n + 1`th
+///   least significant bit of the enumset. If no mapping is specified, this is used by default.
+/// * `#[enumset(map = "compact")]` maps each enum variant to an unspecified bit in the set. This
+///   allows the library to use less bits than it may otherwise.
+///
+/// ## Representation Options
+///
+/// The following options exist to control the in-memory representation of an `EnumSet`:
+///
+/// * `#[enumset(repr = "u…")]` forces the `EnumSet` to use a specific primitive integer type.
+///   Allowed types are `u8`, `u16`, `u32`, `u64` and `u128`. This allows the `EnumSet` to be
+///   safely used across FFI boundaries. Additionally, the procedural macro will generate an
+///   implementation of <code>[EnumSetTypeWithRepr]&lt;Repr = R&gt;</code>.
 /// * `#[enumset(repr = "array")]` forces the `EnumSet` of this type to be backed with an array,
 ///   even if all the variants could fit into a primitive numeric type.
 ///
-/// When the `serde` feature is used, the following features may also be specified. These options
-/// may be used (with no effect) when building without the feature enabled:
+/// By default, `enumset` tries to choose the representation most suitable to the type, but no
+/// guarantees are made about which it picks.
 ///
-/// * `#[enumset(serialize_repr = "…")]` may be used to override the way the `EnumSet` is
-///   serialized. Valid options are `u8`, `u16`, `u32`, `u64`, `list`, `map` and `array`. For more
-///   information, see the
-///   ["Serialization" section of the `EnumSet` documentation](EnumSet#serialization).
+/// [EnumSetTypeWithRepr]: crate::traits::EnumSetTypeWithRepr
+///
+/// ## Serialization Options
+///
+/// The following options exist to control how an `EnumSet` is serialized with `serde`:
+///
+/// * `#[enumset(serialize_repr = "u…")]` causes the set to be serialized as a single integer
+///   of the corresponding primitive type.
+/// * `#[enumset(serialize_repr = "array")]` causes the set to be serialized as a list of `u64`s
+///   corresponding to the [array representation](EnumSet#array-representation) of the set.
+/// * `#[enumset(serialize_repr = "list")]` causes the set to be serialized as a list of enum
+///   variants. This requires your enum type implement [`Serialize`] and [`Deserialize`].
+/// * `#[enumset(serialize_repr = "map")]` causes the set to be serialized as map of enum variants
+///   to booleans. The set contains a value if the boolean is `true`. This requires your enum type
+///   implement `Serialize` and `Deserialize`.
 /// * `#[enumset(serialize_deny_unknown)]` causes the generated deserializer to return an error
 ///   for unknown bits instead of silently ignoring them.
+///
+/// By default, `enumset` uses the smallest integer type that can contain all enum variants or an
+/// array if there is no such integer type.
 ///
 /// # Examples
 ///
@@ -200,4 +238,10 @@ pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 /// [`BitOr`]: core::ops::BitOr
 /// [`BitXor`]: core::ops::BitXor
 /// [`Not`]: core::ops::Not
+#[cfg_attr(
+    not(feature = "serde"),
+    doc = "\n\n",
+    doc = "[`Serialize`]: https://docs.rs/serde/latest/serde/trait.Serialize.html\n",
+    doc = "[`Deserialize`]: https://docs.rs/serde/latest/serde/trait.Deserialize.html\n"
+)]
 pub use enumset_derive::EnumSetType;

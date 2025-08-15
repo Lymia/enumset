@@ -31,6 +31,9 @@ use serde::{Deserialize, Serialize};
 /// variant with a discriminator of `n` is stored in the `n + 1`th least significant bit
 /// (corresponding to a mask of e.g. `1 << enum as u32`).
 ///
+/// The [`#[enumset(map = "…")]`](derive@crate::EnumSetType#options) attribute can be used to
+/// control this mapping.
+///
 /// # Array representation
 ///
 /// Sets with more than 128 variants are instead stored with an underlying array of `u64`s. This
@@ -40,46 +43,24 @@ use serde::{Deserialize, Serialize};
 /// # Serialization
 ///
 /// When the `serde` feature is enabled, `EnumSet`s can be serialized and deserialized using
-/// the `serde` crate. The exact serialization format can be controlled with additional attributes
-/// on the enum type. These attributes are valid regardless of whether the `serde` feature
-/// is enabled.
+/// the `serde` crate.
 ///
 /// By default, `EnumSet` is serialized by directly writing out a single integer containing the
 /// numeric representation of the bitset. The integer type used is the smallest one that can fit
 /// the largest variant in the enum. If no integer type is large enough, instead the `EnumSet` is
-/// serialized as an array of `u64`s containing the array representation.
+/// serialized as an array of `u64`s containing the array representation. Unknown bits are ignored
+/// and silently removed from the bitset when deserializing.
 ///
-/// The `#[enumset(serialize_repr = "…")]` attribute can be used to override the representation
-/// used. Valid values are as follows:
+/// The exact serialization format can be controlled with additional attributes on the enum type.
+/// For more information, see the documentation for
+/// [Serialization Options](derive@crate::EnumSetType#serialization-options).
 ///
-/// * `u8`, `u16`, `u32`, `u64`, and `u128` serialize the type as the corresponding integer type.
-/// * `array` serializes the set as an list of `u64`s corresponding to the array representation.
-/// * `list` serializes the set as a list of enum variants. This requires your enum type implement
-///   [`Serialize`] and [`Deserialize`].
-/// * `map` serializes the set as a map of enum variants to booleans. The set contains a value if
-///   the boolean is `true`. This requires your enum type implement `Serialize` and `Deserialize`.
+/// # FFI Safety
 ///
-/// The representation used is determined statically at compile time, and there is currently no
-/// support for reading different formats with the same deserializer.
-///
-/// By default, unknown bits are ignored and silently removed from the bitset. To override this
-/// behavior, you can add a `#[enumset(serialize_deny_unknown)]` attribute. This will cause
-/// deserialization to fail if an invalid bit is set.
-///
-/// # FFI, Safety and `repr`
-///
-/// If an enum type `T` is annotated with
-/// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#options) where `…` is a primitive integer
-/// type, then several things happen:
-///
-/// * `T` will implement
-///   <code>[EnumSetTypeWithRepr](crate::traits::EnumSetTypeWithRepr)&lt;Repr = R&gt;</code> in
-///   addition to [`EnumSetType`].
-/// * The `EnumSet` methods with `repr` in their name, such as [`as_repr`][EnumSet::as_repr] and
-///   [`from_repr`][EnumSet::from_repr], will be available for `EnumSet<T>`.
-/// * The in-memory representation of `EnumSet<T>` is guaranteed to be `R`.
-///
-/// That last guarantee makes it sound to send `EnumSet<T>` across an FFI boundary. For example:
+/// By default, there are no guarantees about the underlying representation of an `EnumSet`. To use
+/// them safely across FFI boundaries, the
+/// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) attribute must be
+/// used with a primitive integer type. For example:
 ///
 /// ```
 /// # use enumset::*;
@@ -111,12 +92,6 @@ use serde::{Deserialize, Serialize};
 ///
 /// When an `EnumSet<T>` is received via FFI, all bits that don't correspond to an enum variant
 /// of `T` must be set to `0`. Behavior is **undefined** if any of these bits are set to `1`.
-#[cfg_attr(
-    not(feature = "serde"),
-    doc = "\n\n",
-    doc = "[`Serialize`]: https://docs.rs/serde/latest/serde/trait.Serialize.html\n",
-    doc = "[`Deserialize`]: https://docs.rs/serde/latest/serde/trait.Deserialize.html\n"
-)]
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct EnumSet<T: EnumSetType> {
@@ -480,8 +455,9 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
     /// Unlike the other `as_*` methods, this method is zero-cost and guaranteed not to fail,
     /// panic or truncate any bits.
     ///
-    /// In order to use this method, the definition of `T` must have the `#[enumset(repr = "…")]`
-    /// annotation.
+    /// In order to use this method, the definition of `T` must have an
+    /// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) annotation
+    /// with a primitive integer type.
     #[inline(always)]
     pub const fn as_repr(&self) -> <T as EnumSetTypeWithRepr>::Repr {
         self.__priv_repr
@@ -492,8 +468,9 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
     /// Unlike the other `from_*` methods, this method is zero-cost and guaranteed not to fail,
     /// panic or truncate any bits, provided the conditions under “Safety” are upheld.
     ///
-    /// In order to use this method, the definition of `T` must have the `#[enumset(repr = "…")]`
-    /// annotation.
+    /// In order to use this method, the definition of `T` must have an
+    /// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) annotation
+    /// with a primitive integer type.
     ///
     /// # Safety
     ///
@@ -509,8 +486,9 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
     /// If a bit that doesn't correspond to an enum variant is set, this
     /// method will panic.
     ///
-    /// In order to use this method, the definition of `T` must have the `#[enumset(repr = "…")]`
-    /// annotation.
+    /// In order to use this method, the definition of `T` must have an
+    /// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) annotation
+    /// with a primitive integer type.
     #[inline(always)]
     pub fn from_repr(bits: <T as EnumSetTypeWithRepr>::Repr) -> Self {
         Self::try_from_repr(bits).expect("Bitset contains invalid variants.")
@@ -521,8 +499,9 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
     /// If a bit that doesn't correspond to an enum variant is set, this
     /// method will return `None`.
     ///
-    /// In order to use this method, the definition of `T` must have the `#[enumset(repr = "…")]`
-    /// annotation.
+    /// In order to use this method, the definition of `T` must have an
+    /// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) annotation
+    /// with a primitive integer type.
     #[inline(always)]
     pub fn try_from_repr(bits: <T as EnumSetTypeWithRepr>::Repr) -> Option<Self> {
         let mask = Self::all().__priv_repr;
@@ -535,8 +514,9 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
 
     /// Constructs a bitset from a `T::Repr`, ignoring invalid variants.
     ///
-    /// In order to use this method, the definition of `T` must have the `#[enumset(repr = "…")]`
-    /// annotation.
+    /// In order to use this method, the definition of `T` must have an
+    /// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) annotation
+    /// with a primitive integer type.
     #[inline(always)]
     pub fn from_repr_truncated(bits: <T as EnumSetTypeWithRepr>::Repr) -> Self {
         let mask = Self::all().as_repr();
