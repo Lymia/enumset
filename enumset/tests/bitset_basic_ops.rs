@@ -358,6 +358,34 @@ macro_rules! test_enum {
             check_iter_size_hint(set);
         }
 
+        /// Checks that mixing next and next_back works properly.
+        #[test]
+        fn iter_both_ends() {
+            {
+                let e1 = $e::A | $e::B | $e::C | $e::D | $e::E | $e::F | $e::G;
+                let mut iter = e1.iter();
+                assert_eq!(iter.next(), Some($e::A));
+                assert_eq!(iter.next(), Some($e::B));
+                assert_eq!(iter.next_back(), Some($e::G));
+                assert_eq!(iter.next_back(), Some($e::F));
+                assert_eq!(iter.next(), Some($e::C));
+                assert_eq!(iter.next_back(), Some($e::E));
+                assert_eq!(iter.next(), Some($e::D));
+                assert_eq!(iter.next(), None);
+            }
+
+            {
+                let e1 = $e::A | $e::B | $e::C | $e::F | $e::G;
+                let mut iter = e1.iter();
+                assert_eq!(iter.next_back(), Some($e::G));
+                assert_eq!(iter.next(), Some($e::A));
+                assert_eq!(iter.next_back(), Some($e::F));
+                assert_eq!(iter.next_back(), Some($e::C));
+                assert_eq!(iter.next(), Some($e::B));
+                assert_eq!(iter.next_back(), None);
+            }
+        }
+
         /// Check that advanced iterator operations like filter and collect work properly.
         #[test]
         fn iter_advanced_ops_test() {
