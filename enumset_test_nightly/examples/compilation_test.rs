@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::hint::black_box;
-use enumset::{enum_set, EnumSet};
-use enumset_derive::EnumSetType;
+use enumset::{enum_set, EnumSet, EnumSetType};
 
 // Test of a relatively typical enum.
 #[derive(EnumSetType, Debug)]
