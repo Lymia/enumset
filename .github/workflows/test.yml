@@ -79,11 +79,11 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p enumset_test_trybuild
+          args: -p enumset_test_nightly
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -p enumset_test_trybuild
+          args: -p enumset_test_nightly
 
   test_build_embedded:
     runs-on: ubuntu-latest

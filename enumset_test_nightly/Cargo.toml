@@ -1,5 +1,5 @@
 [package]
-name = "enumset_test_trybuild"
+name = "enumset_test_nightly"
 version = "1.1.3"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2021"
@@ -7,11 +7,16 @@ edition = "2021"
 description = "DO NOT PUBLISH"
 publish = false
 
+[[bench]]
+name = "basic_benchmark"
+harness = false
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_derive = "1"
 
 [dev-dependencies]
+criterion = "0.7.0"
 enumset = { path = "../enumset", features = ["serde"] }
 trybuild = "1"
 rustversion = "1"

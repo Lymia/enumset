@@ -3,7 +3,7 @@ members = [
     "enumset",
     "enumset_derive",
     "enumset_test_embedded",
-    "enumset_test_trybuild",
+    "enumset_test_nightly",
 ]
 resolver = "2"
 
