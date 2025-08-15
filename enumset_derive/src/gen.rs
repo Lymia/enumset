@@ -1,9 +1,8 @@
 //! This module handles generating the actual code to allow an enum type to be used as a bitset.
 
 use crate::plan::{EnumSetInfo, InternalRepr, SerdeRepr};
-use proc_macro2::{Literal, Span, TokenStream as SynTokenStream};
+use proc_macro2::{Literal, TokenStream as SynTokenStream};
 use quote::*;
-use syn::*;
 
 /// Generates the actual `EnumSetType` impl.
 pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
@@ -360,17 +359,37 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
             }
         }
     } else {
-        let variant_name: Vec<_> = info.variants.iter().map(|x| &x.name).collect();
-        let variant_value: Vec<_> = info.variants.iter().map(|x| x.variant_repr).collect();
+        // Build a table of branches.
+        let mut names = Vec::new();
+        for i in 0..info.bit_width() {
+            // We create invalid transmutes for invalid branches that will never happen.
+            // While not very safe, this encourages the compiler to generate a transmute.
+            names.push(quote! {{
+                #[cfg(target_endian = "little")]
+                let r = {
+                    let v = #i as u128;
+                    *(&v as *const u128 as *const #name)
+                };
 
-        let const_field: Vec<_> = ["IS_U8", "IS_U16", "IS_U32", "IS_U64", "IS_U128"]
-            .iter()
-            .map(|x| Ident::new(x, Span::call_site()))
-            .collect();
-        let int_type: Vec<_> = ["u8", "u16", "u32", "u64", "u128"]
-            .iter()
-            .map(|x| Ident::new(x, Span::call_site()))
-            .collect();
+                #[cfg(target_endian = "big")]
+                let r = {
+                    let v = #i as u128;
+                    let offset = #core::mem::size_of::<u128>() - #core::mem::size_of::<#name>();
+                    let v = v << (offset * 8);
+                    *(&v as *const u128 as *const u8 as *const #name)
+                };
+
+                r
+            }});
+        }
+
+        // Fill variants into the table.
+        for variant in &info.variants {
+            let variant_name = &variant.name;
+            names[variant.variant_repr as usize] = quote! { #name::#variant_name };
+        }
+
+        let values = 0..(names.len() as u32);
 
         quote! {
             fn enum_into_u32(self) -> u32 {
@@ -379,21 +398,11 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
             unsafe fn enum_from_u32(val: u32) -> Self {
                 // We put these in const fields so the branches they guard aren't generated even
                 // on -O0
-                #(const #const_field: bool =
-                    #core::mem::size_of::<#name>() == #core::mem::size_of::<#int_type>();)*
                 match val {
                     // Every valid variant value has an explicit branch. If they get optimized out,
-                    // great. If the representation has changed somehow, and they don't, oh well,
-                    // there's still no UB.
-                    #(#variant_value => #name::#variant_name,)*
-                    // Helps hint to the LLVM that this is a transmute. Note that this branch is
-                    // still unreachable.
-                    #(x if #const_field => {
-                        let x = x as #int_type;
-                        *(&x as *const _ as *const #name)
-                    })*
-                    // Default case. Sometimes causes LLVM to generate a table instead of a simple
-                    // transmute, but, oh well.
+                    // great. Otherwise, oh well, at least it's safe.
+                    #(#values => #names,)*
+                    // Default case.
                     _ => #core::hint::unreachable_unchecked(),
                 }
             }
