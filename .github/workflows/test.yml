@@ -101,9 +101,9 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --target thumbv7em-none-eabi -p enumset_test_embedded
+        args: --target thumbv7em-none-eabihf -p enumset_test_embedded
     - uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --target thumbv7em-none-eabi -p enumset_test_embedded
+        args: --target thumbv7em-none-eabihf -p enumset_test_embedded
     - run: bash enumset_test_embedded/test_qemu_output.sh
