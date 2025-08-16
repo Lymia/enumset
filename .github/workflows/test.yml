@@ -92,14 +92,18 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
-        target: thumbv6m-none-eabi
+        target: thumbv7em-none-eabihf
         default: true
         components: clippy
+    - uses: cachix/install-nix-action@v31
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
     - uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --target thumbv6m-none-eabi -p enumset_test_embedded
+        args: --target thumbv7em-none-eabi -p enumset_test_embedded
     - uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --target thumbv6m-none-eabi -p enumset_test_embedded
+        args: --target thumbv7em-none-eabi -p enumset_test_embedded
+    - run: bash enumset_test_embedded/test_qemu_output.sh

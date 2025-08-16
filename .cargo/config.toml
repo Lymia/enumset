@@ -1,0 +1,6 @@
+[target.thumbv7em-none-eabihf]
+rustflags = [
+    "-Clink-arg=-Tlink.x",
+    "-Clink-arg=-Tdefmt.x",
+]
+runner = "enumset_test_embedded/qemu_run.sh"

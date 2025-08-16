@@ -388,11 +388,9 @@ impl<T: EnumSetType + defmt::Format> defmt::Format for EnumSet<T> {
     fn format(&self, f: defmt::Formatter) {
         let mut i = self.iter();
         if let Some(v) = i.next() {
-            v.format(f);
-            let l = defmt::intern!(" | ");
+            defmt::write!(f, "{}", v);
             for v in i {
-                l.format(f);
-                v.format(f);
+                defmt::write!(f, " | {}", v);
             }
         }
     }

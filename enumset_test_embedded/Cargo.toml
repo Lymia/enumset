@@ -7,11 +7,12 @@ description = "DO NOT PUBLISH"
 publish = false
 
 [dependencies]
-cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
-cortex-m-rt = "0.7"
-cortex-m-semihosting = "0.5.0"
+cortex-m = { version = "0.7.7", features = ["critical-section-single-core", "inline-asm"] }
+cortex-m-rt = "0.7.5"
 defmt = "1.0.1"
 defmt-semihosting = "0.3.0"
+semihosting = { version = "0.1.20", features = ["stdio"] }
+
 enumset = { path = "../enumset", features = ["defmt"] }
 
 [build-dependencies]
