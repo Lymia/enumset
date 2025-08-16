@@ -1,4 +1,4 @@
-macro_rules! set_common_impls {
+macro_rules! set_common_methods {
     ($T:ty, $T_Repr:ty) => {
         /// Returns a set containing a single element.
         #[inline(always)]
@@ -107,16 +107,212 @@ macro_rules! set_common_impls {
             self.__priv_repr.remove_bit(value.enum_into_u32());
             contains
         }
+    };
+}
 
-        /// Adds all elements in another set to this one.
-        #[inline(always)]
-        pub fn insert_all(&mut self, other: Self) {
-            self.__priv_repr = self.__priv_repr | other.__priv_repr
+macro_rules! set_common_impls {
+    ($name:ident, $set_trait:ident) => {
+        impl<T: $set_trait> Default for $name<T> {
+            /// Returns an empty set.
+            fn default() -> Self {
+                Self::new()
+            }
         }
-        /// Removes all values in another set from this one.
-        #[inline(always)]
-        pub fn remove_all(&mut self, other: Self) {
-            self.__priv_repr = self.__priv_repr.and_not(other.__priv_repr);
+
+        impl<T: $set_trait, O: Into<$name<T>>> Sub<O> for $name<T> {
+            type Output = Self;
+            #[inline(always)]
+            fn sub(self, other: O) -> Self::Output {
+                self.difference(other.into())
+            }
+        }
+        impl<T: $set_trait, O: Into<$name<T>>> BitAnd<O> for $name<T> {
+            type Output = Self;
+            #[inline(always)]
+            fn bitand(self, other: O) -> Self::Output {
+                self.intersection(other.into())
+            }
+        }
+        impl<T: $set_trait, O: Into<$name<T>>> BitOr<O> for $name<T> {
+            type Output = Self;
+            #[inline(always)]
+            fn bitor(self, other: O) -> Self::Output {
+                self.union(other.into())
+            }
+        }
+        impl<T: $set_trait, O: Into<$name<T>>> BitXor<O> for $name<T> {
+            type Output = Self;
+            #[inline(always)]
+            fn bitxor(self, other: O) -> Self::Output {
+                self.symmetrical_difference(other.into())
+            }
+        }
+
+        impl<T: $set_trait, O: Into<$name<T>>> SubAssign<O> for $name<T> {
+            #[inline(always)]
+            fn sub_assign(&mut self, rhs: O) {
+                *self = *self - rhs;
+            }
+        }
+        impl<T: $set_trait, O: Into<$name<T>>> BitAndAssign<O> for $name<T> {
+            #[inline(always)]
+            fn bitand_assign(&mut self, rhs: O) {
+                *self = *self & rhs;
+            }
+        }
+        impl<T: $set_trait, O: Into<$name<T>>> BitOrAssign<O> for $name<T> {
+            #[inline(always)]
+            fn bitor_assign(&mut self, rhs: O) {
+                *self = *self | rhs;
+            }
+        }
+        impl<T: $set_trait, O: Into<$name<T>>> BitXorAssign<O> for $name<T> {
+            #[inline(always)]
+            fn bitxor_assign(&mut self, rhs: O) {
+                *self = *self ^ rhs;
+            }
+        }
+
+        impl<T: $set_trait> Not for $name<T> {
+            type Output = Self;
+            #[inline(always)]
+            fn not(self) -> Self::Output {
+                self.complement()
+            }
+        }
+
+        impl<T: $set_trait> From<T> for $name<T> {
+            fn from(t: T) -> Self {
+                $name::only(t)
+            }
+        }
+
+        impl<T: $set_trait> PartialEq<T> for $name<T> {
+            fn eq(&self, other: &T) -> bool {
+                self.__priv_repr == $name::only(*other).__priv_repr
+            }
+        }
+
+        #[allow(clippy::derived_hash_with_manual_eq)] // This impl exists to change trait bounds only.
+        impl<T: $set_trait> Hash for $name<T> {
+            fn hash<H: Hasher>(&self, state: &mut H) {
+                self.__priv_repr.hash(state)
+            }
+        }
+        #[allow(clippy::non_canonical_partial_ord_impl)]
+        impl<T: $set_trait> PartialOrd for $name<T> {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                self.__priv_repr.partial_cmp(&other.__priv_repr)
+            }
+        }
+        impl<T: $set_trait> Ord for $name<T> {
+            fn cmp(&self, other: &Self) -> Ordering {
+                self.__priv_repr.cmp(&other.__priv_repr)
+            }
+        }
+
+        impl<T: $set_trait + Debug> Debug for $name<T> {
+            fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+                // Note: We don't use `.debug_struct` to avoid splitting lines when using `{:x}`
+                f.write_str(concat!(stringify!($name), "("))?;
+                let mut i = self.iter();
+                if let Some(v) = i.next() {
+                    Debug::fmt(&v, f)?;
+                    for v in i {
+                        f.write_str(" | ")?;
+                        Debug::fmt(&v, f)?;
+                    }
+                }
+                f.write_str(")")?;
+                Ok(())
+            }
+        }
+
+        impl<T: $set_trait + Display> Display for $name<T> {
+            fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+                let mut i = self.iter();
+                if let Some(v) = i.next() {
+                    Display::fmt(&v, f)?;
+                    for v in i {
+                        f.write_str(" | ")?;
+                        Display::fmt(&v, f)?;
+                    }
+                }
+                Ok(())
+            }
+        }
+    };
+}
+
+macro_rules! set_iterator_impls {
+    ($name:ident, $set_trait:ident) => {
+        impl<T: $set_trait> Extend<T> for $name<T> {
+            fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+                iter.into_iter().for_each(|v| {
+                    self.insert(v);
+                });
+            }
+        }
+
+        impl<'a, T: $set_trait> Extend<&'a T> for $name<T> {
+            fn extend<I: IntoIterator<Item = &'a T>>(&mut self, iter: I) {
+                iter.into_iter().for_each(|v| {
+                    self.insert(*v);
+                });
+            }
+        }
+
+        impl<T: $set_trait> FromIterator<T> for $name<T> {
+            fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+                let mut set = $name::default();
+                set.extend(iter);
+                set
+            }
+        }
+
+        impl<T: $set_trait> Extend<$name<T>> for $name<T> {
+            fn extend<I: IntoIterator<Item = $name<T>>>(&mut self, iter: I) {
+                iter.into_iter().for_each(|v| {
+                    self.insert_all(v);
+                });
+            }
+        }
+
+        impl<'a, T: $set_trait> Extend<&'a $name<T>> for $name<T> {
+            fn extend<I: IntoIterator<Item = &'a $name<T>>>(&mut self, iter: I) {
+                iter.into_iter().for_each(|v| {
+                    self.insert_all(*v);
+                });
+            }
+        }
+
+        impl<T: $set_trait> FromIterator<$name<T>> for $name<T> {
+            fn from_iter<I: IntoIterator<Item = $name<T>>>(iter: I) -> Self {
+                let mut set = $name::default();
+                set.extend(iter);
+                set
+            }
+        }
+
+        impl<T: $set_trait> Sum for $name<T> {
+            fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+                iter.fold($name::empty(), |a, v| a | v)
+            }
+        }
+        impl<'a, T: $set_trait> Sum<&'a $name<T>> for $name<T> {
+            fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+                iter.fold($name::empty(), |a, v| a | *v)
+            }
+        }
+        impl<T: $set_trait> Sum<T> for $name<T> {
+            fn sum<I: Iterator<Item = T>>(iter: I) -> Self {
+                iter.fold($name::empty(), |a, v| a | v)
+            }
+        }
+        impl<'a, T: $set_trait> Sum<&'a T> for $name<T> {
+            fn sum<I: Iterator<Item = &'a T>>(iter: I) -> Self {
+                iter.fold($name::empty(), |a, v| a | *v)
+            }
         }
     };
 }
