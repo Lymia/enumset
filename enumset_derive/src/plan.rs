@@ -115,10 +115,10 @@ pub struct EnumSetInfo {
     pub name: Ident,
     /// The crate name to use.
     pub crate_name: Option<Ident>,
-    /// The numeric type to represent the `EnumSet` as in memory.
-    explicit_internal_repr: Option<InternalRepr>,
-    /// Forces the internal numeric type of the `EnumSet` to be an array.
-    internal_repr_force_array: bool,
+    /// Forces the internal storage for an `EnumSet` to be a specific integer type.
+    explicit_integer_repr: Option<InternalRepr>,
+    /// Forces the internal storage for an `EnumSet` to be an array.
+    explicit_array_repr: bool,
     /// The numeric type to serialize the enum as.
     explicit_serde_repr: Option<SerdeRepr>,
     /// A list of variants in the enum.
@@ -170,8 +170,8 @@ impl EnumSetInfo {
                 .crate_name
                 .as_ref()
                 .map(|x| Ident::new(x, Span::call_site())),
-            explicit_internal_repr: None,
-            internal_repr_force_array: false,
+            explicit_integer_repr: None,
+            explicit_array_repr: false,
             explicit_serde_repr: None,
             variants: Vec::new(),
             vis: input.vis.clone(),
@@ -213,12 +213,12 @@ impl EnumSetInfo {
     /// Explicitly sets the representation of the enumset from a string.
     fn push_repr(&mut self, span: Span, ty: &str) -> syn::Result<()> {
         match ty {
-            "u8" => self.explicit_internal_repr = Some(InternalRepr::U8),
-            "u16" => self.explicit_internal_repr = Some(InternalRepr::U16),
-            "u32" => self.explicit_internal_repr = Some(InternalRepr::U32),
-            "u64" => self.explicit_internal_repr = Some(InternalRepr::U64),
-            "u128" => self.explicit_internal_repr = Some(InternalRepr::U128),
-            "array" => self.internal_repr_force_array = true,
+            "u8" => self.explicit_integer_repr = Some(InternalRepr::U8),
+            "u16" => self.explicit_integer_repr = Some(InternalRepr::U16),
+            "u32" => self.explicit_integer_repr = Some(InternalRepr::U32),
+            "u64" => self.explicit_integer_repr = Some(InternalRepr::U64),
+            "u128" => self.explicit_integer_repr = Some(InternalRepr::U128),
+            "array" => self.explicit_array_repr = true,
             _ => error(span, format!("`{ty}` is not a valid internal enumset representation."))?,
         }
         Ok(())
@@ -272,21 +272,21 @@ impl EnumSetInfo {
 
     /// Returns the actual internal representation of the set.
     pub fn internal_repr(&self) -> InternalRepr {
-        match self.explicit_internal_repr {
+        match self.explicit_integer_repr {
             Some(x) => x,
             None => match self.max_variant_bit {
-                x if x < 8 && !self.internal_repr_force_array => InternalRepr::U8,
-                x if x < 16 && !self.internal_repr_force_array => InternalRepr::U16,
-                x if x < 32 && !self.internal_repr_force_array => InternalRepr::U32,
-                x if x < 64 && !self.internal_repr_force_array => InternalRepr::U64,
+                x if x < 8 && !self.explicit_array_repr => InternalRepr::U8,
+                x if x < 16 && !self.explicit_array_repr => InternalRepr::U16,
+                x if x < 32 && !self.explicit_array_repr => InternalRepr::U32,
+                x if x < 64 && !self.explicit_array_repr => InternalRepr::U64,
                 x => InternalRepr::Array((x as usize + 64) / 64),
             },
         }
     }
 
-    /// Returns whether this enumset has an explicit internal representation.
-    pub fn has_explicit_repr(&self) -> bool {
-        self.explicit_internal_repr.is_some()
+    /// Returns whether this enumset has an explicit integer representation.
+    pub fn has_explicit_integer_repr(&self) -> bool {
+        self.explicit_integer_repr.is_some()
     }
 
     /// Returns the actual serde representation of the set.
@@ -407,7 +407,7 @@ impl EnumSetInfo {
 
     /// Maps the enum variants as a MSB set.
     fn map_msb(&mut self, span: Span) -> syn::Result<()> {
-        let bit_width = match self.explicit_internal_repr {
+        let bit_width = match self.explicit_integer_repr {
             Some(InternalRepr::U8) => 8,
             Some(InternalRepr::U16) => 16,
             Some(InternalRepr::U32) => 32,

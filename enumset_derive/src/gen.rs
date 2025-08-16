@@ -396,7 +396,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     //
     // Generate the code for the explicit repr trait.
     //
-    let impl_with_repr = if info.has_explicit_repr() {
+    let impl_with_repr = if info.has_explicit_integer_repr() {
         quote! {
             #[automatically_derived]
             unsafe impl #enumset::EnumSetTypeWithRepr for #name {
