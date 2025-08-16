@@ -1,6 +1,6 @@
 [package]
 name = "enumset_derive"
-version = "0.13.1"
+version = "0.13.0"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2021"
 
