@@ -91,10 +91,13 @@ extern crate alloc;
 
 mod macros;
 
+#[macro_use]
+mod set_common;
+
 mod derive;
-mod mixed_set;
 mod repr;
 mod set;
+//mod set_mixed;
 mod traits;
 
 pub use crate::derive::EnumSetType;
