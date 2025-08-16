@@ -359,6 +359,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     // Implement the core conversion function that maps enum variants to bits.
     //
     let impl_internal_conversions = create_enum_conversions(&info, &paths);
+    let impl_compact_conversions = create_compact_conversions(&info, &paths);
 
     //
     // Generate the code for `Eq` and other similar basic traits.
@@ -428,7 +429,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     }
 
     let bit_width = info.bit_width();
-    let variant_count = info.variants.len() as u32;
+    let variant_count = info.variants.len();
     let enum_repr = info.enum_repr();
     let enum_discrim: Vec<_> = info.variants.iter().map(|x| x.discriminant).collect();
     let enum_names: Vec<_> = info.variants.iter().map(|x| &x.name).collect();
@@ -443,9 +444,12 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
                 type Repr = #repr;
                 const ALL_BITS: Self::Repr = #all_variants;
                 const BIT_WIDTH: u32 = #bit_width;
-                const VARIANT_COUNT: u32 = #variant_count;
+                const VARIANT_COUNT: u32 = #variant_count as u32;
+
+                type RecordArray<V> = [V; #variant_count];
 
                 #impl_internal_conversions
+                #impl_compact_conversions
 
                 #internal::__if_serde! {
                     #impl_serde_ops
@@ -598,23 +602,41 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
             }
         }
     } else if info.uses_compact_encoding() {
-        let variant_bits: Vec<_> = info.variants.iter().map(|x| x.variant_bit).collect();
-        let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
         quote! {
             fn enum_into_u32(self) -> u32 {
-                match self {
-                    #(#name::#variant_names => #variant_bits,)*
-                }
+                self.compact_enum_into_u32()
             }
             unsafe fn enum_from_u32(val: u32) -> Self {
-                match val {
-                    #(#variant_bits => #name::#variant_names,)*
-                    _ => #core::hint::unreachable_unchecked(),
-                }
+                Self::compact_enum_from_u32(val)
             }
         }
     } else {
         panic!("Unknown encoding?");
+    }
+}
+
+fn create_compact_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream {
+    let name = &info.name;
+    let core = &paths.core;
+
+    let variant_bits: Vec<_> = info
+        .variants
+        .iter()
+        .map(|x| x.compact_variant_bit)
+        .collect();
+    let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
+    quote! {
+        fn compact_enum_into_u32(self) -> u32 {
+            match self {
+                #(#name::#variant_names => #variant_bits,)*
+            }
+        }
+        unsafe fn compact_enum_from_u32(val: u32) -> Self {
+            match val {
+                #(#variant_bits => #name::#variant_names,)*
+                _ => #core::hint::unreachable_unchecked(),
+            }
+        }
     }
 }
 

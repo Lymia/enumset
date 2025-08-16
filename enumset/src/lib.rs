@@ -1,5 +1,5 @@
 #![no_std]
-#![deny(missing_docs)]
+//#![deny(missing_docs)]
 #![allow(clippy::missing_safety_doc)] // The safety requirement is "use the procedural derive".
 #![allow(clippy::needless_range_loop)] // range loop style is clearer in most places in enumset
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -92,11 +92,13 @@ extern crate alloc;
 mod macros;
 
 mod derive;
+mod record;
 mod repr;
 mod set;
 mod traits;
 
 pub use crate::derive::EnumSetType;
 pub use crate::macros::__internal;
+pub use crate::record::{EnumRecord, EnumRecordIntoIter, EnumRecordIter, EnumRecordIterMut};
 pub use crate::set::{EnumSet, EnumSetIter};
 pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};

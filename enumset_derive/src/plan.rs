@@ -104,6 +104,8 @@ pub struct EnumSetValue {
     pub discriminant: i64,
     /// The bit this variant is stored in.
     pub variant_bit: u32,
+    /// The bit this variant is stored in when compacted.
+    pub compact_variant_bit: u32,
     /// The span this variant originates in.
     pub span: Span,
 }
@@ -259,6 +261,7 @@ impl EnumSetInfo {
                 name: variant.ident.clone(),
                 discriminant,
                 variant_bit: !0,
+                compact_variant_bit: !0,
                 span: variant.span(),
             });
             self.used_variant_names.insert(variant.ident.to_string());
@@ -389,6 +392,28 @@ impl EnumSetInfo {
         vec
     }
 
+    /// Creates the compacted bit variants.
+    fn build_compacted(&mut self) {
+        let mut occupied = BTreeSet::new();
+        for i in 0..self.variants.len() {
+            occupied.insert(i as u32);
+        }
+        let variant_len = self.variants.len();
+        for variant in &mut self.variants {
+            if variant.discriminant > 0 && variant.discriminant < variant_len as i64 {
+                variant.compact_variant_bit = variant.discriminant as u32;
+                occupied.remove(&variant.compact_variant_bit);
+            }
+        }
+        for variant in &mut self.variants {
+            if variant.compact_variant_bit == !0 {
+                let first = *occupied.iter().next().unwrap();
+                variant.compact_variant_bit = first;
+                occupied.remove(&first);
+            }
+        }
+    }
+
     /// Maps the enum variants as a LSB set.
     fn map_lsb(&mut self) -> syn::Result<()> {
         for variant in &mut self.variants {
@@ -447,23 +472,8 @@ impl EnumSetInfo {
 
     /// Maps the enum variants as a compact set.
     fn map_compact(&mut self) {
-        let mut occupied = BTreeSet::new();
-        for i in 0..self.variants.len() {
-            occupied.insert(i as u32);
-        }
-        let variant_len = self.variants.len();
         for variant in &mut self.variants {
-            if variant.discriminant > 0 && variant.discriminant < variant_len as i64 {
-                variant.variant_bit = variant.discriminant as u32;
-                occupied.remove(&variant.variant_bit);
-            }
-        }
-        for variant in &mut self.variants {
-            if variant.variant_bit == !0 {
-                let first = *occupied.iter().next().unwrap();
-                variant.variant_bit = first;
-                occupied.remove(&first);
-            }
+            variant.variant_bit = variant.compact_variant_bit;
         }
         self.compact_encoding = true;
         self.update_after_map();
@@ -580,7 +590,8 @@ pub fn plan_for_enum(input: DeriveInput) -> syn::Result<EnumSetInfo> {
             info.push_variant(variant)?;
         }
 
-        // Compact the enumset if requested
+        // Maps the enumset if requested
+        info.build_compacted();
         match (*attrs.map).as_deref() {
             None | Some("lsb") => info.map_lsb()?,
             Some("msb") => info.map_msb(attrs.map.span())?,

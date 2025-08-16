@@ -43,6 +43,9 @@ pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper + Sized {
     /// The number of variants in the bitset.
     const VARIANT_COUNT: u32;
 
+    /// The type used for `EnumRecord`.
+    type RecordArray<V>: crate::record::EnumRecordUnderlying<Value = V>;
+
     /// Converts an enum of this type into its bit position.
     fn enum_into_u32(self) -> u32;
 
@@ -53,6 +56,18 @@ pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper + Sized {
     unsafe fn enum_from_u32_checked(val: u32) -> Self {
         debug_assert!(Self::ALL_BITS.has_bit(val), "Unknown bit retrieved from bitset.");
         Self::enum_from_u32(val)
+    }
+
+    /// Converts an enum of this type into its compacted bit position.
+    fn compact_enum_into_u32(self) -> u32;
+
+    /// Converts a compacted bit position into an enum value.
+    unsafe fn compact_enum_from_u32(val: u32) -> Self;
+
+    /// Converts a compacted bit position into an enum value, with an debug_assert.
+    unsafe fn compact_enum_from_u32_checked(val: u32) -> Self {
+        debug_assert!(val < Self::VARIANT_COUNT, "Unknown bit retrieved from bitset.");
+        Self::compact_enum_from_u32(val)
     }
 
     /// Serializes the `EnumSet`.

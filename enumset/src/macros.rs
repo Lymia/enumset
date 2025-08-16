@@ -43,6 +43,8 @@ pub mod __internal {
     pub const fn init_helper<T: EnumSetConstHelper>(_: &T) -> T::ConstInitHelper {
         T::CONST_INIT_HELPER
     }
+
+    pub use crate::record::EnumRecordUnderlying;
 }
 
 /// Creates a EnumSet literal, which can be used in const contexts.
