@@ -1,5 +1,5 @@
 #![no_std]
-//#![deny(missing_docs)]
+#![deny(missing_docs)]
 #![allow(clippy::missing_safety_doc)] // The safety requirement is "use the procedural derive".
 #![allow(clippy::needless_range_loop)] // range loop style is clearer in most places in enumset
 #![cfg_attr(docsrs, feature(doc_cfg))]

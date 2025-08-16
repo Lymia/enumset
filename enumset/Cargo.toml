@@ -3,7 +3,7 @@ name = "enumset"
 version = "1.1.8"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2021"
-rust-version = "1.61"
+rust-version = "1.65"
 
 description = "A library for creating compact sets of enums."
 keywords = ["enum", "bitset"]

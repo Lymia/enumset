@@ -7,10 +7,13 @@ use core::marker::PhantomData;
 use core::ops::{Index, IndexMut};
 use core::{array, slice};
 
+#[allow(missing_docs)]
 pub trait EnumRecordUnderlying {
     const N: usize;
     type Value;
+
     fn create(func: impl FnMut(usize) -> Self::Value) -> Self;
+    unsafe fn as_ptr(ptr: *mut Self) -> *mut Self::Value;
 
     fn get(&self, idx: usize) -> &Self::Value;
     fn get_mut(&mut self, idx: usize) -> &mut Self::Value;
@@ -25,8 +28,12 @@ pub trait EnumRecordUnderlying {
 impl<const N: usize, V> EnumRecordUnderlying for [V; N] {
     const N: usize = N;
     type Value = V;
+
     fn create(func: impl FnMut(usize) -> Self::Value) -> Self {
         array::from_fn(func)
+    }
+    unsafe fn as_ptr(ptr: *mut Self) -> *mut Self::Value {
+        ptr as *mut Self::Value
     }
 
     fn get(&self, idx: usize) -> &Self::Value {
@@ -60,10 +67,28 @@ impl<const N: usize, V> EnumRecordUnderlying for [V; N] {
 /// # FFI Safety
 ///
 /// `EnumRecord` is not FFI safe.
+#[repr(transparent)]
 pub struct EnumRecord<K: EnumSetType, V> {
     underlying: K::RecordArray<V>,
 }
 impl<K: EnumSetType, V> EnumRecord<K, V> {
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    unsafe fn boxed_init(mut func: impl FnMut(usize) -> V) -> alloc::boxed::Box<Self> {
+        let alloc = alloc::alloc::alloc(core::alloc::Layout::new::<K::RecordArray<V>>());
+        let alloc = alloc as *mut K::RecordArray<V>;
+        let direct_ptr = K::RecordArray::<V>::as_ptr(alloc);
+        for i in 0..K::VARIANT_COUNT {
+            let value = func(i as usize);
+            direct_ptr.offset(i as isize).write(value);
+        }
+        alloc::boxed::Box::from_raw(direct_ptr as *mut Self)
+    }
+
+    /// Constructs a new record from a function.
+    ///
+    /// Each value in the record will be the result of calling the function on the corresponding
+    /// key.
     pub fn from_fn(mut func: impl FnMut(K) -> V) -> Self {
         EnumRecord {
             underlying: K::RecordArray::<V>::create(|x| {
@@ -72,9 +97,61 @@ impl<K: EnumSetType, V> EnumRecord<K, V> {
         }
     }
 
+    /// Constructs a new boxed record from a function.
+    ///
+    /// Each value in the record will be the result of calling the function on the corresponding
+    /// key.
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    pub fn from_fn_boxed(mut func: impl FnMut(K) -> V) -> alloc::boxed::Box<Self> {
+        unsafe { Self::boxed_init(|x| func(K::compact_enum_from_u32_checked(x as u32))) }
+    }
+
+    /// Constructs a new record from a single value.
+    ///
+    /// Each value in the record will be a clone of the given value.
     pub fn repeat(v: V) -> Self
     where V: Clone {
         EnumRecord { underlying: K::RecordArray::<V>::create(|_| v.clone()) }
+    }
+
+    /// Constructs a new boxed record from a single value.
+    ///
+    /// Each value in the record will be a clone of the given value.
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    pub fn repeat_boxed(v: V) -> alloc::boxed::Box<Self>
+    where V: Clone {
+        unsafe { Self::boxed_init(|_| v.clone()) }
+    }
+
+    /// Constructs a new record based on the values of this one.
+    ///
+    /// Each value in the new record will be the result of calling the function on the
+    /// corresponding key and the existing value in this record.
+    pub fn map<V2>(&self, mut func: impl FnMut(K, &V) -> V2) -> EnumRecord<K, V2> {
+        EnumRecord {
+            underlying: K::RecordArray::<V2>::create(|x| {
+                func(unsafe { K::compact_enum_from_u32_checked(x as u32) }, self.underlying.get(x))
+            }),
+        }
+    }
+
+    /// Constructs a new boxed record based on the values of this one.
+    ///
+    /// Each value in the new record will be the result of calling the function on the
+    /// corresponding key and the existing value in this record.
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    pub fn map_boxed<V2>(
+        &self,
+        mut func: impl FnMut(K, &V) -> V2,
+    ) -> alloc::boxed::Box<EnumRecord<K, V2>> {
+        unsafe {
+            EnumRecord::boxed_init(|x| {
+                func(K::compact_enum_from_u32_checked(x as u32), self.underlying.get(x))
+            })
+        }
     }
 }
 impl<K: EnumSetType, V> Index<K> for EnumRecord<K, V> {
