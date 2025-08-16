@@ -460,7 +460,9 @@ impl EnumSetInfo {
         }
         for variant in &mut self.variants {
             if variant.variant_bit == !0 {
-                variant.variant_bit = occupied.pop_first().unwrap();
+                let first = *occupied.iter().next().unwrap();
+                variant.variant_bit = first;
+                occupied.remove(&first);
             }
         }
         self.compact_encoding = true;

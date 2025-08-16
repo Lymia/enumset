@@ -77,7 +77,7 @@ pub enum ReprEnum {
 }
 
 /// Used to test repr on enums. (cont)
-#[repr(u128)]
+#[rustversion::attr(since(1.89), repr(u128))]
 #[derive(EnumSetType, Debug)]
 pub enum ReprEnum2 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
