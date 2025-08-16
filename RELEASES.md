@@ -1,4 +1,4 @@
-# Unreleased
+# Version 1.1.8 (2025-08-16)
 
 ## New Features
 * Add `From<[T; N]>`, `Extend<&'a T>`, and `Extend<&'a EnumSet<T>>`
