@@ -375,7 +375,7 @@ impl EnumSetInfo {
         };
         for variant in &mut self.variants {
             if variant.discriminant >= bit_width {
-                error(variant.span.clone(), "`repr` is too small to contain this discriminant.")?;
+                error(variant.span, "`repr` is too small to contain this discriminant.")?;
             }
             variant.variant_bit = bit_width - 1 - variant.discriminant;
         }
@@ -388,7 +388,7 @@ impl EnumSetInfo {
     fn map_masks(&mut self) -> syn::Result<()> {
         for variant in &mut self.variants {
             if variant.discriminant.count_ones() != 1 {
-                error(variant.span.clone(), "All variants must be a non-zero power of two.")?;
+                error(variant.span, "All variants must be a non-zero power of two.")?;
             }
             variant.variant_bit = variant.discriminant.trailing_zeros();
         }
@@ -411,7 +411,7 @@ impl EnumSetInfo {
         for variant in &self.variants {
             if variant.variant_bit > self.max_variant_bit {
                 self.max_variant_bit = variant.variant_bit;
-                self.max_variant_span = Some(variant.span.clone());
+                self.max_variant_span = Some(variant.span);
             }
         }
     }
@@ -514,7 +514,7 @@ pub fn plan_for_enum(input: DeriveInput) -> syn::Result<EnumSetInfo> {
         }
 
         // Compact the enumset if requested
-        match (&*attrs.map).as_ref().map(|x| x.as_str()) {
+        match (*attrs.map).as_deref() {
             Some("lsb") => {}
             Some("msb") => info.map_msb(attrs.map.span())?,
             Some("compact") => info.map_compact(),
