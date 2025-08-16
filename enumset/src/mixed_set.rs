@@ -1,5 +1,5 @@
 use crate::repr::EnumSetTypeRepr;
-use crate::traits::{EnumSetConstHelper, EnumSetType};
+use crate::traits::{EnumSetConstHelper, EnumSetType, EnumSetTypePrivate};
 use crate::EnumSetTypeWithRepr;
 use core::cmp::Ordering;
 use core::fmt::{Debug, Display, Formatter};
@@ -12,107 +12,46 @@ use core::ops::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// An efficient set type for enums.
+/// A variant of [`EnumSet`] that preserves unknown bits.
 ///
-/// It is implemented using a bitset stored using the smallest integer that can fit all bits
-/// in the underlying enum. In general, an enum variant with a discriminator of `n` is stored in
-/// the nth least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
+/// It only works for enums with an
+/// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) attribute used
+/// with a primitive integer type.
 ///
-/// # Numeric representation
+/// # Numeric Representation
 ///
-/// `EnumSet` is internally implemented using integer types, and as such can be easily converted
-/// from and to numbers.
-///
-/// Each bit of the underlying integer corresponds to at most one particular enum variant. If the
-/// corresponding bit for a variant is set, it present in the set. Bits that do not correspond to
-/// any variant are always unset.
-///
-/// By default, each enum variant is stored in a bit corresponding to its discriminator. An enum
-/// variant with a discriminator of `n` is stored in the `n + 1`th least significant bit
-/// (corresponding to a mask of e.g. `1 << enum as u32`).
-///
-/// The [`#[enumset(map = "…")]`](derive@crate::EnumSetType#mapping-options) attribute can be used
-/// to control this mapping.
-///
-/// # Array representation
-///
-/// Sets with 64 or more variants are instead stored with an underlying array of `u64`s. This is
-/// treated as if it was a single large integer. The `n`th least significant bit of this integer
-/// is stored in the `n % 64`th least significant bit of the `n / 64`th element in the array.
+/// `MixedEnumSet` uses the same underlying
+/// [`numeric representation`](EnumSet#numeric-representation) as `EnumSet`. However, bits that do
+/// not correspond to an enum variant can be set.
 ///
 /// # Serialization
 ///
-/// When the `serde` feature is enabled, `EnumSet`s can be serialized and deserialized using
-/// the `serde` crate.
+/// When the `serde` feature is enabled, `MixedEnumSet`s can be serialized and deserialized using
+/// the `serde` crate. It always serialized as a single integer of the underlying repr type.
 ///
-/// By default, `EnumSet` is serialized by directly writing out a single integer containing the
-/// numeric representation of the bitset. The integer type used is the smallest one that can fit
-/// the largest variant in the enum. If no integer type is large enough, instead the `EnumSet` is
-/// serialized as an array of `u64`s containing the array representation. Unknown bits are ignored
-/// and silently removed from the bitset when deserializing.
-///
-/// The exact serialization format can be controlled with additional attributes on the enum type.
-/// For more information, see the documentation for
-/// [Serialization Options](derive@crate::EnumSetType#serialization-options).
+/// Unlike `EnumSet`, it ignores all flags given to [`EnumSetType`](derive@crate::EnumSetType).
 ///
 /// # FFI Safety
 ///
-/// By default, there are no guarantees about the underlying representation of an `EnumSet`. To use
-/// them safely across FFI boundaries, the
-/// [`#[enumset(repr = "…")]`](derive@crate::EnumSetType#representation-options) attribute must be
-/// used with a primitive integer type. For example:
-///
-/// ```
-/// # use enumset::*;
-/// #
-/// # mod ffi_impl {
-/// #     // This example “foreign” function is actually written in Rust, but for the sake
-/// #     // of example, we'll pretend it's written in C.
-/// #     #[no_mangle]
-/// #     extern "C" fn some_foreign_function(set: u32) -> u32 {
-/// #         set & 0b100
-/// #     }
-/// # }
-/// #
-/// extern "C" {
-///     // This function is written in C like:
-///     // uint32_t some_foreign_function(uint32_t set) { … }
-///     fn some_foreign_function(set: EnumSet<MyEnum>) -> EnumSet<MyEnum>;
-/// }
-///
-/// #[derive(Debug, EnumSetType)]
-/// #[enumset(repr = "u32")]
-/// enum MyEnum { A, B, C }
-///
-/// let set: EnumSet<MyEnum> = enum_set!(MyEnum::A | MyEnum::C);
-///
-/// let new_set: EnumSet<MyEnum> = unsafe { some_foreign_function(set) };
-/// assert_eq!(new_set, enum_set!(MyEnum::C));
-/// ```
-///
-/// When an `EnumSet<T>` is received via FFI, all bits that don't correspond to an enum variant
-/// of `T` must be set to `0`. Behavior is **undefined** if any of these bits are set to `1`.
+/// `MixedEnumSet` may be used interchangeably with the specified repr type in FFI.
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct EnumSet<T: EnumSetType> {
-    #[doc(hidden)]
-    /// This is public due to the `enum_set!` macro.
-    /// This is **NOT** public API and may change at any time.
-    pub __priv_repr: T::Repr,
+pub struct MixedEnumSet<T: EnumSetTypeWithRepr> {
+    __priv_repr: <T as EnumSetTypePrivate>::Repr,
 }
 
-//region EnumSet operations
-impl<T: EnumSetType> EnumSet<T> {
-    const EMPTY_REPR: Self = EnumSet { __priv_repr: T::Repr::EMPTY };
-    const ALL_REPR: Self = EnumSet { __priv_repr: T::ALL_BITS };
+//region MixedEnumSet operations
+impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
+    const EMPTY_REPR: Self = MixedEnumSet { __priv_repr: <T as EnumSetTypePrivate>::Repr::EMPTY };
+    const ALL_REPR: Self = MixedEnumSet { __priv_repr: T::ALL_BITS };
 
-    /// Creates an empty `EnumSet`.
+    /// Creates an empty `MixedEnumSet`.
     #[inline(always)]
     pub const fn new() -> Self {
         Self::EMPTY_REPR
     }
 
-    /// Returns an `EnumSet` containing a single element.
+    /// Returns an `MixedEnumSet` containing a single element.
     #[inline(always)]
     pub fn only(t: T) -> Self {
         let mut set = Self::new();
@@ -128,53 +67,50 @@ impl<T: EnumSetType> EnumSet<T> {
         T::enum_into_u32(t)
     }
 
-    /// Creates an empty `EnumSet`.
+    /// Creates an empty `MixedEnumSet`.
     ///
-    /// This is an alias for [`EnumSet::new`].
+    /// This is an alias for [`MixedEnumSet::new`].
     #[inline(always)]
     pub const fn empty() -> Self {
         Self::EMPTY_REPR
     }
 
-    /// Returns an `EnumSet` containing all valid variants of the enum.
+    /// Returns an `MixedEnumSet` containing all valid variants of the enum.
     #[inline(always)]
     pub const fn all() -> Self {
         Self::ALL_REPR
     }
 
-    /// Total number of bits used by this type. Note that the actual amount of space used is
-    /// rounded up to the next highest integer type (`u8`, `u16`, `u32`, `u64`, or `u128`).
-    ///
-    /// This is the same as [`EnumSet::variant_count`] except in enums with "sparse" variants.
-    /// (e.g. `enum Foo { A = 10, B = 20 }`)
-    #[inline(always)]
-    pub const fn bit_width() -> u32 {
-        T::BIT_WIDTH
-    }
-
     /// The number of valid variants that this type can contain.
-    ///
-    /// This is the same as [`EnumSet::bit_width`] except in enums with "sparse" variants.
-    /// (e.g. `enum Foo { A = 10, B = 20 }`)
     #[inline(always)]
     pub const fn variant_count() -> u32 {
         T::VARIANT_COUNT
     }
 
     /// Returns the number of elements in this set.
+    ///
+    /// This counts bits not found in the enum.
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.__priv_repr.count_ones() as usize
     }
+
+    /// Returns the number of elements in this set, excluding unknown bits.
+    #[inline(always)]
+    pub fn valid_len(&self) -> usize {
+        (self.__priv_repr & T::ALL_BITS).count_ones() as usize
+    }
+
     /// Returns `true` if the set contains no elements.
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.__priv_repr.is_empty()
     }
+
     /// Removes all elements from the set.
     #[inline(always)]
     pub fn clear(&mut self) {
-        self.__priv_repr = T::Repr::EMPTY;
+        self.__priv_repr = <T as EnumSetTypePrivate>::Repr::EMPTY;
     }
 
     /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
@@ -228,7 +164,7 @@ impl<T: EnumSetType> EnumSet<T> {
     pub fn contains(&self, value: T) -> bool {
         self.__priv_repr.has_bit(value.enum_into_u32())
     }
-    
+
     /// Adds a value to this set.
     ///
     /// If the set did not have this value present, `true` is returned.
@@ -434,23 +370,6 @@ impl<'de, T: EnumSetType> Deserialize<'de> for EnumSet<T> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         T::deserialize(deserializer)
     }
-}
-//endregion
-
-//region Deprecated functions
-/// This impl contains all outdated or deprecated functions.
-impl<T: EnumSetType> EnumSet<T> {
-    /// An empty `EnumSet`.
-    ///
-    /// This is deprecated because [`EnumSet::empty`] is now `const`.
-    #[deprecated = "Use `EnumSet::empty()` instead."]
-    pub const EMPTY: Self = Self::EMPTY_REPR;
-
-    /// An `EnumSet` containing all valid variants of the enum.
-    ///
-    /// This is deprecated because [`EnumSet::all`] is now `const`.
-    #[deprecated = "Use `EnumSet::all()` instead."]
-    pub const ALL: Self = Self::ALL_REPR;
 }
 //endregion
 

@@ -92,6 +92,7 @@ extern crate alloc;
 mod macros;
 
 mod derive;
+mod mixed_set;
 mod repr;
 mod set;
 mod traits;
