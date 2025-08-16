@@ -9,3 +9,15 @@ error: `repr` is too small to contain this discriminant.
    |
 12 |     A, B, C, D = 64
    |              ^^^^^^
+
+error: All variants must be a non-zero power of two.
+  --> tests/compile-fail/mappings.rs:18:5
+   |
+18 |     A = 0x3,
+   |     ^^^^^^^
+
+error: `invalid_mask` is not a valid mapping.
+  --> tests/compile-fail/mappings.rs:22:17
+   |
+22 | #[enumset(map = "invalid_mask")]
+   |                 ^^^^^^^^^^^^^^
