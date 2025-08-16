@@ -1,10 +1,10 @@
-use crate::traits::EnumSetTypePrivate;
 use crate::EnumSetType;
 use core::cmp::Ordering;
 use core::fmt::{Debug, Formatter};
 use core::hash::{Hash, Hasher};
 use core::iter::Enumerate;
 use core::marker::PhantomData;
+use core::ops::{Index, IndexMut};
 use core::{array, slice};
 
 pub trait EnumRecordUnderlying {
@@ -49,6 +49,17 @@ impl<const N: usize, V> EnumRecordUnderlying for [V; N] {
     }
 }
 
+/// A collection that maps enum keys to values.
+///
+/// Unlike a typical map, this collection is *injective*, and maps every variant of an enum to some
+/// value. As such, it behaves more like an array than a typical map.
+///
+/// This type is backed by a simple array of values. As such, it can often be too large to use
+/// effectively on the stack. Methods are provided to efficiently construct boxed `EnumRecord`s.
+///
+/// # FFI Safety
+///
+/// `EnumRecord` is not FFI safe.
 pub struct EnumRecord<K: EnumSetType, V> {
     underlying: K::RecordArray<V>,
 }
@@ -66,6 +77,19 @@ impl<K: EnumSetType, V> EnumRecord<K, V> {
         EnumRecord { underlying: K::RecordArray::<V>::create(|_| v.clone()) }
     }
 }
+impl<K: EnumSetType, V> Index<K> for EnumRecord<K, V> {
+    type Output = V;
+    fn index(&self, index: K) -> &Self::Output {
+        self.underlying
+            .get(K::compact_enum_into_u32(index) as usize)
+    }
+}
+impl<K: EnumSetType, V> IndexMut<K> for EnumRecord<K, V> {
+    fn index_mut(&mut self, index: K) -> &mut <Self as Index<K>>::Output {
+        self.underlying
+            .get_mut(K::compact_enum_into_u32(index) as usize)
+    }
+}
 
 //region Basic traits
 impl<K: EnumSetType, V: Clone> Clone for EnumRecord<K, V>
@@ -73,6 +97,11 @@ where K::RecordArray<V>: Clone
 {
     fn clone(&self) -> Self {
         EnumRecord { underlying: self.underlying.clone() }
+    }
+
+    fn clone_from(&mut self, source: &Self)
+    where Self: {
+        self.underlying.clone_from(&source.underlying)
     }
 }
 impl<K: EnumSetType, V: Copy + Clone> Copy for EnumRecord<K, V> where K::RecordArray<V>: Copy + Clone
@@ -114,11 +143,14 @@ where K::RecordArray<V>: Default
         EnumRecord { underlying: K::RecordArray::<V>::default() }
     }
 }
-impl<K: EnumSetType, V: Debug> Debug for EnumRecord<K, V>
+impl<K: EnumSetType + Debug, V: Debug> Debug for EnumRecord<K, V>
 where K::RecordArray<V>: Debug
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let mut map = f.debug_map();
+        for (k, v) in self {
+            map.entry(&k, v);
+        }
         map.finish()?;
         Ok(())
     }
@@ -174,6 +206,15 @@ macro_rules! record_impls {
             }
         }
         impl<$($bound)* K: EnumSetType, V> ExactSizeIterator for $iter_ty<$($bound)* K, V> {}
+        impl <$($bound)* K: EnumSetType, V> IntoIterator for
+            $($borrow)* $($item_lt)* $($mut_flag)* EnumRecord<K, V>
+        {
+            type Item = (K, $($borrow)* $($item_lt)* $($mut_flag)* V);
+            type IntoIter = $iter_ty<$($bound)* K, V>;
+            fn into_iter(self) -> Self::IntoIter {
+                self.$iter_fn()
+            }
+        }
     };
 }
 
