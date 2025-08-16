@@ -1,3 +1,9 @@
+# Version 1.1.9 (2025-08-16)
+* Fixed a bug that allowed an internal type to be accessed via the
+  `#[enumset(repr = "array")]` attribute. Types with this attribute will no
+  longer implement `EnumSetTypeWithRepr`. This bugfix is a **breaking
+  change**, but I am not aware of any software that exploits this bug.
+
 # Version 1.1.8 (2025-08-16)
 
 ## New Features
