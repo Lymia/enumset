@@ -1,0 +1,11 @@
+error: #[enumset(map = "msb")] can only be used with an explicit integer repr.
+ --> tests/compile-fail/mappings.rs:4:17
+  |
+4 | #[enumset(map = "msb")]
+  |                 ^^^^^
+
+error: `repr` is too small to contain this discriminant.
+  --> tests/compile-fail/mappings.rs:12:14
+   |
+12 |     A, B, C, D = 64
+   |              ^^^^^^

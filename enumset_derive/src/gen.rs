@@ -483,7 +483,16 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
                 #name::#variant
             }
         }
-    } else if !info.has_variant_mapping() {
+    } else if !info.has_variant_mapping() || info.uses_msb_encoding().is_some() {
+        // Prepares output for MSB mode.
+        let process_output = if let Some(msb_repr) = info.uses_msb_encoding() {
+            quote! {
+                let r = (#msb_repr as u128) - 1 - r;
+            }
+        } else {
+            quote!()
+        };
+
         // Build a table of branches.
         let mut names = Vec::new();
         for i in 0..info.bit_width() {
@@ -492,16 +501,18 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
             names.push(quote! {{
                 #[cfg(target_endian = "little")]
                 let r = {
-                    let v = #i as u128;
-                    *(&v as *const u128 as *const #name)
+                    let r = #i as u128;
+                    #process_output
+                    *(&r as *const u128 as *const #name)
                 };
 
                 #[cfg(target_endian = "big")]
                 let r = {
-                    let v = #i as u128;
+                    let r = #i as u128;
+                    #process_output
                     let offset = #core::mem::size_of::<u128>() - #core::mem::size_of::<#name>();
-                    let v = v << (offset * 8);
-                    *(&v as *const u128 as *const u8 as *const #name)
+                    let r = r << (offset * 8);
+                    (&r as *const u128 as *const u8 as *const #name)
                 };
 
                 r
@@ -511,14 +522,16 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
         // Fill variants into the table.
         for variant in &info.variants {
             let variant_name = &variant.name;
-            names[variant.discriminant as usize] = quote! { #name::#variant_name };
+            names[variant.variant_bit as usize] = quote! { #name::#variant_name };
         }
 
         let values = 0..(names.len() as u32);
 
         quote! {
             fn enum_into_u32(self) -> u32 {
-                self as u32
+                let r = self as u128;
+                #process_output
+                r as u32
             }
             unsafe fn enum_from_u32(val: u32) -> Self {
                 // We put these in const fields so the branches they guard aren't generated even

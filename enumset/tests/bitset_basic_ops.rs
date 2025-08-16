@@ -145,6 +145,20 @@ pub enum CompactEnumB {
     A = 2, B = 4, C = 6, D = 8, E = 10, F = 120, G = 180, H = 1000,
 }
 
+/// Used to test MSB.
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "u64", map = "msb")]
+pub enum MsbEnum {
+    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+}
+
+/// Used to test MSB.
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "u64", map = "msb")]
+enum MsbSparseEnum {
+    A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
+}
+
 /// Tests that all variants are properly present when `EnumSet::all` is used.
 macro_rules! test_variants {
     ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
@@ -188,6 +202,59 @@ test_variants! { CompactEnumB compact_enum_b_all_empty
 }
 
 macro_rules! test_enum {
+    ($e:ident, $mem_size:expr, ordered) => {
+        test_enum!($e, $mem_size);
+
+        /// Basic test that `Debug` returns the expected outupt.
+        #[test]
+        fn debug_impl_has_expected_output() {
+            assert_eq!(format!("{:?}", $e::A | $e::B | $e::D), "EnumSet(A | B | D)");
+        }
+
+        /// Tests that the iterator returns enums in the expected order.
+        #[test]
+        fn iter_ordering() {
+            let set_a = $e::A | $e::B | $e::E;
+            let vec_a: Vec<_> = set_a.iter().collect();
+            assert_eq!(vec_a, &[$e::A, $e::B, $e::E]);
+            let vec_a_rev: Vec<_> = set_a.iter().rev().collect();
+            assert_eq!(vec_a_rev, &[$e::E, $e::B, $e::A]);
+
+            let set_b = $e::B | $e::C | $e::D | $e::G;
+            let vec_b: Vec<_> = set_b.iter().collect();
+            assert_eq!(vec_b, &[$e::B, $e::C, $e::D, $e::G]);
+            let vec_b_rev: Vec<_> = set_b.iter().rev().collect();
+            assert_eq!(vec_b_rev, &[$e::G, $e::D, $e::C, $e::B]);
+        }
+
+        /// Checks that mixing next and next_back works properly.
+        #[test]
+        fn iter_both_ends() {
+            {
+                let e1 = $e::A | $e::B | $e::C | $e::D | $e::E | $e::F | $e::G;
+                let mut iter = e1.iter();
+                assert_eq!(iter.next(), Some($e::A));
+                assert_eq!(iter.next(), Some($e::B));
+                assert_eq!(iter.next_back(), Some($e::G));
+                assert_eq!(iter.next_back(), Some($e::F));
+                assert_eq!(iter.next(), Some($e::C));
+                assert_eq!(iter.next_back(), Some($e::E));
+                assert_eq!(iter.next(), Some($e::D));
+                assert_eq!(iter.next(), None);
+            }
+
+            {
+                let e1 = $e::A | $e::B | $e::C | $e::F | $e::G;
+                let mut iter = e1.iter();
+                assert_eq!(iter.next_back(), Some($e::G));
+                assert_eq!(iter.next(), Some($e::A));
+                assert_eq!(iter.next_back(), Some($e::F));
+                assert_eq!(iter.next_back(), Some($e::C));
+                assert_eq!(iter.next(), Some($e::B));
+                assert_eq!(iter.next_back(), None);
+            }
+        }
+    };
     ($e:ident, $mem_size:expr) => {
         const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
 
@@ -322,22 +389,6 @@ macro_rules! test_enum {
             }
         }
 
-        /// Tests that the iterator returns enums in the expected order.
-        #[test]
-        fn iter_ordering() {
-            let set_a = $e::A | $e::B | $e::E;
-            let vec_a: Vec<_> = set_a.iter().collect();
-            assert_eq!(vec_a, &[$e::A, $e::B, $e::E]);
-            let vec_a_rev: Vec<_> = set_a.iter().rev().collect();
-            assert_eq!(vec_a_rev, &[$e::E, $e::B, $e::A]);
-
-            let set_b = $e::B | $e::C | $e::D | $e::G;
-            let vec_b: Vec<_> = set_b.iter().collect();
-            assert_eq!(vec_b, &[$e::B, $e::C, $e::D, $e::G]);
-            let vec_b_rev: Vec<_> = set_b.iter().rev().collect();
-            assert_eq!(vec_b_rev, &[$e::G, $e::D, $e::C, $e::B]);
-        }
-
         /// Tests that the size hint returned by the iterator is correct.
         #[test]
         fn iter_size_hint() {
@@ -376,34 +427,6 @@ macro_rules! test_enum {
             set.insert($e::C);
             set.insert($e::E);
             check_iter_size_hint(set);
-        }
-
-        /// Checks that mixing next and next_back works properly.
-        #[test]
-        fn iter_both_ends() {
-            {
-                let e1 = $e::A | $e::B | $e::C | $e::D | $e::E | $e::F | $e::G;
-                let mut iter = e1.iter();
-                assert_eq!(iter.next(), Some($e::A));
-                assert_eq!(iter.next(), Some($e::B));
-                assert_eq!(iter.next_back(), Some($e::G));
-                assert_eq!(iter.next_back(), Some($e::F));
-                assert_eq!(iter.next(), Some($e::C));
-                assert_eq!(iter.next_back(), Some($e::E));
-                assert_eq!(iter.next(), Some($e::D));
-                assert_eq!(iter.next(), None);
-            }
-
-            {
-                let e1 = $e::A | $e::B | $e::C | $e::F | $e::G;
-                let mut iter = e1.iter();
-                assert_eq!(iter.next_back(), Some($e::G));
-                assert_eq!(iter.next(), Some($e::A));
-                assert_eq!(iter.next_back(), Some($e::F));
-                assert_eq!(iter.next_back(), Some($e::C));
-                assert_eq!(iter.next(), Some($e::B));
-                assert_eq!(iter.next_back(), None);
-            }
         }
 
         /// Check that advanced iterator operations like filter and collect work properly.
@@ -446,12 +469,6 @@ macro_rules! test_enum {
             assert!(!($e::A | $e::B | $e::C | $e::D).is_disjoint($e::D | $e::E | $e::F));
             assert!(($e::A | $e::B).is_subset($e::A | $e::B | $e::C));
             assert!(!($e::A | $e::D).is_subset($e::A | $e::B | $e::C));
-        }
-
-        /// Basic test that `Debug` returns the expected outupt.
-        #[test]
-        fn debug_impl_has_expected_output() {
-            assert_eq!(format!("{:?}", $e::A | $e::B | $e::D), "EnumSet(A | B | D)");
         }
 
         /// Basic test that converting to and from an integer works as expected.
@@ -574,23 +591,25 @@ macro_rules! tests {
     ($m:ident, $($tt:tt)*) => { mod $m { use super::*; $($tt)*; } }
 }
 
-tests!(small_enum, test_enum!(SmallEnum, 4));
-tests!(small_enum_explicit_derive, test_enum!(SmallEnumExplicitDerive, 4));
-tests!(large_enum, test_enum!(LargeEnum, 16));
-tests!(enum8, test_enum!(Enum8, 1));
-tests!(enum128, test_enum!(Enum128, 16));
-tests!(sparse_enum, test_enum!(SparseEnum, 16));
-tests!(repr_enum_u32, test_enum!(ReprEnum, 4));
-tests!(repr_enum_u64, test_enum!(ReprEnum2, 4));
-tests!(repr_enum_isize, test_enum!(ReprEnum3, 4));
-tests!(repr_enum_c, test_enum!(ReprEnum4, 4));
-tests!(giant_enum, test_enum!(GiantEnum, 104));
-tests!(small_array_enum, test_enum!(SmallArrayEnum, 8));
-tests!(marginal_array_enum_s2, test_enum!(MarginalArrayEnumS2, 16));
-tests!(marginal_array_enum_s2h, test_enum!(MarginalArrayEnumS2H, 16));
-tests!(marginal_array_enum_s3, test_enum!(MarginalArrayEnumS3, 24));
+tests!(small_enum, test_enum!(SmallEnum, 4, ordered));
+tests!(small_enum_explicit_derive, test_enum!(SmallEnumExplicitDerive, 4, ordered));
+tests!(large_enum, test_enum!(LargeEnum, 16, ordered));
+tests!(enum8, test_enum!(Enum8, 1, ordered));
+tests!(enum128, test_enum!(Enum128, 16, ordered));
+tests!(sparse_enum, test_enum!(SparseEnum, 16, ordered));
+tests!(repr_enum_u32, test_enum!(ReprEnum, 4, ordered));
+tests!(repr_enum_u64, test_enum!(ReprEnum2, 4, ordered));
+tests!(repr_enum_isize, test_enum!(ReprEnum3, 4, ordered));
+tests!(repr_enum_c, test_enum!(ReprEnum4, 4, ordered));
+tests!(giant_enum, test_enum!(GiantEnum, 104, ordered));
+tests!(small_array_enum, test_enum!(SmallArrayEnum, 8, ordered));
+tests!(marginal_array_enum_s2, test_enum!(MarginalArrayEnumS2, 16, ordered));
+tests!(marginal_array_enum_s2h, test_enum!(MarginalArrayEnumS2H, 16, ordered));
+tests!(marginal_array_enum_s3, test_enum!(MarginalArrayEnumS3, 24, ordered));
 tests!(compact_enum_a, test_enum!(CompactEnumA, 1));
 tests!(compact_enum_b, test_enum!(CompactEnumB, 1));
+tests!(msb_enum, test_enum!(MsbEnum, 8));
+tests!(msb_sparse_enum, test_enum!(MsbSparseEnum, 8));
 
 #[derive(EnumSetType, Debug)]
 pub enum ThresholdEnum {

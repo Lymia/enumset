@@ -104,6 +104,8 @@ pub struct EnumSetValue {
     pub discriminant: u32,
     /// The bit this variant is stored in.
     pub variant_bit: u32,
+    /// The span this variant originates in.
+    pub span: Span,
 }
 
 /// Stores information about the enum set type.
@@ -125,15 +127,18 @@ pub struct EnumSetInfo {
     pub vis: Visibility,
 
     /// The highest encountered variant discriminant.
-    max_discrim: u32,
+    max_variant_bit: u32,
     /// The span of the highest encountered variant.
-    max_discrim_span: Option<Span>,
+    max_variant_span: Option<Span>,
     /// The current variant discriminant. Used to track, e.g. `A=10,B,C`.
     cur_discrim: u32,
     /// A list of variant names that are already in use.
     used_variant_names: HashSet<String>,
     /// A list of variant discriminants that are already in use.
     used_discriminants: HashSet<u32>,
+
+    /// Marks if this set uses the MSB encoding.
+    msb_encoding: Option<u32>,
 
     /// Avoid generating operator overloads on the enum type.
     pub no_ops: bool,
@@ -158,11 +163,12 @@ impl EnumSetInfo {
             explicit_serde_repr: None,
             variants: Vec::new(),
             vis: input.vis.clone(),
-            max_discrim: 0,
-            max_discrim_span: None,
+            max_variant_bit: 0,
+            max_variant_span: None,
             cur_discrim: 0,
             used_variant_names: HashSet::new(),
             used_discriminants: HashSet::new(),
+            msb_encoding: None,
             no_ops: attrs.no_ops,
             no_super_impls: attrs.no_super_impls,
             serialize_deny_unknown: attrs.serialize_deny_unknown,
@@ -230,14 +236,15 @@ impl EnumSetInfo {
 
             // Add the variant to the info.
             self.cur_discrim += 1;
-            if discriminant > self.max_discrim {
-                self.max_discrim = discriminant;
-                self.max_discrim_span = Some(variant.span());
+            if discriminant > self.max_variant_bit {
+                self.max_variant_bit = discriminant;
+                self.max_variant_span = Some(variant.span());
             }
             self.variants.push(EnumSetValue {
                 name: variant.ident.clone(),
                 discriminant,
                 variant_bit: discriminant,
+                span: variant.span(),
             });
             self.used_variant_names.insert(variant.ident.to_string());
             self.used_discriminants.insert(discriminant);
@@ -252,7 +259,7 @@ impl EnumSetInfo {
     pub fn internal_repr(&self) -> InternalRepr {
         match self.explicit_internal_repr {
             Some(x) => x,
-            None => match self.max_discrim {
+            None => match self.max_variant_bit {
                 x if x < 8 && !self.internal_repr_force_array => InternalRepr::U8,
                 x if x < 16 && !self.internal_repr_force_array => InternalRepr::U16,
                 x if x < 32 && !self.internal_repr_force_array => InternalRepr::U32,
@@ -271,7 +278,7 @@ impl EnumSetInfo {
     pub fn serde_repr(&self) -> SerdeRepr {
         match self.explicit_serde_repr {
             Some(x) => x,
-            None => match self.max_discrim {
+            None => match self.max_variant_bit {
                 x if x < 8 => SerdeRepr::U8,
                 x if x < 16 => SerdeRepr::U16,
                 x if x < 32 => SerdeRepr::U32,
@@ -284,19 +291,19 @@ impl EnumSetInfo {
 
     /// Returns the number of bits this enumset takes.
     pub fn bit_width(&self) -> u32 {
-        self.max_discrim + 1
+        self.max_variant_bit + 1
     }
 
     /// Validate the enumset type.
     fn validate(&self) -> syn::Result<()> {
         // Gets the span of the maximum value.
-        let largest_discriminant_span = match &self.max_discrim_span {
+        let largest_discriminant_span = match &self.max_variant_span {
             Some(x) => *x,
             None => Span::call_site(),
         };
 
         // Check if all bits of the bitset can fit in the memory representation, if one was given.
-        if self.internal_repr().supported_variants() <= self.max_discrim as usize {
+        if self.internal_repr().supported_variants() <= self.max_variant_bit as usize {
             error(
                 largest_discriminant_span,
                 "`repr` is too small to contain the largest discriminant.",
@@ -305,7 +312,7 @@ impl EnumSetInfo {
 
         // Check if all bits of the bitset can fit in the serialization representation.
         if let Some(supported_variants) = self.serde_repr().supported_variants() {
-            if supported_variants <= self.max_discrim as usize {
+            if supported_variants <= self.max_variant_bit as usize {
                 error(
                     largest_discriminant_span,
                     "`serialize_repr` is too small to contain the largest discriminant.",
@@ -329,16 +336,52 @@ impl EnumSetInfo {
         vec
     }
 
-    pub fn compact(&mut self) {
-        let old_variants: Vec<_> = self.variants.drain(..).collect();
-        for (i, variant) in old_variants.into_iter().enumerate() {
-            self.variants.push(EnumSetValue {
-                name: variant.name,
-                discriminant: variant.discriminant,
-                variant_bit: i as u32,
-            });
+    /// Maps the enum variants as a compact set.
+    fn map_msb(&mut self, span: Span) -> syn::Result<()> {
+        let bit_width = match self.explicit_internal_repr {
+            Some(InternalRepr::U8) => 8,
+            Some(InternalRepr::U16) => 16,
+            Some(InternalRepr::U32) => 32,
+            Some(InternalRepr::U64) => 64,
+            Some(InternalRepr::U128) => 128,
+            _ => error(
+                span,
+                "#[enumset(map = \"msb\")] can only be used with an explicit integer repr.",
+            )?,
+        };
+        for variant in &mut self.variants {
+            if variant.discriminant >= bit_width {
+                error(variant.span.clone(), "`repr` is too small to contain this discriminant.")?;
+            }
+            variant.variant_bit = bit_width - 1 - variant.discriminant;
         }
-        self.max_discrim = (self.variants.len() - 1) as u32;
+        self.msb_encoding = Some(bit_width);
+        self.update_after_map();
+        Ok(())
+    }
+
+    /// Maps the enum variants as a compact set.
+    fn map_compact(&mut self) {
+        for (i, variant) in self.variants.iter_mut().enumerate() {
+            variant.variant_bit = i as u32;
+        }
+        self.update_after_map();
+    }
+
+    /// Updates internal state after mappings are applied.
+    fn update_after_map(&mut self) {
+        self.max_variant_bit = 0;
+        for variant in &self.variants {
+            if variant.variant_bit > self.max_variant_bit {
+                self.max_variant_bit = variant.variant_bit;
+                self.max_variant_span = Some(variant.span.clone());
+            }
+        }
+    }
+
+    /// Returns whether the MSB encoding is used for this set.
+    pub fn uses_msb_encoding(&self) -> Option<u32> {
+        self.msb_encoding
     }
 
     /// Returns whether the variants map 1-to-1 with discriminants.
@@ -425,8 +468,9 @@ pub fn plan_for_enum(input: DeriveInput) -> syn::Result<EnumSetInfo> {
 
         // Compact the enumset if requested
         match (&*attrs.map).as_ref().map(|x| x.as_str()) {
-            Some("lsb") => {},
-            Some("compact") => info.compact(),
+            Some("lsb") => {}
+            Some("msb") => info.map_msb(attrs.map.span())?,
+            Some("compact") => info.map_compact(),
             Some(map) => error(attrs.map.span(), format!("`{map}` is not a valid mapping."))?,
             None => {}
         }

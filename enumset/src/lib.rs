@@ -100,7 +100,7 @@ pub use crate::set::{EnumSet, EnumSetIter};
 pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
 
 #[cfg(all(doc, feature = "serde"))]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// The procedural macro used to derive [`EnumSetType`], and allow enums to be used with
 /// [`EnumSet`].
@@ -162,6 +162,9 @@ use serde::{Serialize, Deserialize};
 ///
 /// * `#[enumset(map = "lsb")]` maps an enum variant with a discriminator of `n` to the `n + 1`th
 ///   least significant bit of the enumset. If no mapping is specified, this is used by default.
+/// * `#[enumset(map = "msb")]` maps an enum variant with a discriminator of `n` to the `n + 1`th
+///   most significant bit of the enumset. This requires an explicit integer representation or else
+///   compilation will fail.
 /// * `#[enumset(map = "compact")]` maps each enum variant to an unspecified bit in the set. This
 ///   allows the library to use less bits than it may otherwise.
 ///

@@ -1,14 +1,15 @@
+//! This is a simple test program used to test the code generated for various operations.
+//! Not meant for automatic testing, just manual checks.
+
 use std::fmt::Debug;
 use std::hint::black_box;
 use enumset::{enum_set, EnumSet, EnumSetType};
 
-// Test of a relatively typical enum.
 #[derive(EnumSetType, Debug)]
 enum SmallEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 
-/// Used to test enums with sparse elements.
 #[derive(EnumSetType, Debug)]
 pub enum SparseEnum {
     A = 0xA, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
@@ -41,24 +42,22 @@ pub enum ArrayEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 
-#[inline(never)]
-fn test_insert1(a: EnumSet<SmallEnum>, b: SmallEnum) -> EnumSet<SmallEnum> {
-    black_box(black_box(a) | black_box(b))
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+pub enum CompactEnum {
+    A = 10, B = 22, C = 36, D = 24, E = 88, F = 61, G = 20, H = 1259,
 }
 
-#[inline(never)]
-fn test_insert2(a: EnumSet<SparseEnum>, b: SparseEnum) -> EnumSet<SparseEnum> {
-    black_box(black_box(a) | black_box(b))
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "msb", repr = "u64")]
+enum MsbEnum {
+    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 
-#[inline(never)]
-fn test_insert3(a: EnumSet<LargeEnum>, b: LargeEnum) -> EnumSet<LargeEnum> {
-    black_box(black_box(a) | black_box(b))
-}
-
-#[inline(never)]
-fn test_insert4(a: EnumSet<ArrayEnum>, b: ArrayEnum) -> EnumSet<ArrayEnum> {
-    black_box(black_box(a) | black_box(b))
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "msb", repr = "u64")]
+enum MsbSparseEnum {
+    A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
 }
 
 #[inline(never)]
@@ -66,52 +65,49 @@ fn test_print<T: Debug>(t: T) {
     println!("{} {t:?}", std::any::type_name::<T>());
 }
 
-#[inline(never)]
-fn test_dump1(a: EnumSet<SmallEnum>) {
-    for v in black_box(a) {
-        test_print(v);
-    }
+macro_rules! gen_tests {
+    ($ty:ident, $mod_name:ident, $test_fn:ident) => {
+        mod $mod_name {
+            use super::*;
+
+            #[inline(never)]
+            pub fn test_insert(a: EnumSet<$ty>, b: $ty) -> EnumSet<$ty> {
+                black_box(black_box(a) | black_box(b))
+            }
+
+            #[inline(never)]
+            pub fn test_dump(a: EnumSet<$ty>) {
+                for v in black_box(a) {
+                    test_print(black_box(v));
+                }
+            }
+        }
+
+        fn $test_fn() {
+            println!(concat!("== ", stringify!($ty), " =="));
+            println!("{:?}", $mod_name::test_insert(enum_set!($ty::A | $ty::C), $ty::E));
+            println!("{:?}", $mod_name::test_insert(enum_set!($ty::A | $ty::D), $ty::F));
+            $mod_name::test_dump(enum_set!($ty::A | $ty::C | $ty::E));
+            $mod_name::test_dump(enum_set!($ty::A | $ty::D | $ty::F));
+            println!();
+        }
+    };
 }
 
-#[inline(never)]
-fn test_dump2(a: EnumSet<SparseEnum>) {
-    for v in black_box(a) {
-        test_print(v);
-    }
-}
-
-#[inline(never)]
-fn test_dump3(a: EnumSet<LargeEnum>) {
-    for v in black_box(a) {
-        test_print(v);
-    }
-}
-
-#[inline(never)]
-fn test_dump4(a: EnumSet<ArrayEnum>) {
-    for v in black_box(a) {
-        test_print(v);
-    }
-}
+gen_tests!(SmallEnum, small_enum, test_small_enum);
+gen_tests!(SparseEnum, sparse_enum, test_sparse_enum);
+gen_tests!(LargeEnum, large_enum, test_large_enum);
+gen_tests!(ArrayEnum, array_enum, test_array_enum);
+gen_tests!(CompactEnum, compact_enum, test_compact_enum);
+gen_tests!(MsbEnum, msb_enum, test_msb_enum);
+gen_tests!(MsbSparseEnum, msb_sparse_enum, test_msb_sparse_enum);
 
 fn main() {
-    println!("{:?}", test_insert1(enum_set!(SmallEnum::A | SmallEnum::C), SmallEnum::E));
-    println!("{:?}", test_insert1(enum_set!(SmallEnum::A | SmallEnum::D), SmallEnum::F));
-    test_dump1(enum_set!(SmallEnum::A | SmallEnum::C | SmallEnum::E));
-    test_dump1(enum_set!(SmallEnum::A | SmallEnum::D | SmallEnum::F));
-
-    println!("{:?}", test_insert2(enum_set!(SparseEnum::A | SparseEnum::C), SparseEnum::E));
-    println!("{:?}", test_insert2(enum_set!(SparseEnum::A | SparseEnum::D), SparseEnum::F));
-    test_dump2(enum_set!(SparseEnum::A | SparseEnum::C | SparseEnum::E));
-    test_dump2(enum_set!(SparseEnum::A | SparseEnum::D | SparseEnum::F));
-
-    println!("{:?}", test_insert3(enum_set!(LargeEnum::A | LargeEnum::C), LargeEnum::E));
-    println!("{:?}", test_insert3(enum_set!(LargeEnum::A | LargeEnum::D), LargeEnum::F));
-    test_dump3(enum_set!(LargeEnum::A | LargeEnum::C | LargeEnum::E));
-    test_dump3(enum_set!(LargeEnum::A | LargeEnum::D | LargeEnum::F));
-
-    println!("{:?}", test_insert4(enum_set!(ArrayEnum::A | ArrayEnum::C), ArrayEnum::E));
-    println!("{:?}", test_insert4(enum_set!(ArrayEnum::A | ArrayEnum::D), ArrayEnum::F));
-    test_dump4(enum_set!(ArrayEnum::A | ArrayEnum::C | ArrayEnum::E));
-    test_dump4(enum_set!(ArrayEnum::A | ArrayEnum::D | ArrayEnum::F));
+    test_small_enum();
+    test_sparse_enum();
+    test_large_enum();
+    test_array_enum();
+    test_compact_enum();
+    test_msb_enum();
+    test_msb_sparse_enum();
 }
