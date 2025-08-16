@@ -284,16 +284,9 @@ impl EnumSetInfo {
         }
     }
 
-    /// Returns whether this enumset has an internal and stable representation.
-    pub fn has_stable_repr(&self) -> bool {
-        match self.explicit_internal_repr {
-            Some(InternalRepr::U8) => true,
-            Some(InternalRepr::U16) => true,
-            Some(InternalRepr::U32) => true,
-            Some(InternalRepr::U64) => true,
-            Some(InternalRepr::U128) => true,
-            _ => false
-        }
+    /// Returns whether this enumset has an explicit internal representation.
+    pub fn has_explicit_repr(&self) -> bool {
+        self.explicit_internal_repr.is_some()
     }
 
     /// Returns the actual serde representation of the set.
