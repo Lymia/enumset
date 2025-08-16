@@ -125,8 +125,12 @@ pub struct EnumSetInfo {
     pub variants: Vec<EnumSetValue>,
     /// Visbility
     pub vis: Visibility,
+    /// The numeric type to represent the underlying enum in memory.
+    explicit_enum_repr: Option<Ident>,
 
     /// The highest encountered variant discriminant.
+    max_discriminant: u32,
+    /// The highest encountered bit value.
     max_variant_bit: u32,
     /// The span of the highest encountered variant.
     max_variant_span: Option<Span>,
@@ -139,6 +143,8 @@ pub struct EnumSetInfo {
 
     /// Marks if this set uses the MSB encoding.
     msb_encoding: Option<u32>,
+    /// Marks if this set uses the mask encoding.
+    mask_encoding: bool,
 
     /// Avoid generating operator overloads on the enum type.
     pub no_ops: bool,
@@ -163,12 +169,15 @@ impl EnumSetInfo {
             explicit_serde_repr: None,
             variants: Vec::new(),
             vis: input.vis.clone(),
+            explicit_enum_repr: None,
+            max_discriminant: 0,
             max_variant_bit: 0,
             max_variant_span: None,
             cur_discrim: 0,
             used_variant_names: HashSet::new(),
             used_discriminants: HashSet::new(),
             msb_encoding: None,
+            mask_encoding: false,
             no_ops: attrs.no_ops,
             no_super_impls: attrs.no_super_impls,
             serialize_deny_unknown: attrs.serialize_deny_unknown,
@@ -240,6 +249,9 @@ impl EnumSetInfo {
                 self.max_variant_bit = discriminant;
                 self.max_variant_span = Some(variant.span());
             }
+            if discriminant > self.max_discriminant {
+                self.max_discriminant = discriminant;
+            }
             self.variants.push(EnumSetValue {
                 name: variant.ident.clone(),
                 discriminant,
@@ -286,6 +298,18 @@ impl EnumSetInfo {
                 x if x < 128 => SerdeRepr::U128,
                 _ => SerdeRepr::Array,
             },
+        }
+    }
+
+    pub fn enum_repr(&self) -> Ident {
+        if let Some(ident) = &self.explicit_enum_repr {
+            ident.clone()
+        } else {
+            match self.max_discriminant {
+                x if x <= u8::MAX as u32 => Ident::new("u8", Span::call_site()),
+                x if x <= u16::MAX as u32 => Ident::new("u16", Span::call_site()),
+                _ => Ident::new("u32", Span::call_site()),
+            }
         }
     }
 
@@ -361,6 +385,19 @@ impl EnumSetInfo {
     }
 
     /// Maps the enum variants as a compact set.
+    fn map_masks(&mut self) -> syn::Result<()> {
+        for variant in &mut self.variants {
+            if variant.discriminant.count_ones() != 1 {
+                error(variant.span.clone(), "All variants must be a non-zero power of two.")?;
+            }
+            variant.variant_bit = variant.discriminant.trailing_zeros();
+        }
+        self.mask_encoding = true;
+        self.update_after_map();
+        Ok(())
+    }
+
+    /// Maps the enum variants as a compact set.
     fn map_compact(&mut self) {
         for (i, variant) in self.variants.iter_mut().enumerate() {
             variant.variant_bit = i as u32;
@@ -377,6 +414,11 @@ impl EnumSetInfo {
                 self.max_variant_span = Some(variant.span.clone());
             }
         }
+    }
+
+    /// Returns whether the MSB encoding is used for this set.
+    pub fn uses_mask_encoding(&self) -> bool {
+        self.mask_encoding
     }
 
     /// Returns whether the MSB encoding is used for this set.
@@ -407,14 +449,19 @@ pub fn plan_for_enum(input: DeriveInput) -> syn::Result<EnumSetInfo> {
         for attr in &input.attrs {
             if attr.path().is_ident("repr") {
                 let meta: Ident = attr.parse_args()?;
-                match meta.to_string().as_str() {
-                    "C" | "Rust" => {}
-                    "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {}
-                    "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {}
-                    x => error(
-                        attr.span(),
-                        format!("`#[repr({x})]` cannot be used on enumset variants."),
-                    )?,
+                let str = meta.to_string();
+                match str.as_str() {
+                    "Rust" => {}
+                    "C" => info.explicit_enum_repr = Some(Ident::new("u64", Span::call_site())),
+                    "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {
+                        info.explicit_enum_repr = Some(Ident::new(str.as_str(), Span::call_site()))
+                    }
+                    "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {
+                        info.explicit_enum_repr = Some(Ident::new(str.as_str(), Span::call_site()))
+                    }
+                    x => {
+                        error(attr.span(), format!("`#[repr({x})]` is not supported by enumset."))?
+                    }
                 }
             }
         }
@@ -471,6 +518,7 @@ pub fn plan_for_enum(input: DeriveInput) -> syn::Result<EnumSetInfo> {
             Some("lsb") => {}
             Some("msb") => info.map_msb(attrs.map.span())?,
             Some("compact") => info.map_compact(),
+            Some("mask") => info.map_masks()?,
             Some(map) => error(attrs.map.span(), format!("`{map}` is not a valid mapping."))?,
             None => {}
         }

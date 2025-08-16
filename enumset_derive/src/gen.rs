@@ -1,8 +1,9 @@
 //! This module handles generating the actual code to allow an enum type to be used as a bitset.
 
 use crate::plan::{EnumSetInfo, InternalRepr, SerdeRepr};
-use proc_macro2::{Literal, TokenStream as SynTokenStream};
+use proc_macro2::{Literal, Span, TokenStream as SynTokenStream};
 use quote::*;
+use syn::{Lit, LitInt};
 
 struct Paths {
     enumset: SynTokenStream,
@@ -428,8 +429,12 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
 
     let bit_width = info.bit_width();
     let variant_count = info.variants.len() as u32;
+    let enum_repr = info.enum_repr();
     quote! {
         const _: () = {
+            // This is a fundamental assumption baked into a lot of the code here.
+            assert!(#core::mem::size_of::<#name>() <= #core::mem::size_of::<#enum_repr>());
+
             #[automatically_derived]
             unsafe impl #internal::EnumSetTypePrivate for #name {
                 type Repr = #repr;
@@ -462,6 +467,20 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
 fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream {
     let name = &info.name;
     let core = &paths.core;
+    let enum_repr = info.enum_repr();
+
+    let hint_is_transmute = quote! {
+        #[cfg(target_endian = "little")]
+        let r = *(&r as *const #enum_repr as *const #name);
+
+        #[cfg(target_endian = "big")]
+        let r = {
+            let offset =
+                #core::mem::size_of::<#enum_repr>() - #core::mem::size_of::<#name>();
+            let r = r << ((offset as #enum_repr) * 8);
+            (&r as *const #enum_repr as *const u8 as *const #name)
+        };
+    };
 
     let is_zst = info.variants.len() == 1;
     if info.variants.is_empty() {
@@ -487,7 +506,7 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
         // Prepares output for MSB mode.
         let process_output = if let Some(msb_repr) = info.uses_msb_encoding() {
             quote! {
-                let r = (#msb_repr as u128) - 1 - r;
+                let r = (#msb_repr as #enum_repr) - 1 - r;
             }
         } else {
             quote!()
@@ -512,22 +531,9 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
                 // We create invalid transmutes for invalid branches that will never happen.
                 // While not very safe, this encourages the compiler to generate a transmute.
                 names.push(quote! {{
-                    #[cfg(target_endian = "little")]
-                    let r = {
-                        let r = #i as u128;
-                        #process_output
-                        *(&r as *const u128 as *const #name)
-                    };
-
-                    #[cfg(target_endian = "big")]
-                    let r = {
-                        let r = #i as u128;
-                        #process_output
-                        let offset = #core::mem::size_of::<u128>() - #core::mem::size_of::<#name>();
-                        let r = r << (offset * 8);
-                        (&r as *const u128 as *const u8 as *const #name)
-                    };
-
+                    let r = #i as #enum_repr;
+                    #process_output
+                    #hint_is_transmute
                     r
                 }});
             }
@@ -544,8 +550,9 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
         };
 
         quote! {
+            #[inline]
             fn enum_into_u32(self) -> u32 {
-                let r = self as u128;
+                let r = self as #enum_repr;
                 #process_output
                 r as u32
             }
@@ -558,6 +565,32 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
                     #(#values => #names,)*
                     // Default case.
                     _ => #core::hint::unreachable_unchecked(),
+                }
+            }
+        }
+    } else if info.uses_mask_encoding() {
+        let discriminants: Vec<_> = info
+            .variants
+            .iter()
+            .map(|x| Lit::Int(LitInt::new(x.discriminant.to_string().as_str(), Span::call_site())))
+            .collect();
+        let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
+        quote! {
+            fn enum_into_u32(self) -> u32 {
+                (self as #enum_repr).trailing_zeros()
+            }
+            unsafe fn enum_from_u32(val: u32) -> Self {
+                let val: #enum_repr = 1 << (val as #enum_repr);
+                match val {
+                    // Every valid variant value has an explicit branch. If they get optimized out,
+                    // great. Otherwise, oh well, at least it's safe.
+                    #(#discriminants => #name::#variant_names,)*
+                    // Default case, hints to the compiler that this is a transmute.
+                    r => {
+                        let r = r as #enum_repr;
+                        #hint_is_transmute
+                        r
+                    },
                 }
             }
         }

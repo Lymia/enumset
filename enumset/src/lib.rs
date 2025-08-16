@@ -167,6 +167,8 @@ use serde::{Deserialize, Serialize};
 ///   compilation will fail.
 /// * `#[enumset(map = "compact")]` maps each enum variant to an unspecified bit in the set. This
 ///   allows the library to use less bits than it may otherwise.
+/// * `#[enumset(map = "mask")]` treats each enum variant's discriminator as a mask rather than a
+///   bit index. Each discriminant must be a nonzero power of two.
 ///
 /// ## Representation Options
 ///

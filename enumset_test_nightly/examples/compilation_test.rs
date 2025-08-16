@@ -60,35 +60,66 @@ enum MsbSparseEnum {
     A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
 }
 
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "mask")]
+pub enum MaskEnum {
+    A = 0x1, B = 0x2, C = 0x4, D = 0x8, E = 0x10, F = 0x20, G = 0x40, H = 0x80,
+}
+
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "mask")]
+pub enum MaskSparseEnum {
+    A = 0x1, B = 0x2, C = 0x10, D = 0x20, E = 0x100, F = 0x200, G = 0x1000, H = 0x10000,
+}
+
 #[inline(never)]
 fn test_print<T: Debug>(t: T) {
-    println!("{} {t:?}", std::any::type_name::<T>());
+    print!("{t:?}, ");
 }
 
 macro_rules! gen_tests {
     ($ty:ident, $mod_name:ident, $test_fn:ident) => {
+        #[allow(improper_ctypes_definitions)]
         mod $mod_name {
             use super::*;
 
             #[inline(never)]
-            pub fn test_insert(a: EnumSet<$ty>, b: $ty) -> EnumSet<$ty> {
-                black_box(black_box(a) | black_box(b))
+            fn print(t: $ty) {
+                test_print(black_box(t));
             }
 
             #[inline(never)]
-            pub fn test_dump(a: EnumSet<$ty>) {
-                for v in black_box(a) {
-                    test_print(black_box(v));
+            fn test_insert(a: EnumSet<$ty>, b: $ty) -> EnumSet<$ty> {
+                a | b
+            }
+
+            #[inline(never)]
+            fn test_dump(a: EnumSet<$ty>) {
+                for v in a {
+                    print(v);
                 }
+            }
+
+            pub fn insert(a: EnumSet<$ty>, b: $ty) -> EnumSet<$ty> {
+                black_box(test_insert(black_box(a), black_box(b)))
+            }
+
+            pub fn dump(a: EnumSet<$ty>)  {
+                test_dump(black_box(a))
             }
         }
 
         fn $test_fn() {
             println!(concat!("== ", stringify!($ty), " =="));
-            println!("{:?}", $mod_name::test_insert(enum_set!($ty::A | $ty::C), $ty::E));
-            println!("{:?}", $mod_name::test_insert(enum_set!($ty::A | $ty::D), $ty::F));
-            $mod_name::test_dump(enum_set!($ty::A | $ty::C | $ty::E));
-            $mod_name::test_dump(enum_set!($ty::A | $ty::D | $ty::F));
+            println!("{:?}", $mod_name::insert(enum_set!($ty::A | $ty::C), $ty::E));
+            println!("{:?}", $mod_name::insert(enum_set!($ty::A | $ty::D), $ty::F));
+            println!("{:?}", $mod_name::insert(enum_set!($ty::B | $ty::D), $ty::F));
+            $mod_name::dump(enum_set!($ty::A | $ty::C | $ty::E));
+            println!();
+            $mod_name::dump(enum_set!($ty::A | $ty::D | $ty::F));
+            println!();
+            $mod_name::dump(enum_set!($ty::B | $ty::D | $ty::F));
+            println!();
             println!();
         }
     };
@@ -101,6 +132,8 @@ gen_tests!(ArrayEnum, array_enum, test_array_enum);
 gen_tests!(CompactEnum, compact_enum, test_compact_enum);
 gen_tests!(MsbEnum, msb_enum, test_msb_enum);
 gen_tests!(MsbSparseEnum, msb_sparse_enum, test_msb_sparse_enum);
+gen_tests!(MaskEnum, mask_enum, test_mask_enum);
+gen_tests!(MaskSparseEnum, mask_sparse_enum, test_mask_sparse_enum);
 
 fn main() {
     test_small_enum();
@@ -110,4 +143,6 @@ fn main() {
     test_compact_enum();
     test_msb_enum();
     test_msb_sparse_enum();
+    test_mask_enum();
+    test_mask_sparse_enum();
 }

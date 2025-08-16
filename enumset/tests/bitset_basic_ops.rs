@@ -77,7 +77,7 @@ pub enum ReprEnum {
 }
 
 /// Used to test repr on enums. (cont)
-#[repr(u64)]
+#[repr(u128)]
 #[derive(EnumSetType, Debug)]
 pub enum ReprEnum2 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
@@ -157,6 +157,19 @@ pub enum MsbEnum {
 #[enumset(repr = "u64", map = "msb")]
 enum MsbSparseEnum {
     A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
+}
+
+/// Used to test massive enums that require arrays to use.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "mask")]
+pub enum MaskEnum {
+    A = 0x1, B = 0x2, C = 0x4, D = 0x8, E = 0x10, F = 0x20, G = 0x40, H = 0x80,
+}
+
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "mask")]
+pub enum MaskSparseEnum {
+    A = 0x1, B = 0x2, C = 0x10, D = 0x20, E = 0x100, F = 0x200, G = 0x1000, H = 0x10000,
 }
 
 /// Tests that all variants are properly present when `EnumSet::all` is used.
@@ -610,6 +623,8 @@ tests!(compact_enum_a, test_enum!(CompactEnumA, 1));
 tests!(compact_enum_b, test_enum!(CompactEnumB, 1));
 tests!(msb_enum, test_enum!(MsbEnum, 8));
 tests!(msb_sparse_enum, test_enum!(MsbSparseEnum, 8));
+tests!(mask_enum, test_enum!(MaskEnum, 1, ordered));
+tests!(mask_sparse_enum, test_enum!(MaskSparseEnum, 4));
 
 #[derive(EnumSetType, Debug)]
 pub enum ThresholdEnum {
