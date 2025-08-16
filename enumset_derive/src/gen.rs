@@ -430,10 +430,13 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     let bit_width = info.bit_width();
     let variant_count = info.variants.len() as u32;
     let enum_repr = info.enum_repr();
+    let enum_discrim: Vec<_> = info.variants.iter().map(|x| x.discriminant).collect();
+    let enum_names: Vec<_> = info.variants.iter().map(|x| &x.name).collect();
     quote! {
         const _: () = {
-            // This is a fundamental assumption baked into a lot of the code here.
+            // Double check fundamental assumptions baked into a lot of the code here.
             assert!(#core::mem::size_of::<#name>() <= #core::mem::size_of::<#enum_repr>());
+            #(assert!(#enum_discrim == (#name::#enum_names as i64));)*
 
             #[automatically_derived]
             unsafe impl #internal::EnumSetTypePrivate for #name {
@@ -502,7 +505,7 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
                 #name::#variant
             }
         }
-    } else if !info.has_variant_mapping() || info.uses_msb_encoding().is_some() {
+    } else if info.uses_lsb_encoding() || info.uses_msb_encoding().is_some() {
         // Prepares output for MSB mode.
         let process_output = if let Some(msb_repr) = info.uses_msb_encoding() {
             quote! {
@@ -594,7 +597,7 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
                 }
             }
         }
-    } else {
+    } else if info.uses_compact_encoding() {
         let variant_bits: Vec<_> = info.variants.iter().map(|x| x.variant_bit).collect();
         let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
         quote! {
@@ -610,6 +613,8 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
                 }
             }
         }
+    } else {
+        panic!("Unknown encoding?");
     }
 }
 
@@ -625,8 +630,12 @@ fn create_enum_const_opers(
 
     let value_to_bit = if info.variants.is_empty() {
         quote! { 0 }
-    } else if !info.has_variant_mapping() {
+    } else if info.uses_lsb_encoding() {
         quote! { value as u32 }
+    } else if let Some(size) = info.uses_msb_encoding() {
+        quote! { ((#size as u32) - 1 - (value as u32)) }
+    } else if info.uses_mask_encoding() {
+        quote! { (value as i64).trailing_zeros() }
     } else {
         let variant_bits: Vec<_> = info.variants.iter().map(|x| x.variant_bit).collect();
         let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();

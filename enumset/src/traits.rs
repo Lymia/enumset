@@ -33,7 +33,7 @@ pub unsafe trait EnumSetTypeWithRepr:
 }
 
 /// The actual members of EnumSetType. Put here to avoid polluting global namespaces.
-pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper {
+pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper + Sized {
     /// The underlying type used to store the bitset.
     type Repr: EnumSetTypeRepr;
     /// A mask of bits that are valid in the bitset.
@@ -45,8 +45,15 @@ pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper {
 
     /// Converts an enum of this type into its bit position.
     fn enum_into_u32(self) -> u32;
+
     /// Converts a bit position into an enum value.
     unsafe fn enum_from_u32(val: u32) -> Self;
+
+    /// Converts a bit position into an enum value, with an debug_assert.
+    unsafe fn enum_from_u32_checked(val: u32) -> Self {
+        debug_assert!(Self::ALL_BITS.has_bit(val), "Unknown bit retrieved from bitset.");
+        Self::enum_from_u32(val)
+    }
 
     /// Serializes the `EnumSet`.
     ///

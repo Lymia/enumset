@@ -822,7 +822,9 @@ impl<T: EnumSetType> Iterator for EnumSetIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|x| unsafe { T::enum_from_u32(x) })
+        self.iter
+            .next()
+            .map(|x| unsafe { T::enum_from_u32_checked(x) })
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
@@ -833,7 +835,7 @@ impl<T: EnumSetType> DoubleEndedIterator for EnumSetIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter
             .next_back()
-            .map(|x| unsafe { T::enum_from_u32(x) })
+            .map(|x| unsafe { T::enum_from_u32_checked(x) })
     }
 }
 

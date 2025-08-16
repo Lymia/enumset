@@ -142,7 +142,7 @@ pub enum CompactEnumA {
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "compact", repr = "u8")]
 pub enum CompactEnumB {
-    A = 2, B = 4, C = 6, D = 8, E = 10, F = 120, G = 180, H = 1000,
+    A = 2, B = 4, C = 6, D = 8, E = 10, F = 120, G = 180, H = (1 << 60) | 12345,
 }
 
 /// Used to test MSB.
@@ -169,7 +169,8 @@ pub enum MaskEnum {
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "mask")]
 pub enum MaskSparseEnum {
-    A = 0x1, B = 0x2, C = 0x10, D = 0x20, E = 0x100, F = 0x200, G = 0x1000, H = 0x10000,
+    A = 1 << 0, B = 1 << 3, C = 1 << 4, D = 1 << 8,
+    E = 1 << 9, F = 1 << 30, G = 1 << 33, H = 1 << 62,
 }
 
 /// Tests that all variants are properly present when `EnumSet::all` is used.
@@ -624,7 +625,7 @@ tests!(compact_enum_b, test_enum!(CompactEnumB, 1));
 tests!(msb_enum, test_enum!(MsbEnum, 8));
 tests!(msb_sparse_enum, test_enum!(MsbSparseEnum, 8));
 tests!(mask_enum, test_enum!(MaskEnum, 1, ordered));
-tests!(mask_sparse_enum, test_enum!(MaskSparseEnum, 4));
+tests!(mask_sparse_enum, test_enum!(MaskSparseEnum, 8));
 
 #[derive(EnumSetType, Debug)]
 pub enum ThresholdEnum {

@@ -1,5 +1,6 @@
 #![recursion_limit = "256"]
 
+mod const_eval;
 mod gen;
 mod plan;
 

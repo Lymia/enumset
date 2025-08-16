@@ -111,10 +111,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// * The enum must have no data fields in any variant.
 /// * Variant discriminators must be zero or positive.
-/// * No variant discriminator may be larger than `0xFFFFFFBF`. This is chosen to limit problems
-///   involving overflow and similar edge cases.
-/// * Variant discriminators must be defined with integer literals. Expressions like `V = 1 + 1`
-///   are not currently supported.
+/// * No variant may have a discriminator larger than `0xFFFFFFBF`.
 ///
 /// # Additional Impls
 ///
@@ -166,9 +163,10 @@ use serde::{Deserialize, Serialize};
 ///   most significant bit of the enumset. This requires an explicit integer representation or else
 ///   compilation will fail.
 /// * `#[enumset(map = "compact")]` maps each enum variant to an unspecified bit in the set. This
-///   allows the library to use less bits than it may otherwise.
+///   allows the library to use less memory than it may otherwise and allows any discrminator
+///   values to be used without issue.
 /// * `#[enumset(map = "mask")]` treats each enum variant's discriminator as a mask rather than a
-///   bit index. Each discriminant must be a nonzero power of two.
+///   bit index. Each discriminant must be a power of two, and may be of arbitrary size.
 ///
 /// ## Representation Options
 ///
