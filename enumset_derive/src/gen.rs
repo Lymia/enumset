@@ -493,39 +493,55 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
             quote!()
         };
 
-        // Build a table of branches.
-        let mut names = Vec::new();
-        for i in 0..info.bit_width() {
-            // We create invalid transmutes for invalid branches that will never happen.
-            // While not very safe, this encourages the compiler to generate a transmute.
-            names.push(quote! {{
-                #[cfg(target_endian = "little")]
-                let r = {
-                    let r = #i as u128;
-                    #process_output
-                    *(&r as *const u128 as *const #name)
-                };
+        let (names, values) = if info.bit_width() >= 1000 {
+            // This worsens codegen quality, but avoids creating big tables for no good reason.
+            let variant_bits: Vec<_> = info.variants.iter().map(|x| x.variant_bit).collect();
+            let variant_names: Vec<_> = info
+                .variants
+                .iter()
+                .map(|x| {
+                    let variant_name = &x.name;
+                    quote! { #name::#variant_name }
+                })
+                .collect();
+            (variant_names, variant_bits)
+        } else {
+            // Build a table of branches.
+            let mut names = Vec::new();
+            for i in 0..info.bit_width() {
+                // We create invalid transmutes for invalid branches that will never happen.
+                // While not very safe, this encourages the compiler to generate a transmute.
+                names.push(quote! {{
+                    #[cfg(target_endian = "little")]
+                    let r = {
+                        let r = #i as u128;
+                        #process_output
+                        *(&r as *const u128 as *const #name)
+                    };
 
-                #[cfg(target_endian = "big")]
-                let r = {
-                    let r = #i as u128;
-                    #process_output
-                    let offset = #core::mem::size_of::<u128>() - #core::mem::size_of::<#name>();
-                    let r = r << (offset * 8);
-                    (&r as *const u128 as *const u8 as *const #name)
-                };
+                    #[cfg(target_endian = "big")]
+                    let r = {
+                        let r = #i as u128;
+                        #process_output
+                        let offset = #core::mem::size_of::<u128>() - #core::mem::size_of::<#name>();
+                        let r = r << (offset * 8);
+                        (&r as *const u128 as *const u8 as *const #name)
+                    };
 
-                r
-            }});
-        }
+                    r
+                }});
+            }
 
-        // Fill variants into the table.
-        for variant in &info.variants {
-            let variant_name = &variant.name;
-            names[variant.variant_bit as usize] = quote! { #name::#variant_name };
-        }
+            // Fill variants into the table.
+            for variant in &info.variants {
+                let variant_name = &variant.name;
+                names[variant.variant_bit as usize] = quote! { #name::#variant_name };
+            }
 
-        let values = 0..(names.len() as u32);
+            let values: Vec<u32> = (0..(names.len() as u32)).collect();
+
+            (names, values)
+        };
 
         quote! {
             fn enum_into_u32(self) -> u32 {
