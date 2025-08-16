@@ -16,19 +16,10 @@ jobs:
         - "--release --features serde,alloc,proc-macro-crate"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.rustver }}
-        default: true
-    - uses: actions-rs/cargo@v1
-      with:
-        command: version
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: -p enumset ${{ matrix.args }}
+    - uses: actions/checkout@v5
+    - run: rustup toolchain install ${{ matrix.rustver }}
+    - run: rustup override set ${{ matrix.rustver }}
+    - run: cargo test -p enumset ${{ matrix.args }}
 
   build_msrv:
     strategy:
@@ -36,74 +27,38 @@ jobs:
         args: [ "", "--features serde", "--features alloc", "--release --features serde,alloc" ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: "1.61.0"
-          default: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: version
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p enumset ${{ matrix.args }}
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install 1.61.0
+      - run: rustup override set 1.61.0
+      - run: cargo test -p enumset ${{ matrix.args }}
 
   build_msrv_all_features:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: "1.69.0"
-          default: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: version
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p enumset --features serde,alloc,proc-macro-crate
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install 1.69.0
+      - run: rustup override set 1.69.0
+      - run: cargo test -p enumset --features serde,alloc,proc-macro-crate
 
-  test_trybuild:
+  test_nightly:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          default: true
-          components: clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p enumset_test_nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -p enumset_test_nightly
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install nightly
+      - run: rustup override set nightly
+      - run: cargo test -p enumset_test_nightly
+      - run: cargo clippy -p enumset_test_nightly
 
   test_build_embedded:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        target: thumbv7em-none-eabihf
-        default: true
-        components: clippy
+    - uses: actions/checkout@v5
+    - run: rustup toolchain install nightly
+    - run: rustup override set nightly
+    - run: rustup target install thumbv7em-none-eabihf
     - uses: cachix/install-nix-action@v31
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --target thumbv7em-none-eabihf -p enumset_test_embedded
-    - uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --target thumbv7em-none-eabihf -p enumset_test_embedded
+    - run: cargo build --target thumbv7em-none-eabihf -p enumset_test_embedded
+    - run: cargo clippy --target thumbv7em-none-eabihf -p enumset_test_embedded
     - run: bash enumset_test_embedded/test_qemu_output.sh
