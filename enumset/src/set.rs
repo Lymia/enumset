@@ -36,8 +36,8 @@ use serde::{Deserialize, Serialize};
 ///
 /// # Array representation
 ///
-/// Sets with more than 128 variants are instead stored with an underlying array of `u64`s. This
-/// is treated as if it was a single large integer. The `n`th least significant bit of this integer
+/// Sets with 64 or more variants are instead stored with an underlying array of `u64`s. This is
+/// treated as if it was a single large integer. The `n`th least significant bit of this integer
 /// is stored in the `n % 64`th least significant bit of the `n / 64`th element in the array.
 ///
 /// # Serialization
@@ -103,21 +103,13 @@ pub struct EnumSet<T: EnumSetType> {
 
 //region EnumSet operations
 impl<T: EnumSetType> EnumSet<T> {
-    const EMPTY_REPR: Self = EnumSet { __priv_repr: T::Repr::EMPTY };
-    const ALL_REPR: Self = EnumSet { __priv_repr: T::ALL_BITS };
+    const EMPTY_REPR: Self = Self { __priv_repr: T::Repr::EMPTY };
+    const ALL_REPR: Self = Self { __priv_repr: T::ALL_BITS };
 
     /// Creates an empty `EnumSet`.
     #[inline(always)]
     pub const fn new() -> Self {
         Self::EMPTY_REPR
-    }
-
-    /// Returns an `EnumSet` containing a single element.
-    #[inline(always)]
-    pub fn only(t: T) -> Self {
-        let mut set = Self::new();
-        set.insert(t);
-        set
     }
 
     /// Creates an empty `EnumSet`.
@@ -153,91 +145,12 @@ impl<T: EnumSetType> EnumSet<T> {
         T::VARIANT_COUNT
     }
 
-    /// Returns the number of elements in this set.
-    #[inline(always)]
-    pub fn len(&self) -> usize {
-        self.__priv_repr.count_ones() as usize
-    }
-    /// Returns `true` if the set contains no elements.
-    #[inline(always)]
-    pub fn is_empty(&self) -> bool {
-        self.__priv_repr.is_empty()
-    }
-    /// Removes all elements from the set.
-    #[inline(always)]
-    pub fn clear(&mut self) {
-        self.__priv_repr = T::Repr::EMPTY;
-    }
+    set_common_methods!(T, T::Repr);
 
-    /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
-    /// checking for an empty intersection.
-    #[inline(always)]
-    pub fn is_disjoint(&self, other: Self) -> bool {
-        (*self & other).is_empty()
-    }
-    /// Returns `true` if the set is a superset of another, i.e., `self` contains at least all the
-    /// values in `other`.
-    #[inline(always)]
-    pub fn is_superset(&self, other: Self) -> bool {
-        (*self & other).__priv_repr == other.__priv_repr
-    }
-    /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all
-    /// the values in `self`.
-    #[inline(always)]
-    pub fn is_subset(&self, other: Self) -> bool {
-        other.is_superset(*self)
-    }
-
-    /// Returns a set containing any elements present in either set.
-    #[inline(always)]
-    pub fn union(&self, other: Self) -> Self {
-        EnumSet { __priv_repr: self.__priv_repr | other.__priv_repr }
-    }
-    /// Returns a set containing every element present in both sets.
-    #[inline(always)]
-    pub fn intersection(&self, other: Self) -> Self {
-        EnumSet { __priv_repr: self.__priv_repr & other.__priv_repr }
-    }
-    /// Returns a set containing element present in `self` but not in `other`.
-    #[inline(always)]
-    pub fn difference(&self, other: Self) -> Self {
-        EnumSet { __priv_repr: self.__priv_repr.and_not(other.__priv_repr) }
-    }
-    /// Returns a set containing every element present in either `self` or `other`, but is not
-    /// present in both.
-    #[inline(always)]
-    pub fn symmetrical_difference(&self, other: Self) -> Self {
-        EnumSet { __priv_repr: self.__priv_repr ^ other.__priv_repr }
-    }
     /// Returns a set containing all enum variants not in this set.
     #[inline(always)]
     pub fn complement(&self) -> Self {
-        EnumSet { __priv_repr: !self.__priv_repr & T::ALL_BITS }
-    }
-
-    /// Checks whether this set contains a value.
-    #[inline(always)]
-    pub fn contains(&self, value: T) -> bool {
-        self.__priv_repr.has_bit(value.enum_into_u32())
-    }
-
-    /// Adds a value to this set.
-    ///
-    /// If the set did not have this value present, `true` is returned.
-    ///
-    /// If the set did have this value present, `false` is returned.
-    #[inline(always)]
-    pub fn insert(&mut self, value: T) -> bool {
-        let contains = !self.contains(value);
-        self.__priv_repr.add_bit(value.enum_into_u32());
-        contains
-    }
-    /// Removes a value from this set. Returns whether the value was present in the set.
-    #[inline(always)]
-    pub fn remove(&mut self, value: T) -> bool {
-        let contains = self.contains(value);
-        self.__priv_repr.remove_bit(value.enum_into_u32());
-        contains
+        Self { __priv_repr: !self.__priv_repr & T::ALL_BITS }
     }
 
     /// Adds all elements in another set to this one.
@@ -245,6 +158,7 @@ impl<T: EnumSetType> EnumSet<T> {
     pub fn insert_all(&mut self, other: Self) {
         self.__priv_repr = self.__priv_repr | other.__priv_repr
     }
+
     /// Removes all values in another set from this one.
     #[inline(always)]
     pub fn remove_all(&mut self, other: Self) {
@@ -272,116 +186,7 @@ unsafe impl<T: EnumSetType> EnumSetConstHelper for EnumSet<T> {
     const CONST_OP_HELPER: Self::ConstOpHelper = T::CONST_OP_HELPER;
 }
 
-impl<T: EnumSetType> Default for EnumSet<T> {
-    /// Returns an empty set.
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T: EnumSetType, O: Into<EnumSet<T>>> Sub<O> for EnumSet<T> {
-    type Output = Self;
-    #[inline(always)]
-    fn sub(self, other: O) -> Self::Output {
-        self.difference(other.into())
-    }
-}
-impl<T: EnumSetType, O: Into<EnumSet<T>>> BitAnd<O> for EnumSet<T> {
-    type Output = Self;
-    #[inline(always)]
-    fn bitand(self, other: O) -> Self::Output {
-        self.intersection(other.into())
-    }
-}
-impl<T: EnumSetType, O: Into<EnumSet<T>>> BitOr<O> for EnumSet<T> {
-    type Output = Self;
-    #[inline(always)]
-    fn bitor(self, other: O) -> Self::Output {
-        self.union(other.into())
-    }
-}
-impl<T: EnumSetType, O: Into<EnumSet<T>>> BitXor<O> for EnumSet<T> {
-    type Output = Self;
-    #[inline(always)]
-    fn bitxor(self, other: O) -> Self::Output {
-        self.symmetrical_difference(other.into())
-    }
-}
-
-impl<T: EnumSetType, O: Into<EnumSet<T>>> SubAssign<O> for EnumSet<T> {
-    #[inline(always)]
-    fn sub_assign(&mut self, rhs: O) {
-        *self = *self - rhs;
-    }
-}
-impl<T: EnumSetType, O: Into<EnumSet<T>>> BitAndAssign<O> for EnumSet<T> {
-    #[inline(always)]
-    fn bitand_assign(&mut self, rhs: O) {
-        *self = *self & rhs;
-    }
-}
-impl<T: EnumSetType, O: Into<EnumSet<T>>> BitOrAssign<O> for EnumSet<T> {
-    #[inline(always)]
-    fn bitor_assign(&mut self, rhs: O) {
-        *self = *self | rhs;
-    }
-}
-impl<T: EnumSetType, O: Into<EnumSet<T>>> BitXorAssign<O> for EnumSet<T> {
-    #[inline(always)]
-    fn bitxor_assign(&mut self, rhs: O) {
-        *self = *self ^ rhs;
-    }
-}
-
-impl<T: EnumSetType> Not for EnumSet<T> {
-    type Output = Self;
-    #[inline(always)]
-    fn not(self) -> Self::Output {
-        self.complement()
-    }
-}
-
-impl<T: EnumSetType> From<T> for EnumSet<T> {
-    fn from(t: T) -> Self {
-        EnumSet::only(t)
-    }
-}
-
-impl<T: EnumSetType> PartialEq<T> for EnumSet<T> {
-    fn eq(&self, other: &T) -> bool {
-        self.__priv_repr == EnumSet::only(*other).__priv_repr
-    }
-}
-
-impl<T: EnumSetType + Debug> Debug for EnumSet<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        // Note: We don't use `.debug_struct` to avoid splitting lines when using `{:x}`
-        f.write_str("EnumSet(")?;
-        let mut i = self.iter();
-        if let Some(v) = i.next() {
-            v.fmt(f)?;
-            for v in i {
-                f.write_str(" | ")?;
-                v.fmt(f)?;
-            }
-        }
-        f.write_str(")")?;
-        Ok(())
-    }
-}
-impl<T: EnumSetType + Display> Display for EnumSet<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let mut i = self.iter();
-        if let Some(v) = i.next() {
-            v.fmt(f)?;
-            for v in i {
-                f.write_str(" | ")?;
-                v.fmt(f)?;
-            }
-        }
-        Ok(())
-    }
-}
+set_common_impls!(EnumSet, EnumSetType);
 
 #[cfg(feature = "defmt")]
 impl<T: EnumSetType + defmt::Format> defmt::Format for EnumSet<T> {
@@ -393,24 +198,6 @@ impl<T: EnumSetType + defmt::Format> defmt::Format for EnumSet<T> {
                 defmt::write!(f, " | {}", v);
             }
         }
-    }
-}
-
-#[allow(clippy::derived_hash_with_manual_eq)] // This impl exists to change trait bounds only.
-impl<T: EnumSetType> Hash for EnumSet<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.__priv_repr.hash(state)
-    }
-}
-#[allow(clippy::non_canonical_partial_ord_impl)]
-impl<T: EnumSetType> PartialOrd for EnumSet<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.__priv_repr.partial_cmp(&other.__priv_repr)
-    }
-}
-impl<T: EnumSetType> Ord for EnumSet<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.__priv_repr.cmp(&other.__priv_repr)
     }
 }
 
@@ -830,7 +617,6 @@ impl<T: EnumSetType> Iterator for EnumSetIter<T> {
         self.iter.size_hint()
     }
 }
-
 impl<T: EnumSetType> DoubleEndedIterator for EnumSetIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter
@@ -838,56 +624,9 @@ impl<T: EnumSetType> DoubleEndedIterator for EnumSetIter<T> {
             .map(|x| unsafe { T::enum_from_u32_checked(x) })
     }
 }
-
 impl<T: EnumSetType> ExactSizeIterator for EnumSetIter<T> {}
 
-impl<T: EnumSetType> Extend<T> for EnumSet<T> {
-    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
-        iter.into_iter().for_each(|v| {
-            self.insert(v);
-        });
-    }
-}
-
-impl<'a, T: EnumSetType> Extend<&'a T> for EnumSet<T> {
-    fn extend<I: IntoIterator<Item = &'a T>>(&mut self, iter: I) {
-        iter.into_iter().for_each(|v| {
-            self.insert(*v);
-        });
-    }
-}
-
-impl<T: EnumSetType> FromIterator<T> for EnumSet<T> {
-    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        let mut set = EnumSet::default();
-        set.extend(iter);
-        set
-    }
-}
-
-impl<T: EnumSetType> Extend<EnumSet<T>> for EnumSet<T> {
-    fn extend<I: IntoIterator<Item = EnumSet<T>>>(&mut self, iter: I) {
-        iter.into_iter().for_each(|v| {
-            self.insert_all(v);
-        });
-    }
-}
-
-impl<'a, T: EnumSetType> Extend<&'a EnumSet<T>> for EnumSet<T> {
-    fn extend<I: IntoIterator<Item = &'a EnumSet<T>>>(&mut self, iter: I) {
-        iter.into_iter().for_each(|v| {
-            self.insert_all(*v);
-        });
-    }
-}
-
-impl<T: EnumSetType> FromIterator<EnumSet<T>> for EnumSet<T> {
-    fn from_iter<I: IntoIterator<Item = EnumSet<T>>>(iter: I) -> Self {
-        let mut set = EnumSet::default();
-        set.extend(iter);
-        set
-    }
-}
+set_iterator_impls!(EnumSet, EnumSetType);
 
 impl<T: EnumSetType> IntoIterator for EnumSet<T> {
     type Item = T;
@@ -895,26 +634,6 @@ impl<T: EnumSetType> IntoIterator for EnumSet<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
-    }
-}
-impl<T: EnumSetType> Sum for EnumSet<T> {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(EnumSet::empty(), |a, v| a | v)
-    }
-}
-impl<'a, T: EnumSetType> Sum<&'a EnumSet<T>> for EnumSet<T> {
-    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(EnumSet::empty(), |a, v| a | *v)
-    }
-}
-impl<T: EnumSetType> Sum<T> for EnumSet<T> {
-    fn sum<I: Iterator<Item = T>>(iter: I) -> Self {
-        iter.fold(EnumSet::empty(), |a, v| a | v)
-    }
-}
-impl<'a, T: EnumSetType> Sum<&'a T> for EnumSet<T> {
-    fn sum<I: Iterator<Item = &'a T>>(iter: I) -> Self {
-        iter.fold(EnumSet::empty(), |a, v| a | *v)
     }
 }
 //endregion

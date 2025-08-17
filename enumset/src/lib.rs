@@ -91,14 +91,19 @@ extern crate alloc;
 
 mod macros;
 
+#[macro_use]
+mod set_common;
+
 mod derive;
 mod record;
 mod repr;
 mod set;
+mod set_mixed;
 mod traits;
 
 pub use crate::derive::EnumSetType;
 pub use crate::macros::__internal;
 pub use crate::record::{EnumRecord, EnumRecordIntoIter, EnumRecordIter, EnumRecordIterMut};
 pub use crate::set::{EnumSet, EnumSetIter};
+pub use crate::set_mixed::{MixedEnumSet, MixedEnumSetIter, MixedValue};
 pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};

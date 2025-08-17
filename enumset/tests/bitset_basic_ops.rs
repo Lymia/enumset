@@ -173,6 +173,13 @@ pub enum MaskSparseEnum {
     E = 1 << 9, F = 1 << 30, G = 1 << 33, H = 1 << 62,
 }
 
+/// Used to test mixed enumsets.
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "u64")]
+enum MixedSparseEnum {
+    A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
+}
+
 /// Tests that all variants are properly present when `EnumSet::all` is used.
 macro_rules! test_variants {
     ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
@@ -215,7 +222,199 @@ test_variants! { CompactEnumB compact_enum_b_all_empty
     A, B, C, D, E, F, G, H,
 }
 
+macro_rules! test_enum_common {
+    ($e:ident, $enum_ty:ident, $enum_const:ident) => {
+        /// Tests that enumsets work in match expressions.
+        #[test]
+        fn match_const_test() {
+            const CONST_SET: $enum_ty<$e> = $enum_const!($e::A | $e::C);
+            match CONST_SET {
+                CONST_SET => { /* ok */ }
+                _ => panic!("match fell through?"),
+            }
+        }
+
+        // Basic tests to ensure insert/remove operations work properly.
+        #[test]
+        fn basic_add_remove() {
+            let mut set = $enum_ty::new();
+            set.insert($e::A);
+            set.insert($e::B);
+            set.insert($e::C);
+            assert_eq!(set, $e::A | $e::B | $e::C);
+            set.remove($e::B);
+            assert_eq!(set, $e::A | $e::C);
+            set.insert($e::D);
+            assert_eq!(set, $e::A | $e::C | $e::D);
+            set.insert_all($e::F | $e::E | $e::G);
+            assert_eq!(set, $e::A | $e::C | $e::D | $e::F | $e::E | $e::G);
+            set.remove_all($e::A | $e::D | $e::G);
+            assert_eq!(set, $e::C | $e::F | $e::E);
+            assert!(!set.is_empty());
+            set.clear();
+            assert!(set.is_empty());
+        }
+
+        /// Basic tests to ensure the return status for `insert` is correct.
+        #[test]
+        fn already_present_element() {
+            let mut set = $enum_ty::new();
+            assert!(set.insert($e::A));
+            assert!(!set.insert($e::A));
+            set.remove($e::A);
+            assert!(set.insert($e::A));
+        }
+
+        /// Basic test to ensure `empty` actually returns an empty set.
+        #[test]
+        fn empty_is_empty() {
+            assert_eq!($enum_ty::<$e>::empty().len(), 0)
+        }
+
+        /// Basic test to ensure that the length of the complete set is as expected.
+        #[test]
+        fn all_len() {
+            assert_eq!($enum_ty::<$e>::all().len(), $enum_ty::<$e>::variant_count() as usize)
+        }
+
+        /// Tests that the size hint returned by the iterator is correct.
+        #[test]
+        fn iter_size_hint() {
+            fn check_iter_size_hint(set: $enum_ty<$e>) {
+                let count = set.len();
+
+                // check for forward iteration
+                {
+                    let mut itr = set.iter();
+                    for idx in 0 .. count {
+                        assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                        assert_eq!(itr.len(), count-idx);
+                        assert!(itr.next().is_some());
+                    }
+                    assert_eq!(itr.size_hint(), (0, Some(0)));
+                    assert_eq!(itr.len(), 0);
+                }
+
+                // check for backwards iteration
+                {
+                    let mut itr = set.iter().rev();
+                    for idx in 0 .. count {
+                        assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
+                        assert_eq!(itr.len(), count-idx);
+                        assert!(itr.next().is_some());
+                    }
+                    assert_eq!(itr.size_hint(), (0, Some(0)));
+                    assert_eq!(itr.len(), 0);
+                }
+            }
+
+            check_iter_size_hint($enum_ty::<$e>::new());
+            check_iter_size_hint($enum_ty::<$e>::all());
+            let mut set = $enum_ty::new();
+            set.insert($e::A);
+            set.insert($e::C);
+            set.insert($e::E);
+            check_iter_size_hint(set);
+        }
+
+        /// Basic test for arithmetic operators on bitsets.
+        #[test]
+        fn basic_ops_test() {
+            assert_eq!(
+                $enum_ty::from($e::A | $e::B) | $enum_ty::from($e::B | $e::C),
+                $enum_ty::from($e::A | $e::B | $e::C),
+            );
+            assert_eq!(
+                $enum_ty::from($e::A | $e::B) & $enum_ty::from($e::B | $e::C),
+                $enum_ty::from($e::B),
+            );
+            assert_eq!(
+                $enum_ty::from($e::A | $e::B) ^ $enum_ty::from($e::B | $e::C),
+                $enum_ty::from($e::A | $e::C),
+            );
+            assert_eq!(
+                $enum_ty::from($e::A | $e::B) - $enum_ty::from($e::B | $e::C),
+                $enum_ty::from($e::A),
+            );
+            assert_eq!(
+                $enum_ty::from($e::A | !$e::A),
+                $enum_ty::<$e>::all()
+            );
+        }
+
+        /// Basic test for mutate-in-place operators on bitsets.
+        #[test]
+        fn mutable_ops_test() {
+            let mut set = $enum_ty::from($e::A | $e::B);
+            assert_eq!(set, $e::A | $e::B);
+            set |= $e::C | $e::D;
+            assert_eq!(set, $e::A | $e::B | $e::C | $e::D);
+            set -= $e::C;
+            assert_eq!(set, $e::A | $e::B | $e::D);
+            set ^= $e::B | $e::E;
+            assert_eq!(set, $e::A | $e::D | $e::E);
+            set &= $e::A | $e::E | $e::F;
+            assert_eq!(set, $e::A | $e::E);
+        }
+
+        /// Basic test for disjoint/subset checking.
+        #[test]
+        fn test_disjoint_subset() {
+            assert!($enum_ty::from($e::A | $e::B | $e::C).is_disjoint($e::D | $e::E | $e::F));
+            assert!(!$enum_ty::from($e::A | $e::B | $e::C | $e::D).is_disjoint($e::D | $e::E | $e::F));
+            assert!($enum_ty::from($e::A | $e::B).is_subset($e::A | $e::B | $e::C));
+            assert!(!$enum_ty::from($e::A | $e::D).is_subset($e::A | $e::B | $e::C));
+        }
+
+        /// An advanced test that summing enumsets in iterators.
+        #[test]
+        fn sum_iterator_of_enumsets() {
+            let target = $enum_ty::from($e::A | $e::B | $e::D | $e::E | $e::G | $e::H);
+
+            let list_a = [$e::A | $e::B, $e::D | $e::E, $e::G | $e::H];
+            let sum_a: $enum_ty<$e> = list_a.iter().map(|x| *x).sum();
+            assert_eq!(target, sum_a);
+            let sum_b: $enum_ty<$e> = list_a.iter().sum();
+            assert_eq!(target, sum_b);
+
+            let list_b = [$e::A, $e::B, $e::D, $e::E, $e::G, $e::H];
+            let sum_c: $enum_ty<$e> = list_b.iter().map(|x| *x).sum();
+            assert_eq!(target, sum_c);
+            let sum_d: $enum_ty<$e> = list_b.iter().sum();
+            assert_eq!(target, sum_d);
+        }
+
+        /// Tests the conversion of const-length arrays to EnumSets.
+        #[test]
+        fn from_array() {
+            assert!($enum_ty::<$e>::from([]).is_empty());
+            assert_eq!(
+                $enum_ty::<$e>::from([$e::B, $e::E, $e::H]),
+                $enum_const!($e::B | $e::E | $e::H)
+            );
+            assert_eq!(
+                $enum_ty::<$e>::from([$e::A, $e::B, $e::C]),
+                $enum_const!($e::A | $e::B | $e::C)
+            );
+        }
+    };
+}
+
 macro_rules! test_enum {
+    ($e:ident, $mem_size:expr, mixed) => {
+        test_enum!($e, $mem_size);
+        mod mixed_set {
+            use super::*;
+            test_enum_common!($e, MixedEnumSet, mixed_enum_set);
+        }
+    };
+    ($e:ident, $mem_size:expr, mixed+ordered) => {
+        test_enum!($e, $mem_size, ordered);
+        mod mixed_set {
+            use super::*;
+            test_enum_common!($e, MixedEnumSet, mixed_enum_set);
+        }
+    };
     ($e:ident, $mem_size:expr, ordered) => {
         test_enum!($e, $mem_size);
 
@@ -270,11 +469,10 @@ macro_rules! test_enum {
         }
     };
     ($e:ident, $mem_size:expr) => {
-        const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
-
         /// Tests that sets created at compiletime using const exprs work as expected.
         #[test]
         fn const_set() {
+            const CONST_SET: EnumSet<$e> = enum_set!($e::A | $e::C);
             const CONST_1_SET: EnumSet<$e> = enum_set!($e::A);
             const CONST_SET_CHAIN: EnumSet<$e> = enum_set!(CONST_SET | $e::D);
             const CONST_SET_CHAIN_2: EnumSet<$e> = enum_set!($e::E | CONST_SET);
@@ -303,59 +501,12 @@ macro_rules! test_enum {
             assert_eq!(ALL_SET, EnumSet::all());
         }
 
-        /// Tests that enumsets work in match expressions.
-        #[test]
-        fn match_const_test() {
-            match CONST_SET {
-                CONST_SET => { /* ok */ }
-                _ => panic!("match fell through?"),
-            }
+        mod set {
+            use super::*;
+            test_enum_common!($e, EnumSet, enum_set);
         }
 
-        // Basic tests to ensure insert/remove operations work properly.
-        #[test]
-        fn basic_add_remove() {
-            let mut set = EnumSet::new();
-            set.insert($e::A);
-            set.insert($e::B);
-            set.insert($e::C);
-            assert_eq!(set, $e::A | $e::B | $e::C);
-            set.remove($e::B);
-            assert_eq!(set, $e::A | $e::C);
-            set.insert($e::D);
-            assert_eq!(set, $e::A | $e::C | $e::D);
-            set.insert_all($e::F | $e::E | $e::G);
-            assert_eq!(set, $e::A | $e::C | $e::D | $e::F | $e::E | $e::G);
-            set.remove_all($e::A | $e::D | $e::G);
-            assert_eq!(set, $e::C | $e::F | $e::E);
-            assert!(!set.is_empty());
-            set.clear();
-            assert!(set.is_empty());
-        }
-
-        /// Basic tests to ensure the return status for `insert` is correct.
-        #[test]
-        fn already_present_element() {
-            let mut set = EnumSet::new();
-            assert!(set.insert($e::A));
-            assert!(!set.insert($e::A));
-            set.remove($e::A);
-            assert!(set.insert($e::A));
-        }
-
-        /// Basic test to ensure `empty` actually returns an empty set.
-        #[test]
-        fn empty_is_empty() {
-            assert_eq!(EnumSet::<$e>::empty().len(), 0)
-        }
-
-        /// Basic test to ensure that the length of the complete set is as expected.
-        #[test]
-        fn all_len() {
-            assert_eq!(EnumSet::<$e>::all().len(), EnumSet::<$e>::variant_count() as usize)
-        }
-
-        /// Tests the basic functionality of the iterator tyep.
+        /// Tests the basic functionality of the iterator type.
         #[test]
         fn iter_basic_ops() {
             let mut set = EnumSet::new();
@@ -395,52 +546,12 @@ macro_rules! test_enum {
             assert_eq!(set, set_5);
         }
 
-        /// Tests that iteration on an empty seti n fact returns nothing.
+        /// Tests that iteration on an empty set in fact returns nothing.
         #[test]
         fn empty_iter() {
             for _ in EnumSet::<$e>::new() {
                 panic!("should not happen");
             }
-        }
-
-        /// Tests that the size hint returned by the iterator is correct.
-        #[test]
-        fn iter_size_hint() {
-            fn check_iter_size_hint(set: EnumSet<$e>) {
-                let count = set.len();
-
-                // check for forward iteration
-                {
-                    let mut itr = set.iter();
-                    for idx in 0 .. count {
-                        assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
-                        assert_eq!(itr.len(), count-idx);
-                        assert!(itr.next().is_some());
-                    }
-                    assert_eq!(itr.size_hint(), (0, Some(0)));
-                    assert_eq!(itr.len(), 0);
-                }
-
-                // check for backwards iteration
-                {
-                    let mut itr = set.iter().rev();
-                    for idx in 0 .. count {
-                        assert_eq!(itr.size_hint(), (count-idx, Some(count-idx)));
-                        assert_eq!(itr.len(), count-idx);
-                        assert!(itr.next().is_some());
-                    }
-                    assert_eq!(itr.size_hint(), (0, Some(0)));
-                    assert_eq!(itr.len(), 0);
-                }
-            }
-
-            check_iter_size_hint(EnumSet::<$e>::new());
-            check_iter_size_hint(EnumSet::<$e>::all());
-            let mut set = EnumSet::new();
-            set.insert($e::A);
-            set.insert($e::C);
-            set.insert($e::E);
-            check_iter_size_hint(set);
         }
 
         /// Check that advanced iterator operations like filter and collect work properly.
@@ -449,40 +560,6 @@ macro_rules! test_enum {
             let set = $e::A | $e::B | $e::C | $e::E;
             let set2 = set.iter().filter(|&v| v != $e::B).collect::<EnumSet<_>>();
             assert_eq!(set2, $e::A | $e::C | $e::E);
-        }
-
-        /// Basic test for arithmetic operators on bitsets.
-        #[test]
-        fn basic_ops_test() {
-            assert_eq!(($e::A | $e::B) | ($e::B | $e::C), $e::A | $e::B | $e::C);
-            assert_eq!(($e::A | $e::B) & ($e::B | $e::C), $e::B);
-            assert_eq!(($e::A | $e::B) ^ ($e::B | $e::C), $e::A | $e::C);
-            assert_eq!(($e::A | $e::B) - ($e::B | $e::C), $e::A);
-            assert_eq!($e::A | !$e::A, EnumSet::<$e>::all());
-        }
-
-        /// Basic test for mutate-in-place operators on bitsets.
-        #[test]
-        fn mutable_ops_test() {
-            let mut set = $e::A | $e::B;
-            assert_eq!(set, $e::A | $e::B);
-            set |= $e::C | $e::D;
-            assert_eq!(set, $e::A | $e::B | $e::C | $e::D);
-            set -= $e::C;
-            assert_eq!(set, $e::A | $e::B | $e::D);
-            set ^= $e::B | $e::E;
-            assert_eq!(set, $e::A | $e::D | $e::E);
-            set &= $e::A | $e::E | $e::F;
-            assert_eq!(set, $e::A | $e::E);
-        }
-
-        /// Basic test for disjoint/subset checking.
-        #[test]
-        fn test_disjoint_subset() {
-            assert!(($e::A | $e::B | $e::C).is_disjoint($e::D | $e::E | $e::F));
-            assert!(!($e::A | $e::B | $e::C | $e::D).is_disjoint($e::D | $e::E | $e::F));
-            assert!(($e::A | $e::B).is_subset($e::A | $e::B | $e::C));
-            assert!(!($e::A | $e::D).is_subset($e::A | $e::B | $e::C));
         }
 
         /// Basic test that converting to and from an integer works as expected.
@@ -562,42 +639,10 @@ macro_rules! test_enum {
             test_set!(tree_set);
         }
 
-        /// An advanced test that summing enumsets in iterators.
-        #[test]
-        fn sum_iterator_of_enumsets() {
-            let target = $e::A | $e::B | $e::D | $e::E | $e::G | $e::H;
-
-            let list_a = [$e::A | $e::B, $e::D | $e::E, $e::G | $e::H];
-            let sum_a: EnumSet<$e> = list_a.iter().map(|x| *x).sum();
-            assert_eq!(target, sum_a);
-            let sum_b: EnumSet<$e> = list_a.iter().sum();
-            assert_eq!(target, sum_b);
-
-            let list_b = [$e::A, $e::B, $e::D, $e::E, $e::G, $e::H];
-            let sum_c: EnumSet<$e> = list_b.iter().map(|x| *x).sum();
-            assert_eq!(target, sum_c);
-            let sum_d: EnumSet<$e> = list_b.iter().sum();
-            assert_eq!(target, sum_d);
-        }
-
         /// Checks that the enumset has the expected size in memory.
         #[test]
         fn check_size() {
             assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
-        }
-
-        /// Tests the conversion of const-length arrays to EnumSets.
-        #[test]
-        fn from_array() {
-            assert!(EnumSet::<$e>::from([]).is_empty());
-            assert_eq!(
-                EnumSet::<$e>::from([$e::B, $e::E, $e::H]),
-                enum_set!($e::B | $e::E | $e::H)
-            );
-            assert_eq!(
-                EnumSet::<$e>::from([$e::A, $e::B, $e::C]),
-                enum_set!($e::A | $e::B | $e::C)
-            );
         }
     }
 }
@@ -607,7 +652,7 @@ macro_rules! tests {
 
 tests!(small_enum, test_enum!(SmallEnum, 4, ordered));
 tests!(small_enum_explicit_derive, test_enum!(SmallEnumExplicitDerive, 4, ordered));
-tests!(large_enum, test_enum!(LargeEnum, 16, ordered));
+tests!(large_enum, test_enum!(LargeEnum, 16, mixed+ordered));
 tests!(enum8, test_enum!(Enum8, 1, ordered));
 tests!(enum128, test_enum!(Enum128, 16, ordered));
 tests!(sparse_enum, test_enum!(SparseEnum, 16, ordered));
@@ -621,11 +666,12 @@ tests!(marginal_array_enum_s2, test_enum!(MarginalArrayEnumS2, 16, ordered));
 tests!(marginal_array_enum_s2h, test_enum!(MarginalArrayEnumS2H, 16, ordered));
 tests!(marginal_array_enum_s3, test_enum!(MarginalArrayEnumS3, 24, ordered));
 tests!(compact_enum_a, test_enum!(CompactEnumA, 1));
-tests!(compact_enum_b, test_enum!(CompactEnumB, 1));
-tests!(msb_enum, test_enum!(MsbEnum, 8));
-tests!(msb_sparse_enum, test_enum!(MsbSparseEnum, 8));
+tests!(compact_enum_b, test_enum!(CompactEnumB, 1, mixed));
+tests!(msb_enum, test_enum!(MsbEnum, 8, mixed));
+tests!(msb_sparse_enum, test_enum!(MsbSparseEnum, 8, mixed));
 tests!(mask_enum, test_enum!(MaskEnum, 1, ordered));
 tests!(mask_sparse_enum, test_enum!(MaskSparseEnum, 8));
+tests!(mixed_sparse_enum, test_enum!(MixedSparseEnum, 8, mixed+ordered));
 
 #[derive(EnumSetType, Debug)]
 pub enum ThresholdEnum {
