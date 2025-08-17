@@ -2,15 +2,17 @@
 #![deny(warnings)]
 
 use enumset::*;
-use std::collections::{HashSet, BTreeSet};
+use std::collections::{BTreeSet, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 
 /// Used to test the degenerate case of an uninhabited enum.
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum EmptyEnum { }
 
 // Test of a relatively typical enum.
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 enum SmallEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
@@ -18,6 +20,7 @@ enum SmallEnum {
 // Used to test enums where the required impls are derived manually.
 #[derive(Clone, Copy, Debug, EnumSetType, Eq, PartialEq)]
 #[enumset(no_super_impls)]
+#[rustfmt::skip]
 enum SmallEnumExplicitDerive {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
@@ -25,6 +28,7 @@ enum SmallEnumExplicitDerive {
 // Used to test very large enums.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u128")]
+#[rustfmt::skip]
 pub enum LargeEnum {
     _00,  _01,  _02,  _03,  _04,  _05,  _06,  _07,
     _10,  _11,  _12,  _13,  _14,  _15,  _16,  _17,
@@ -39,24 +43,28 @@ pub enum LargeEnum {
 
 /// Used to test enums with sparse elements.
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum SparseEnum {
     A = 0xA, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
 }
 
 /// Used to test the edge case of an enum with a single element.
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum1 {
     A,
 }
 
 /// Used to test the edge case of an enum with eight variants (exactly fits in an u8)
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum8 {
     A, B, C, D, E, F, G, H,
 }
 
 /// Used to test the edge case of an enum with 128 variants (exactly fits in an u128)
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum128 {
     A, B, C, D, E, F, G, H, _8, _9, _10, _11, _12, _13, _14, _15,
     _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31,
@@ -72,6 +80,7 @@ pub enum Enum128 {
 /// Used to test repr on enums.
 #[repr(u32)]
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum ReprEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
@@ -79,6 +88,7 @@ pub enum ReprEnum {
 /// Used to test repr on enums. (cont)
 #[rustversion::attr(since(1.89), repr(u128))]
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum ReprEnum2 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
@@ -86,6 +96,7 @@ pub enum ReprEnum2 {
 /// Used to test repr on enums. (cont)
 #[repr(isize)]
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum ReprEnum3 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
@@ -93,12 +104,14 @@ pub enum ReprEnum3 {
 /// Used to test repr on enums. (cont)
 #[repr(C)]
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum ReprEnum4 {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 
 /// Used to test massive enums that require arrays to use.
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum GiantEnum {
     A = 100, B = 200, C = 300, D = 400, E = 500, F = 600, G = 700, H = 800,
 }
@@ -106,6 +119,7 @@ pub enum GiantEnum {
 /// Used to test enums that are explicitly forced to use the array representation.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
+#[rustfmt::skip]
 pub enum SmallArrayEnum {
     A, B, C, D, E, F, G, H
 }
@@ -113,6 +127,7 @@ pub enum SmallArrayEnum {
 /// Used to test the edge case of an enum exactly one bit larger than a single u64 word
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
+#[rustfmt::skip]
 pub enum MarginalArrayEnumS2 {
     A, B, C, D, E, F, G, H, Marginal = 64,
 }
@@ -120,6 +135,7 @@ pub enum MarginalArrayEnumS2 {
 /// Used to test the edge case of an enum that requires two u64 words.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
+#[rustfmt::skip]
 pub enum MarginalArrayEnumS2H {
     A = 64, B, C, D, E, F, G, H, Marginal = 127,
 }
@@ -127,6 +143,7 @@ pub enum MarginalArrayEnumS2H {
 /// Used to test the edge case of an enum that requires one more bit than two u64 words.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "array")]
+#[rustfmt::skip]
 pub enum MarginalArrayEnumS3 {
     A, B, C, D, E, F, G, H, Marginal = 128,
 }
@@ -134,6 +151,7 @@ pub enum MarginalArrayEnumS3 {
 /// Used to test enums with sparse elements.
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "compact")]
+#[rustfmt::skip]
 pub enum CompactEnumA {
     A = 0xA, B = 20, C = 30, D = 40, E = 50, F = 60, G = 70, H = 80,
 }
@@ -141,6 +159,7 @@ pub enum CompactEnumA {
 /// Used to test enums with sparse elements.
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "compact", repr = "u8")]
+#[rustfmt::skip]
 pub enum CompactEnumB {
     A = 2, B = 4, C = 6, D = 8, E = 10, F = 120, G = 180, H = (1 << 60) | 12345,
 }
@@ -148,6 +167,7 @@ pub enum CompactEnumB {
 /// Used to test MSB.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u64", map = "msb")]
+#[rustfmt::skip]
 pub enum MsbEnum {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
@@ -155,6 +175,7 @@ pub enum MsbEnum {
 /// Used to test MSB.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u64", map = "msb")]
+#[rustfmt::skip]
 enum MsbSparseEnum {
     A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
 }
@@ -162,12 +183,14 @@ enum MsbSparseEnum {
 /// Used to test massive enums that require arrays to use.
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "mask")]
+#[rustfmt::skip]
 pub enum MaskEnum {
     A = 0x1, B = 0x2, C = 0x4, D = 0x8, E = 0x10, F = 0x20, G = 0x40, H = 0x80,
 }
 
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "mask")]
+#[rustfmt::skip]
 pub enum MaskSparseEnum {
     A = 1 << 0, B = 1 << 3, C = 1 << 4, D = 1 << 8,
     E = 1 << 9, F = 1 << 30, G = 1 << 33, H = 1 << 62,
@@ -176,6 +199,7 @@ pub enum MaskSparseEnum {
 /// Used to test mixed enumsets.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u64")]
+#[rustfmt::skip]
 enum MixedSparseEnum {
     A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
 }
@@ -652,7 +676,7 @@ macro_rules! tests {
 
 tests!(small_enum, test_enum!(SmallEnum, 4, ordered));
 tests!(small_enum_explicit_derive, test_enum!(SmallEnumExplicitDerive, 4, ordered));
-tests!(large_enum, test_enum!(LargeEnum, 16, mixed+ordered));
+tests!(large_enum, test_enum!(LargeEnum, 16, mixed + ordered));
 tests!(enum8, test_enum!(Enum8, 1, ordered));
 tests!(enum128, test_enum!(Enum128, 16, ordered));
 tests!(sparse_enum, test_enum!(SparseEnum, 16, ordered));
@@ -671,9 +695,10 @@ tests!(msb_enum, test_enum!(MsbEnum, 8, mixed));
 tests!(msb_sparse_enum, test_enum!(MsbSparseEnum, 8, mixed));
 tests!(mask_enum, test_enum!(MaskEnum, 1, ordered));
 tests!(mask_sparse_enum, test_enum!(MaskSparseEnum, 8));
-tests!(mixed_sparse_enum, test_enum!(MixedSparseEnum, 8, mixed+ordered));
+tests!(mixed_sparse_enum, test_enum!(MixedSparseEnum, 8, mixed + ordered));
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum ThresholdEnum {
     A = 1, B, C, D,
     U8 = 0, U16 = 8, U32 = 16, U64 = 32, U128 = 64,
@@ -765,6 +790,7 @@ mod tests_without_imports {
     // in scope.
 
     const EMPTY: crate::EnumSet<super::SmallEnum> = crate::enum_set!();
-    const CONST_SET: crate::EnumSet<super::SmallEnum> = crate::enum_set!(super::SmallEnum::A | super::SmallEnum::C);
+    const CONST_SET: crate::EnumSet<super::SmallEnum> =
+        crate::enum_set!(super::SmallEnum::A | super::SmallEnum::C);
     const CONST_1_SET: crate::EnumSet<super::SmallEnum> = crate::enum_set!(super::SmallEnum::A);
 }

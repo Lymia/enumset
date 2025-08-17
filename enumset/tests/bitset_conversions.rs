@@ -29,37 +29,44 @@ macro_rules! read_slice_truncated {
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum8 {
     A, B, C, D, E, F, G,
     // H omitted for non-existent bit test
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum16 {
     A, B, C, D, E=8, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum32 {
     A, B, C, D, E=16, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum64 {
     A, B, C, D, E=32, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum128 {
     A, B, C, D, E=64, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum192 {
     A, B, C, D, E=128, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum Enum256 {
     A, B, C, D, E=192, F, G, H,
 }
@@ -124,29 +131,29 @@ macro_rules! check_simple_conversion {
             #[test]
             fn basic_to_array() {
                 // array tests
-                assert_eq!(($e::A | $e::B | $e::C).as_array_truncated(), 
+                assert_eq!(($e::A | $e::B | $e::C).as_array_truncated(),
                            []);
                 assert_eq!(EnumSet::<$e>::empty().as_array_truncated(),
                            []);
-                assert_eq!(($e::A | $e::B | $e::C).as_array(), 
+                assert_eq!(($e::A | $e::B | $e::C).as_array(),
                            [7]);
-                assert_eq!(($e::A | $e::B | $e::C).as_array(), 
+                assert_eq!(($e::A | $e::B | $e::C).as_array(),
                            [7, 0]);
-                assert_eq!(($e::A | $e::B | $e::C).as_array(), 
+                assert_eq!(($e::A | $e::B | $e::C).as_array(),
                            [7, 0, 0]);
-                assert_eq!(($e::A | $e::B | $e::C).as_array(), 
+                assert_eq!(($e::A | $e::B | $e::C).as_array(),
                            [7, 0, 0, 0]);
                 assert_eq!(($e::A | $e::B | $e::C).as_array(),
                            [7, 0, 0, 0, 0]);
-                
+
                 // slice tests
-                assert_eq!(read_slice!($e::A | $e::B | $e::C, 1), 
+                assert_eq!(read_slice!($e::A | $e::B | $e::C, 1),
                            [7]);
-                assert_eq!(read_slice!($e::A | $e::B | $e::C, 2), 
+                assert_eq!(read_slice!($e::A | $e::B | $e::C, 2),
                            [7, 0]);
-                assert_eq!(read_slice!($e::A | $e::B | $e::C, 3), 
+                assert_eq!(read_slice!($e::A | $e::B | $e::C, 3),
                            [7, 0, 0]);
-                assert_eq!(read_slice!($e::A | $e::B | $e::C, 4), 
+                assert_eq!(read_slice!($e::A | $e::B | $e::C, 4),
                            [7, 0, 0, 0]);
                 assert_eq!(read_slice!($e::A | $e::B | $e::C, 5),
                            [7, 0, 0, 0, 0]);

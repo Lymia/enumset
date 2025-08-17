@@ -1,10 +1,11 @@
 #![deny(warnings)]
 
-use std::fmt::{Debug, Display, Formatter};
 use enumset::*;
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u64")]
+#[rustfmt::skip]
 enum Enum {
     A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
 }
