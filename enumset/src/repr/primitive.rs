@@ -1,5 +1,10 @@
 use crate::repr::EnumSetTypeRepr;
 
+pub trait Primitive {
+    fn leading_zeros(&self) -> u32;
+    fn trailing_zeros(&self) -> u32;
+}
+
 macro_rules! prim {
     ($name:ty, $width:expr, $preferred_array_len:expr) => {
         const _: () = {
@@ -36,14 +41,6 @@ macro_rules! prim {
                 #[inline(always)]
                 fn count_ones(&self) -> u32 {
                     (*self).count_ones()
-                }
-                #[inline(always)]
-                fn leading_zeros(&self) -> u32 {
-                    (*self).leading_zeros()
-                }
-                #[inline(always)]
-                fn trailing_zeros(&self) -> u32 {
-                    (*self).trailing_zeros()
                 }
 
                 #[inline(always)]
@@ -255,6 +252,16 @@ macro_rules! prim {
                     }
                 }
             }
+            impl Primitive for $name {
+                #[inline(always)]
+                fn leading_zeros(&self) -> u32 {
+                    (*self).leading_zeros()
+                }
+                #[inline(always)]
+                fn trailing_zeros(&self) -> u32 {
+                    (*self).trailing_zeros()
+                }
+            }
         };
     };
 }
@@ -266,9 +273,9 @@ prim!(u128, 128, 2);
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct PrimitiveIter<T: EnumSetTypeRepr>(pub T);
+pub struct PrimitiveIter<T: EnumSetTypeRepr + Primitive>(pub T);
 
-impl<T: EnumSetTypeRepr> Iterator for PrimitiveIter<T> {
+impl<T: EnumSetTypeRepr + Primitive> Iterator for PrimitiveIter<T> {
     type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -287,7 +294,7 @@ impl<T: EnumSetTypeRepr> Iterator for PrimitiveIter<T> {
     }
 }
 
-impl<T: EnumSetTypeRepr> DoubleEndedIterator for PrimitiveIter<T> {
+impl<T: EnumSetTypeRepr + Primitive> DoubleEndedIterator for PrimitiveIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.0.is_empty() {
             None
@@ -298,3 +305,5 @@ impl<T: EnumSetTypeRepr> DoubleEndedIterator for PrimitiveIter<T> {
         }
     }
 }
+
+impl<T: EnumSetTypeRepr + Primitive> ExactSizeIterator for PrimitiveIter<T> {}
