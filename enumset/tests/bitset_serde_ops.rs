@@ -45,6 +45,12 @@ pub enum DenyUnknownEnum {
     A, B, C, D, E, F, G, H,
 }
 
+#[derive(EnumSetType, Debug)]
+#[enumset(repr = "u64", serialize_repr = "u32")]
+pub enum MixedEnum {
+    A = 10, B, C, D, E, F, G, H,
+}
+
 macro_rules! serde_test_simple {
     ($e:ident, $ser_size:expr) => {
         const VALUES: &[EnumSet<$e>] = &[
@@ -128,9 +134,36 @@ fn test_json_reprs_edge_cases() {
                serde_json::from_str::<EnumSet<LargeEnum>>(r#"[15]"#).unwrap());
 }
 
+#[test]
+fn test_mixed_round_trip() {
+    const VALUES: &[MixedEnumSet<MixedEnum>] = &[
+        mixed_enum_set!(),
+        mixed_enum_set!(MixedEnum::A),
+        mixed_enum_set!(MixedEnum::H),
+        mixed_enum_set!(MixedEnum::A | MixedEnum::B),
+        mixed_enum_set!(MixedEnum::A | MixedEnum::B | MixedEnum::C | MixedEnum::D),
+        mixed_enum_set!(MixedEnum::G | MixedEnum::H),
+        mixed_enum_set!(MixedEnum::E | MixedEnum::F | MixedEnum::G | MixedEnum::H),
+    ];
+
+    for &value in VALUES {
+        let mut value = value;
+        for i in 0..4 {
+            value.insert_bit(i);
+            
+            let serialized = bincode::serialize(&value).unwrap();
+            let deserialized =
+                bincode::deserialize::<MixedEnumSet<MixedEnum>>(&serialized).unwrap();
+            assert_eq!(value, deserialized);
+            assert_eq!(serialized.len(), 8);
+        }
+    }
+}
+
 tests!(list_enum, serde_test_simple!(ListEnum, !0));
 tests!(map_enum, serde_test_simple!(MapEnum, !0));
 tests!(array_enum, serde_test_simple!(ArrayEnum, !0));
 tests!(large_enum, serde_test_simple!(LargeEnum, !0));
 tests!(repr_enum, serde_test!(ReprEnum, 16));
 tests!(deny_unknown_enum, serde_test_simple!(DenyUnknownEnum, 16));
+tests!(mixed_enum, serde_test_simple!(MixedEnum, 4));

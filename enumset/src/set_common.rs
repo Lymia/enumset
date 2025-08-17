@@ -37,6 +37,31 @@ macro_rules! set_common_methods {
             self.__priv_repr = <$T_Repr>::EMPTY;
         }
 
+        /// Checks whether this set contains a value.
+        #[inline(always)]
+        pub fn contains(&self, value: $T) -> bool {
+            self.__priv_repr.has_bit(value.enum_into_u32())
+        }
+
+        /// Adds a value to this set.
+        ///
+        /// If the set did not have this value present, `true` is returned.
+        ///
+        /// If the set did have this value present, `false` is returned.
+        #[inline(always)]
+        pub fn insert(&mut self, value: $T) -> bool {
+            let contains = !self.contains(value);
+            self.__priv_repr.add_bit(value.enum_into_u32());
+            contains
+        }
+        /// Removes a value from this set. Returns whether the value was present in the set.
+        #[inline(always)]
+        pub fn remove(&mut self, value: $T) -> bool {
+            let contains = self.contains(value);
+            self.__priv_repr.remove_bit(value.enum_into_u32());
+            contains
+        }
+
         /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
         /// checking for an empty intersection.
         #[inline(always)]
@@ -77,36 +102,6 @@ macro_rules! set_common_methods {
         #[inline(always)]
         pub fn symmetrical_difference(&self, other: impl Into<Self>) -> Self {
             Self { __priv_repr: self.__priv_repr ^ other.into().__priv_repr }
-        }
-        /// Returns a set containing all enum variants not in this set.
-        #[inline(always)]
-        pub fn complement(&self) -> Self {
-            Self { __priv_repr: !self.__priv_repr & <$T>::ALL_BITS }
-        }
-
-        /// Checks whether this set contains a value.
-        #[inline(always)]
-        pub fn contains(&self, value: $T) -> bool {
-            self.__priv_repr.has_bit(value.enum_into_u32())
-        }
-
-        /// Adds a value to this set.
-        ///
-        /// If the set did not have this value present, `true` is returned.
-        ///
-        /// If the set did have this value present, `false` is returned.
-        #[inline(always)]
-        pub fn insert(&mut self, value: $T) -> bool {
-            let contains = !self.contains(value);
-            self.__priv_repr.add_bit(value.enum_into_u32());
-            contains
-        }
-        /// Removes a value from this set. Returns whether the value was present in the set.
-        #[inline(always)]
-        pub fn remove(&mut self, value: $T) -> bool {
-            let contains = self.contains(value);
-            self.__priv_repr.remove_bit(value.enum_into_u32());
-            contains
         }
     };
 }
@@ -271,6 +266,14 @@ macro_rules! set_iterator_impls {
             }
         }
 
+        impl<'a, T: $set_trait> FromIterator<&'a T> for $name<T> {
+            fn from_iter<I: IntoIterator<Item = &'a T>>(iter: I) -> Self {
+                let mut set = $name::default();
+                set.extend(iter);
+                set
+            }
+        }
+
         impl<T: $set_trait> Extend<$name<T>> for $name<T> {
             fn extend<I: IntoIterator<Item = $name<T>>>(&mut self, iter: I) {
                 iter.into_iter().for_each(|v| {
@@ -289,6 +292,14 @@ macro_rules! set_iterator_impls {
 
         impl<T: $set_trait> FromIterator<$name<T>> for $name<T> {
             fn from_iter<I: IntoIterator<Item = $name<T>>>(iter: I) -> Self {
+                let mut set = $name::default();
+                set.extend(iter);
+                set
+            }
+        }
+
+        impl<'a, T: $set_trait> FromIterator<&'a $name<T>> for $name<T> {
+            fn from_iter<I: IntoIterator<Item = &'a $name<T>>>(iter: I) -> Self {
                 let mut set = $name::default();
                 set.extend(iter);
                 set

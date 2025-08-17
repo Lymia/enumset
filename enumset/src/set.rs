@@ -147,6 +147,12 @@ impl<T: EnumSetType> EnumSet<T> {
 
     set_common_methods!(T, T::Repr);
 
+    /// Returns a set containing all enum variants not in this set.
+    #[inline(always)]
+    pub fn complement(&self) -> Self {
+        Self { __priv_repr: !self.__priv_repr & T::ALL_BITS }
+    }
+
     /// Adds all elements in another set to this one.
     #[inline(always)]
     pub fn insert_all(&mut self, other: Self) {

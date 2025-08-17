@@ -123,6 +123,22 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
 
     set_common_methods!(T, <T as EnumSetTypePrivate>::Repr);
 
+    /// Returns a set containing all enum variants not in this set.
+    ///
+    /// This method clears any unknown bits already existing in the set.
+    #[inline(always)]
+    pub fn complement(&self) -> Self {
+        Self { __priv_repr: !self.__priv_repr & T::ALL_BITS }
+    }
+
+    /// Returns a set containing all bits not in this set.
+    ///
+    /// This method sets any unknown bits not already existing in the set.
+    #[inline(always)]
+    pub fn full_complement(&self) -> Self {
+        Self { __priv_repr: !self.__priv_repr }
+    }
+
     /// Returns the number of elements in this set, excluding unknown bits.
     #[inline(always)]
     pub fn valid_len(&self) -> usize {
@@ -356,6 +372,14 @@ impl<'a, T: EnumSetTypeWithRepr> Extend<&'a EnumSet<T>> for MixedEnumSet<T> {
 
 impl<T: EnumSetTypeWithRepr> FromIterator<EnumSet<T>> for MixedEnumSet<T> {
     fn from_iter<I: IntoIterator<Item = EnumSet<T>>>(iter: I) -> Self {
+        let mut set = MixedEnumSet::default();
+        set.extend(iter);
+        set
+    }
+}
+
+impl<'a, T: EnumSetTypeWithRepr> FromIterator<&'a EnumSet<T>> for MixedEnumSet<T> {
+    fn from_iter<I: IntoIterator<Item = &'a EnumSet<T>>>(iter: I) -> Self {
         let mut set = MixedEnumSet::default();
         set.extend(iter);
         set
