@@ -1,3 +1,11 @@
+# Unreleased
+
+* Implement a new `MixedEnumSet<T>` type that allows unknown bits to be mixed
+  with known enum variants in a single bitset.
+* Added `FromIterator` implementations for iterators of borrowed items.
+* Added `EnumSet::bit_index` and `EnumSet::is_bit_valid` methods to query the
+  bit associated with an enum variant, or if a bit index is valid.
+
 # Version 1.1.8 (2025-08-16)
 
 ## New Features
