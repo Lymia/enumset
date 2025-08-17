@@ -39,8 +39,6 @@ pub trait EnumSetTypeRepr :
     fn has_bit(&self, bit: u32) -> bool;
 
     fn count_ones(&self) -> u32;
-    fn leading_zeros(&self) -> u32;
-    fn trailing_zeros(&self) -> u32;
 
     fn and_not(&self, other: Self) -> Self;
 

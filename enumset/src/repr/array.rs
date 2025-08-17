@@ -75,26 +75,6 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     fn count_ones(&self) -> u32 {
         self.0.iter().map(|x| x.count_ones()).sum()
     }
-    fn leading_zeros(&self) -> u32 {
-        let mut accum = 0;
-        for i in (0..N).rev() {
-            if self.0[i] != 0 {
-                return accum + self.0[i].leading_zeros();
-            }
-            accum += 64;
-        }
-        Self::WIDTH
-    }
-    fn trailing_zeros(&self) -> u32 {
-        let mut accum = 0;
-        for i in 0..N {
-            if self.0[i] != 0 {
-                return accum + self.0[i].trailing_zeros();
-            }
-            accum += 64;
-        }
-        Self::WIDTH
-    }
 
     fn and_not(&self, other: Self) -> Self {
         let mut new = Self([0; N]);
