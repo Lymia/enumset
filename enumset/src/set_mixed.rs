@@ -147,7 +147,7 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     ///
     /// If the set did have this bit present, `false` is returned.
     #[inline(always)]
-    pub fn set_bit(&mut self, value: u32) -> bool {
+    pub fn insert_bit(&mut self, value: u32) -> bool {
         let contains = !self.has_bit(value);
         self.__priv_repr.add_bit(value);
         contains
@@ -155,7 +155,7 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
 
     /// Removes a specific bit from this set. Returns whether the bit was present in the set.
     #[inline(always)]
-    pub fn unset_bit(&mut self, value: u32) -> bool {
+    pub fn remove_bit(&mut self, value: u32) -> bool {
         let contains = self.has_bit(value);
         self.__priv_repr.remove_bit(value);
         contains
