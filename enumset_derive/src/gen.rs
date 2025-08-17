@@ -435,8 +435,8 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     quote! {
         const _: () = {
             // Double check fundamental assumptions baked into a lot of the code here.
-            assert!(#core::mem::size_of::<#name>() <= #core::mem::size_of::<#enum_repr>());
-            #(assert!(#enum_discrim == (#name::#enum_names as i64));)*
+            #core::assert!(#core::mem::size_of::<#name>() <= #core::mem::size_of::<#enum_repr>());
+            #(#core::assert!(#enum_discrim == (#name::#enum_names as i64));)*
 
             #[automatically_derived]
             unsafe impl #internal::EnumSetTypePrivate for #name {
