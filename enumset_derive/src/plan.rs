@@ -366,7 +366,7 @@ impl EnumSetInfo {
         // Checks if any bits of the variant are too large.
         for variant in &self.variants {
             if variant.variant_bit == !0 {
-                panic!("Sentinel value found in enumset plan!?");
+                unreachable!("Sentinel value found in enumset plan!?");
             }
             if variant.variant_bit >= 0xFFFFFFC0 {
                 error(variant.span, "Maximum variant bit allowed is `0xFFFFFFBF`.")?;

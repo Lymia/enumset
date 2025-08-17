@@ -614,7 +614,7 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
             }
         }
     } else {
-        panic!("Unknown encoding?");
+        unreachable!("Unknown encoding?");
     }
 }
 

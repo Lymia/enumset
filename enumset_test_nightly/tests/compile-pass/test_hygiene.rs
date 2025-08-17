@@ -41,6 +41,7 @@ mod defmt_hygiene {
 
     #[repr(C)]
     #[derive(EnumSetType)]
+    #[enumset(no_ops)]
     pub enum ReprEnum4 {
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
@@ -87,6 +88,7 @@ mod log_hygiene {
 
     #[repr(C)]
     #[derive(EnumSetType)]
+    #[enumset(no_ops)]
     pub enum ReprEnum4 {
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
@@ -133,6 +135,7 @@ mod tracing_hygiene {
 
     #[repr(C)]
     #[derive(EnumSetType)]
+    #[enumset(no_ops)]
     pub enum ReprEnum4 {
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
@@ -179,6 +182,7 @@ mod serde_hygiene {
 
     #[repr(C)]
     #[derive(EnumSetType)]
+    #[enumset(no_ops)]
     pub enum ReprEnum4 {
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
@@ -225,6 +229,7 @@ mod anyhow_hygiene {
 
     #[repr(C)]
     #[derive(EnumSetType)]
+    #[enumset(no_ops)]
     pub enum ReprEnum4 {
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     }
