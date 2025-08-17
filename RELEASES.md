@@ -1,3 +1,8 @@
+# Unreleased
+
+* `derive(EnumSetType)` now uses `::core::assert!` instead of whichever
+  `assert!` is visible. (thanks @bugadani)
+
 # Version 1.1.8 (2025-08-16)
 
 ## New Features
