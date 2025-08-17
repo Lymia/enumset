@@ -43,9 +43,15 @@ pub mod __internal {
     pub const fn init_helper<T: EnumSetConstHelper>(_: &T) -> T::ConstInitHelper {
         T::CONST_INIT_HELPER
     }
+
+    pub const fn convert_mixed<T: crate::EnumSetTypeWithRepr>(
+        a: crate::EnumSet<T>,
+    ) -> crate::MixedEnumSet<T> {
+        crate::MixedEnumSet { __priv_repr: a.__priv_repr }
+    }
 }
 
-/// Creates a EnumSet literal, which can be used in const contexts.
+/// Creates a [`EnumSet`](crate::EnumSet) literal, which can be used in const contexts.
 ///
 /// The syntax used is `enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same
 /// type, or an error will occur at compile-time.
@@ -81,6 +87,37 @@ macro_rules! enum_set {
     };
     ($value:path | $($rest:path)|* $(|)*) => {
         $crate::enum_set_union!($value, $($rest,)*)
+    };
+}
+
+/// Creates a [`MixedEnumSet`](crate::MixedEnumSet) literal, which can be used in const contexts.
+///
+/// The syntax used is `mixed_enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same
+/// type, or an error will occur at compile-time.
+///
+/// This macro accepts trailing `|`s to allow easier use in other macros.
+///
+/// # Examples
+///
+/// ```rust
+/// # use enumset::*;
+/// # #[derive(EnumSetType, Debug)] #[enumset(repr = "u32")] enum Enum { A, B, C }
+/// const CONST_SET: MixedEnumSet<Enum> = mixed_enum_set!(Enum::A | Enum::B);
+/// assert_eq!(CONST_SET, MixedEnumSet::from(Enum::A | Enum::B));
+/// ```
+///
+/// This macro is strongly typed. For example, the following will not compile:
+///
+/// ```compile_fail
+/// # use enumset::*;
+/// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C }
+/// # #[derive(EnumSetType, Debug)] enum Enum2 { A, B, C }
+/// let type_error = enum_set!(Enum::A | Enum2::B);
+/// ```
+#[macro_export]
+macro_rules! mixed_enum_set {
+    ($($internal:tt)*) => {
+        $crate::__internal::convert_mixed($crate::enum_set!($($internal)*))
     };
 }
 

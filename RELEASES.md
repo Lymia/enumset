@@ -1,3 +1,9 @@
+# Unreleased
+
+## New Features
+* Implement a new `MixedEnumSet<T>` type that allows unknown bits to be mixed
+  with known enum variants in a single bitset.
+
 # Version 1.1.8 (2025-08-16)
 
 ## New Features

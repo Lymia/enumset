@@ -40,42 +40,43 @@ macro_rules! set_common_methods {
         /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
         /// checking for an empty intersection.
         #[inline(always)]
-        pub fn is_disjoint(&self, other: Self) -> bool {
-            (*self & other).is_empty()
+        pub fn is_disjoint(&self, other: impl Into<Self>) -> bool {
+            (*self & other.into()).is_empty()
         }
         /// Returns `true` if the set is a superset of another, i.e., `self` contains at least all the
         /// values in `other`.
         #[inline(always)]
-        pub fn is_superset(&self, other: Self) -> bool {
+        pub fn is_superset(&self, other: impl Into<Self>) -> bool {
+            let other = other.into();
             (*self & other).__priv_repr == other.__priv_repr
         }
         /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all
         /// the values in `self`.
         #[inline(always)]
-        pub fn is_subset(&self, other: Self) -> bool {
-            other.is_superset(*self)
+        pub fn is_subset(&self, other: impl Into<Self>) -> bool {
+            other.into().is_superset(*self)
         }
 
         /// Returns a set containing any elements present in either set.
         #[inline(always)]
-        pub fn union(&self, other: Self) -> Self {
-            Self { __priv_repr: self.__priv_repr | other.__priv_repr }
+        pub fn union(&self, other: impl Into<Self>) -> Self {
+            Self { __priv_repr: self.__priv_repr | other.into().__priv_repr }
         }
         /// Returns a set containing every element present in both sets.
         #[inline(always)]
-        pub fn intersection(&self, other: Self) -> Self {
-            Self { __priv_repr: self.__priv_repr & other.__priv_repr }
+        pub fn intersection(&self, other: impl Into<Self>) -> Self {
+            Self { __priv_repr: self.__priv_repr & other.into().__priv_repr }
         }
         /// Returns a set containing element present in `self` but not in `other`.
         #[inline(always)]
-        pub fn difference(&self, other: Self) -> Self {
-            Self { __priv_repr: self.__priv_repr.and_not(other.__priv_repr) }
+        pub fn difference(&self, other: impl Into<Self>) -> Self {
+            Self { __priv_repr: self.__priv_repr.and_not(other.into().__priv_repr) }
         }
         /// Returns a set containing every element present in either `self` or `other`, but is not
         /// present in both.
         #[inline(always)]
-        pub fn symmetrical_difference(&self, other: Self) -> Self {
-            Self { __priv_repr: self.__priv_repr ^ other.__priv_repr }
+        pub fn symmetrical_difference(&self, other: impl Into<Self>) -> Self {
+            Self { __priv_repr: self.__priv_repr ^ other.into().__priv_repr }
         }
         /// Returns a set containing all enum variants not in this set.
         #[inline(always)]
