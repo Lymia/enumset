@@ -378,7 +378,7 @@ impl<T: EnumSetTypeWithRepr> FromIterator<EnumSet<T>> for MixedEnumSet<T> {
     }
 }
 
-impl<'a, T: EnumSetTypeWithRepr> FromIterator<&'a EnumSet<T>> for MixedEnumSet<T> {
+impl<'a, T: 'a + EnumSetTypeWithRepr> FromIterator<&'a EnumSet<T>> for MixedEnumSet<T> {
     fn from_iter<I: IntoIterator<Item = &'a EnumSet<T>>>(iter: I) -> Self {
         let mut set = MixedEnumSet::default();
         set.extend(iter);

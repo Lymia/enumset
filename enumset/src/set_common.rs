@@ -266,7 +266,7 @@ macro_rules! set_iterator_impls {
             }
         }
 
-        impl<'a, T: $set_trait> FromIterator<&'a T> for $name<T> {
+        impl<'a, T: 'a + $set_trait> FromIterator<&'a T> for $name<T> {
             fn from_iter<I: IntoIterator<Item = &'a T>>(iter: I) -> Self {
                 let mut set = $name::default();
                 set.extend(iter);
@@ -298,7 +298,7 @@ macro_rules! set_iterator_impls {
             }
         }
 
-        impl<'a, T: $set_trait> FromIterator<&'a $name<T>> for $name<T> {
+        impl<'a, T: 'a + $set_trait> FromIterator<&'a $name<T>> for $name<T> {
             fn from_iter<I: IntoIterator<Item = &'a $name<T>>>(iter: I) -> Self {
                 let mut set = $name::default();
                 set.extend(iter);
