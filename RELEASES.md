@@ -5,7 +5,11 @@
 * Added `FromIterator` implementations for iterators of borrowed items.
 * Added `EnumSet::bit_index` and `EnumSet::is_bit_valid` methods to query the
   bit associated with an enum variant, or if a bit index is valid.
-* `derive(EnumSetType)` now uses `::core::assert!` instead of whichever `assert!` is visible.
+
+# Version 1.1.9 (2025-08-17)
+
+* Fixes a bug that causes compilation failures when a crate (such as `defmt`)
+  exposes a macro called `assert!`. (thanks @bugadani)
 
 # Version 1.1.8 (2025-08-16)
 
