@@ -1,0 +1,65 @@
+error: Expression not supported by enumset.
+ --> tests/compile-fail/const_eval_errors.rs:5:17
+  |
+5 |     Variant = -(const { 1 + 1 }),
+  |                 ^^^^^^^^^^^^^^^
+
+error: Expression not supported by enumset.
+  --> tests/compile-fail/const_eval_errors.rs:10:17
+   |
+10 |     Variant = !(1 > 2),
+   |                 ^^^^^
+
+error: Error while evaluating discriminator.
+  --> tests/compile-fail/const_eval_errors.rs:16:16
+   |
+16 |     Variant = (1u64 << 0x100000000u64) + 1,
+   |                ^^^^^^^^^^^^^^^^^^^^^^
+
+error: Error while evaluating discriminator.
+  --> tests/compile-fail/const_eval_errors.rs:22:20
+   |
+22 |     Variant = 1 + (1u64 >> 0x100000000u64),
+   |                    ^^^^^^^^^^^^^^^^^^^^^^
+
+error: Expression not supported by enumset.
+  --> tests/compile-fail/const_eval_errors.rs:27:15
+   |
+27 |     Variant = "test",
+   |               ^^^^^^
+
+error: Expression not supported by enumset.
+  --> tests/compile-fail/const_eval_errors.rs:32:15
+   |
+32 |     Variant = *(&5),
+   |               ^^^^^
+
+error: Enum discriminants must fit into `isize`.
+  --> tests/compile-fail/const_eval_errors.rs:38:15
+   |
+38 |     Variant = 0x10000000000000000u128,
+   |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/compile-fail/const_eval_errors.rs:10:15
+   |
+10 |     Variant = !(1 > 2),
+   |               ^^^^^^^^ expected `isize`, found `bool`
+
+error[E0080]: attempt to shift left by `4294967296_u64`, which would overflow
+  --> tests/compile-fail/const_eval_errors.rs:16:15
+   |
+16 |     Variant = (1u64 << 0x100000000u64) + 1,
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `BadVariants3::Variant::{constant#0}` failed here
+
+error[E0080]: attempt to shift right by `4294967296_u64`, which would overflow
+  --> tests/compile-fail/const_eval_errors.rs:22:19
+   |
+22 |     Variant = 1 + (1u64 >> 0x100000000u64),
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `BadVariants4::Variant::{constant#0}` failed here
+
+error[E0308]: mismatched types
+  --> tests/compile-fail/const_eval_errors.rs:27:15
+   |
+27 |     Variant = "test",
+   |               ^^^^^^ expected `isize`, found `&str`
