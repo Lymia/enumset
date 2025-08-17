@@ -367,7 +367,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
         quote! {}
     } else {
         let eq_impl = if is_uninhabited {
-            quote!(panic!(concat!(stringify!(#name), " is uninhabited.")))
+            quote!(#core::unreachable!(concat!(stringify!(#name), " is uninhabited.")))
         } else {
             quote!((*self as u32) == (*other as u32))
         };
@@ -489,10 +489,10 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
     if info.variants.is_empty() {
         quote! {
             fn enum_into_u32(self) -> u32 {
-                panic!(concat!(stringify!(#name), " is uninhabited."))
+                #core::panic!(concat!(stringify!(#name), " is uninhabited."))
             }
             unsafe fn enum_from_u32(val: u32) -> Self {
-                panic!(concat!(stringify!(#name), " is uninhabited."))
+                #core::panic!(concat!(stringify!(#name), " is uninhabited."))
             }
         }
     } else if is_zst {
