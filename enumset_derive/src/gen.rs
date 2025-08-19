@@ -154,7 +154,9 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
             };
             let check_unknown = if info.serialize_deny_unknown {
                 quote! {
-                    if value & !#all_variants != 0 {
+                    let all_variants_cast =
+                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&#all_variants);
+                    if value & !all_variants_cast != 0 {
                         use #serde::de::Error;
                         return #core::prelude::v1::Err(
                             D::Error::custom("enumset contains unknown bits")
@@ -277,16 +279,18 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
                 (
                     quote! {
                         if _val != 0 {
+                        use #serde::de::Error;
                             return #core::prelude::v1::Err(
-                                D::Error::custom("enumset contains unknown bits")
+                                A::Error::custom("enumset contains unknown bits")
                             )
                         }
                     },
                     quote! {
+                        use #serde::de::Error;
                         match #enumset::EnumSet::<#name>::try_from_array(accum) {
-                            Some(x) => x,
+                            Some(x) => #core::prelude::v1::Ok(x),
                             None => #core::prelude::v1::Err(
-                                D::Error::custom("enumset contains unknown bits")
+                                A::Error::custom("enumset contains unknown bits")
                             ),
                         }
                     },
@@ -368,7 +372,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
         quote! {}
     } else {
         let eq_impl = if is_uninhabited {
-            quote!(panic!(concat!(stringify!(#name), " is uninhabited.")))
+            quote!(#core::unreachable!(concat!(stringify!(#name), " is uninhabited.")))
         } else {
             quote!((*self as u32) == (*other as u32))
         };
@@ -436,8 +440,8 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     quote! {
         const _: () = {
             // Double check fundamental assumptions baked into a lot of the code here.
-            assert!(#core::mem::size_of::<#name>() <= #core::mem::size_of::<#enum_repr>());
-            #(assert!(#enum_discrim == (#name::#enum_names as i64));)*
+            #core::assert!(#core::mem::size_of::<#name>() <= #core::mem::size_of::<#enum_repr>());
+            #(#core::assert!(#enum_discrim == (#name::#enum_names as i64));)*
 
             #[automatically_derived]
             unsafe impl #internal::EnumSetTypePrivate for #name {
@@ -493,10 +497,10 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
     if info.variants.is_empty() {
         quote! {
             fn enum_into_u32(self) -> u32 {
-                panic!(concat!(stringify!(#name), " is uninhabited."))
+                #core::panic!(concat!(stringify!(#name), " is uninhabited."))
             }
             unsafe fn enum_from_u32(val: u32) -> Self {
-                panic!(concat!(stringify!(#name), " is uninhabited."))
+                #core::panic!(concat!(stringify!(#name), " is uninhabited."))
             }
         }
     } else if is_zst {
@@ -611,7 +615,7 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
             }
         }
     } else {
-        panic!("Unknown encoding?");
+        unreachable!("Unknown encoding?");
     }
 }
 

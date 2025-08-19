@@ -12,43 +12,57 @@ type Result = ();
 
 #[derive(Serialize, Deserialize, EnumSetType, Debug)]
 #[enumset(serialize_repr = "list")]
+#[rustfmt::skip]
 pub enum ListEnum {
     A, B, C, D, E, F, G, H,
 }
 
 #[derive(Serialize, Deserialize, EnumSetType, Debug)]
 #[enumset(serialize_repr = "map")]
+#[rustfmt::skip]
 pub enum MapEnum {
     A, B, C, D, E, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
 #[enumset(serialize_repr = "array")]
+#[rustfmt::skip]
 pub enum ArrayEnum {
     A, B, C, D, E, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
 pub enum LargeEnum {
     A, B, C, D, E=200, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
 #[enumset(serialize_repr = "u128")]
+#[rustfmt::skip]
 pub enum ReprEnum {
     A, B, C, D, E, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
 #[enumset(serialize_repr = "u128", serialize_deny_unknown)]
+#[rustfmt::skip]
 pub enum DenyUnknownEnum {
     A, B, C, D, E, F, G, H,
 }
 
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u64", serialize_repr = "u32")]
+#[rustfmt::skip]
 pub enum MixedEnum {
     A = 10, B, C, D, E, F, G, H,
+}
+
+#[derive(EnumSetType, Debug)]
+#[enumset(serialize_repr = "array", serialize_deny_unknown)]
+#[rustfmt::skip]
+pub enum DenyUnknownEnumArray {
+    A = 40, B, C, D, E, F, G, H,
 }
 
 macro_rules! serde_test_simple {
@@ -111,27 +125,54 @@ fn test_deny_unknown() {
 }
 
 #[test]
+fn test_deny_unknown_array() {
+    let serialized = bincode::serialize(&!0u128).unwrap();
+    let deserialized = bincode::deserialize::<EnumSet<DenyUnknownEnumArray>>(&serialized);
+    assert!(deserialized.is_err());
+}
+
+#[test]
 fn test_json_reprs_basic() {
-    assert_eq!(ListEnum::A | ListEnum::C | ListEnum::F,
-               serde_json::from_str::<EnumSet<ListEnum>>(r#"["A","C","F"]"#).unwrap());
-    assert_eq!(MapEnum::A | MapEnum::C | MapEnum::F,
-               serde_json::from_str::<EnumSet<MapEnum>>(r#"{"A":true,"C":true,"F":true}"#).unwrap());
-    assert_eq!(ReprEnum::A | ReprEnum::C | ReprEnum::D,
-               serde_json::from_str::<EnumSet<ReprEnum>>("13").unwrap());
-    assert_eq!(r#"["A","C","F"]"#,
-               serde_json::to_string(&(ListEnum::A | ListEnum::C | ListEnum::F)).unwrap());
-    assert_eq!(r#"{"A":true,"C":true,"F":true}"#,
-               serde_json::to_string(&(MapEnum::A | MapEnum::C | MapEnum::F)).unwrap());
-    assert_eq!("13",
-               serde_json::to_string(&(ReprEnum::A | ReprEnum::C | ReprEnum::D)).unwrap());
+    assert_eq!(
+        ListEnum::A | ListEnum::C | ListEnum::F,
+        serde_json::from_str::<EnumSet<ListEnum>>(r#"["A","C","F"]"#).unwrap()
+    );
+    assert_eq!(
+        MapEnum::A | MapEnum::C | MapEnum::F,
+        serde_json::from_str::<EnumSet<MapEnum>>(r#"{"A":true,"C":true,"F":true}"#).unwrap()
+    );
+    assert_eq!(
+        ReprEnum::A | ReprEnum::C | ReprEnum::D,
+        serde_json::from_str::<EnumSet<ReprEnum>>("13").unwrap()
+    );
+    assert_eq!(
+        r#"["A","C","F"]"#,
+        serde_json::to_string(&(ListEnum::A | ListEnum::C | ListEnum::F)).unwrap()
+    );
+    assert_eq!(
+        r#"{"A":true,"C":true,"F":true}"#,
+        serde_json::to_string(&(MapEnum::A | MapEnum::C | MapEnum::F)).unwrap()
+    );
+    assert_eq!("13", serde_json::to_string(&(ReprEnum::A | ReprEnum::C | ReprEnum::D)).unwrap());
+    assert_eq!(
+        "[13]",
+        serde_json::to_string(&(ArrayEnum::A | ArrayEnum::C | ArrayEnum::D)).unwrap()
+    );
 }
 
 #[test]
 fn test_json_reprs_edge_cases() {
-    assert_eq!(MapEnum::A | MapEnum::C | MapEnum::F,
-               serde_json::from_str::<EnumSet<MapEnum>>(r#"{"D":false,"A":true,"E":false,"C":true,"F":true}"#).unwrap());
-    assert_eq!(LargeEnum::A | LargeEnum::B | LargeEnum::C | LargeEnum::D,
-               serde_json::from_str::<EnumSet<LargeEnum>>(r#"[15]"#).unwrap());
+    assert_eq!(
+        MapEnum::A | MapEnum::C | MapEnum::F,
+        serde_json::from_str::<EnumSet<MapEnum>>(
+            r#"{"D":false,"A":true,"E":false,"C":true,"F":true}"#
+        )
+        .unwrap()
+    );
+    assert_eq!(
+        LargeEnum::A | LargeEnum::B | LargeEnum::C | LargeEnum::D,
+        serde_json::from_str::<EnumSet<LargeEnum>>(r#"[15]"#).unwrap()
+    );
 }
 
 #[test]
@@ -150,7 +191,7 @@ fn test_mixed_round_trip() {
         let mut value = value;
         for i in 0..4 {
             value.insert_bit(i);
-            
+
             let serialized = bincode::serialize(&value).unwrap();
             let deserialized =
                 bincode::deserialize::<MixedEnumSet<MixedEnum>>(&serialized).unwrap();

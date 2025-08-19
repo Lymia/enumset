@@ -16,7 +16,11 @@ serde = { version = "1", features = ["derive"] }
 serde_derive = "1"
 
 [dev-dependencies]
+anyhow = "1.0.99"
 criterion = "0.7.0"
+defmt = "1.0.1"
 enumset = { path = "../enumset", features = ["serde"] }
+tracing = "0.1.41"
 trybuild = "1"
+log = "0.4.27"
 rustversion = "1"

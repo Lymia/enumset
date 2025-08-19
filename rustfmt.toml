@@ -14,10 +14,3 @@ overflow_delimited_expr = true
 struct_lit_single_line = true
 empty_item_single_line = true
 where_single_line = true
-
-# Ignored paths
-ignore = [
-    "enumset/tests",
-    "enumset_test_nightly/benches",
-    "enumset_test_nightly/examples",
-]

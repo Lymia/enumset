@@ -319,14 +319,14 @@ impl EnumSetInfo {
                     _ => Ident::new("u64", Span::call_site()),
                 }
             } else {
-                match self.max_discriminant {
-                    x if x <= i8::MAX as i64 || x >= i8::MIN as i64 => {
+                match (self.max_discriminant, self.min_discriminant) {
+                    (max, min) if max <= i8::MAX as i64 && min >= i8::MIN as i64 => {
                         Ident::new("i8", Span::call_site())
                     }
-                    x if x <= i16::MAX as i64 || x >= i16::MIN as i64 => {
+                    (max, min) if max <= i16::MAX as i64 && min >= i16::MIN as i64 => {
                         Ident::new("i16", Span::call_site())
                     }
-                    x if x <= i32::MAX as i64 || x >= i32::MIN as i64 => {
+                    (max, min) if max <= i32::MAX as i64 && min >= i32::MIN as i64 => {
                         Ident::new("i32", Span::call_site())
                     }
                     _ => Ident::new("i64", Span::call_site()),
@@ -369,7 +369,7 @@ impl EnumSetInfo {
         // Checks if any bits of the variant are too large.
         for variant in &self.variants {
             if variant.variant_bit == !0 {
-                panic!("Sentinel value found in enumset plan!?");
+                unreachable!("Sentinel value found in enumset plan!?");
             }
             if variant.variant_bit >= 0xFFFFFFC0 {
                 error(variant.span, "Maximum variant bit allowed is `0xFFFFFFBF`.")?;

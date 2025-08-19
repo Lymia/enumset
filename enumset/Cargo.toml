@@ -1,6 +1,6 @@
 [package]
 name = "enumset"
-version = "1.1.8"
+version = "1.1.9"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2021"
 rust-version = "1.65"
