@@ -344,6 +344,7 @@ macro_rules! check_oversized_128 {
 
             #[test]
             fn downcast_to_u128() {
+                assert_eq!(7, ($e::A | $e::B | $e::C).as_u128());
                 assert_eq!(Some(7), ($e::A | $e::B | $e::C).try_as_u128());
                 assert_eq!(None, ($e::E | $e::F | $e::G).try_as_u128());
                 assert_eq!(0, ($e::E | $e::F | $e::G).as_u128_truncated());

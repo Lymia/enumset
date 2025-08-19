@@ -141,8 +141,9 @@ pub enum CompactEnumA {
 /// Used to test enums with sparse elements.
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "compact", repr = "u8")]
+#[repr(i64)]
 pub enum CompactEnumB {
-    A = 2, B = 4, C = 6, D = 8, E = 10, F = 120, G = 180, H = (1 << 60) | 12345,
+    A = 2, B = 4, C = 6, D = 8, E = -10, F = 120, G = -180, H = (1 << 60) | 12345,
 }
 
 /// Used to test MSB.
@@ -255,6 +256,8 @@ macro_rules! test_enum {
                 assert_eq!(iter.next_back(), Some($e::E));
                 assert_eq!(iter.next(), Some($e::D));
                 assert_eq!(iter.next(), None);
+                assert_eq!(iter.next(), None);
+                assert_eq!(iter.next_back(), None);
             }
 
             {
@@ -265,6 +268,8 @@ macro_rules! test_enum {
                 assert_eq!(iter.next_back(), Some($e::F));
                 assert_eq!(iter.next_back(), Some($e::C));
                 assert_eq!(iter.next(), Some($e::B));
+                assert_eq!(iter.next_back(), None);
+                assert_eq!(iter.next(), None);
                 assert_eq!(iter.next_back(), None);
             }
         }
