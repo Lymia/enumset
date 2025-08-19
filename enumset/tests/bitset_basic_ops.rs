@@ -160,8 +160,9 @@ pub enum CompactEnumA {
 #[derive(EnumSetType, Debug)]
 #[enumset(map = "compact", repr = "u8")]
 #[rustfmt::skip]
+#[repr(i64)]
 pub enum CompactEnumB {
-    A = 2, B = 4, C = 6, D = 8, E = 10, F = 120, G = 180, H = (1 << 60) | 12345,
+    A = 2, B = 4, C = 6, D = 8, E = -10, F = 120, G = -180, H = (1 << 60) | 12345,
 }
 
 /// Used to test MSB.
@@ -202,6 +203,70 @@ pub enum MaskSparseEnum {
 #[rustfmt::skip]
 enum MixedSparseEnum {
     A = 0xA, B = 15, C = 22, D = 42, E = 55, F, G, H,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI8N {
+    A, B, C, D, E, F, G, H, V = -128,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI8P {
+    A, B, C, D, E, F, G, H, V = 127,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI16N {
+    A, B, C, D, E, F, G, H, V = -0x8000,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI16P {
+    A, B, C, D, E, F, G, H, V = 0x7FFF,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI32N {
+    A, B, C, D, E, F, G, H, V = -0x80000000,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI32P {
+    A, B, C, D, E, F, G, H, V = 0x7FFFFFFF,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI64N {
+    A, B, C, D, E, F, G, H, V = -0x3FFFFFFFFFFFFFFF,
+}
+
+/// Used to test compact enum edge cases.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactEdgeCaseI64P {
+    A, B, C, D, E, F, G, H, V = 0x3FFFFFFFFFFFFFFF,
 }
 
 /// Tests that all variants are properly present when `EnumSet::all` is used.
@@ -478,6 +543,8 @@ macro_rules! test_enum {
                 assert_eq!(iter.next_back(), Some($e::E));
                 assert_eq!(iter.next(), Some($e::D));
                 assert_eq!(iter.next(), None);
+                assert_eq!(iter.next(), None);
+                assert_eq!(iter.next_back(), None);
             }
 
             {
@@ -488,6 +555,8 @@ macro_rules! test_enum {
                 assert_eq!(iter.next_back(), Some($e::F));
                 assert_eq!(iter.next_back(), Some($e::C));
                 assert_eq!(iter.next(), Some($e::B));
+                assert_eq!(iter.next_back(), None);
+                assert_eq!(iter.next(), None);
                 assert_eq!(iter.next_back(), None);
             }
         }
@@ -696,6 +765,14 @@ tests!(msb_sparse_enum, test_enum!(MsbSparseEnum, 8, mixed));
 tests!(mask_enum, test_enum!(MaskEnum, 1, ordered));
 tests!(mask_sparse_enum, test_enum!(MaskSparseEnum, 8));
 tests!(mixed_sparse_enum, test_enum!(MixedSparseEnum, 8, mixed + ordered));
+tests!(compact_edge_i8n, test_enum!(CompactEdgeCaseI8N, 2, ordered));
+tests!(compact_edge_i8p, test_enum!(CompactEdgeCaseI8P, 2, ordered));
+tests!(compact_edge_i16n, test_enum!(CompactEdgeCaseI16N, 2, ordered));
+tests!(compact_edge_i16p, test_enum!(CompactEdgeCaseI16P, 2, ordered));
+tests!(compact_edge_i32n, test_enum!(CompactEdgeCaseI32N, 2, ordered));
+tests!(compact_edge_i32p, test_enum!(CompactEdgeCaseI32P, 2, ordered));
+tests!(compact_edge_i64n, test_enum!(CompactEdgeCaseI64N, 2, ordered));
+tests!(compact_edge_i64p, test_enum!(CompactEdgeCaseI64P, 2, ordered));
 
 #[derive(EnumSetType, Debug)]
 #[rustfmt::skip]

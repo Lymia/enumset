@@ -154,7 +154,9 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
             };
             let check_unknown = if info.serialize_deny_unknown {
                 quote! {
-                    if value & !#all_variants != 0 {
+                    let all_variants_cast =
+                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&#all_variants);
+                    if value & !all_variants_cast != 0 {
                         use #serde::de::Error;
                         return #core::prelude::v1::Err(
                             D::Error::custom("enumset contains unknown bits")
@@ -277,16 +279,18 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
                 (
                     quote! {
                         if _val != 0 {
+                        use #serde::de::Error;
                             return #core::prelude::v1::Err(
-                                D::Error::custom("enumset contains unknown bits")
+                                A::Error::custom("enumset contains unknown bits")
                             )
                         }
                     },
                     quote! {
+                        use #serde::de::Error;
                         match #enumset::EnumSet::<#name>::try_from_array(accum) {
-                            Some(x) => x,
+                            Some(x) => #core::prelude::v1::Ok(x),
                             None => #core::prelude::v1::Err(
-                                D::Error::custom("enumset contains unknown bits")
+                                A::Error::custom("enumset contains unknown bits")
                             ),
                         }
                     },

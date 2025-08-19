@@ -58,6 +58,13 @@ pub enum MixedEnum {
     A = 10, B, C, D, E, F, G, H,
 }
 
+#[derive(EnumSetType, Debug)]
+#[enumset(serialize_repr = "array", serialize_deny_unknown)]
+#[rustfmt::skip]
+pub enum DenyUnknownEnumArray {
+    A = 40, B, C, D, E, F, G, H,
+}
+
 macro_rules! serde_test_simple {
     ($e:ident, $ser_size:expr) => {
         const VALUES: &[EnumSet<$e>] = &[
@@ -118,6 +125,13 @@ fn test_deny_unknown() {
 }
 
 #[test]
+fn test_deny_unknown_array() {
+    let serialized = bincode::serialize(&!0u128).unwrap();
+    let deserialized = bincode::deserialize::<EnumSet<DenyUnknownEnumArray>>(&serialized);
+    assert!(deserialized.is_err());
+}
+
+#[test]
 fn test_json_reprs_basic() {
     assert_eq!(
         ListEnum::A | ListEnum::C | ListEnum::F,
@@ -140,6 +154,10 @@ fn test_json_reprs_basic() {
         serde_json::to_string(&(MapEnum::A | MapEnum::C | MapEnum::F)).unwrap()
     );
     assert_eq!("13", serde_json::to_string(&(ReprEnum::A | ReprEnum::C | ReprEnum::D)).unwrap());
+    assert_eq!(
+        "[13]",
+        serde_json::to_string(&(ArrayEnum::A | ArrayEnum::C | ArrayEnum::D)).unwrap()
+    );
 }
 
 #[test]
