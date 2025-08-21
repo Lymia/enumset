@@ -85,6 +85,11 @@ pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper + Sized {
 
 /// Retrieves a helper type for constant time operations on `EnumSet`s.
 pub unsafe trait EnumSetConstHelper {
+    /// A helper type that holds all variants of the enum.
+    type AllVariants;
+    /// A list of all variants of the enum.
+    const ALL_VARIANTS: Self::AllVariants;
+
     /// A helper type used to convert values to EnumSets at compile-time.
     type ConstInitHelper;
     /// The instance of the `ConstInitHelper`.

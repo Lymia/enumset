@@ -51,9 +51,54 @@ pub mod __internal {
     ) -> crate::MixedEnumSet<T> {
         crate::MixedEnumSet { __priv_repr: a.__priv_repr }
     }
+
+    pub const fn all_variants<K: crate::EnumSetTypeWithRepr, V>(
+        _: &crate::EnumRecord<K, V>,
+    ) -> K::AllVariants {
+        K::ALL_VARIANTS
+    }
+
+    pub use crate::macros::record;
 }
 
-/// Creates a [`EnumSet`](crate::EnumSet) literal, which can be used in const contexts.
+/// Functions for enum record macros.
+pub mod record {
+    use crate::{EnumRecord, EnumSetType};
+    use core::mem::MaybeUninit;
+
+    /// Helper function to construct the initial Option<T>
+    pub const fn create_type_marker<T: EnumSetType, V>(_: fn(T) -> V) -> Option<(T, V)> {
+        None
+    }
+
+    /// Helper function to construct an underlying array filled with `MaybeUninit<K>`
+    pub const fn assoc_uninit_record<T: EnumSetType, V>(
+        _: &Option<(T, V)>,
+        uninit: T::RecordArray<MaybeUninit<V>>,
+    ) -> T::RecordArray<MaybeUninit<V>> {
+        uninit
+    }
+
+    /// Helper function to return all variants of an enumset type.
+    pub const fn assoc_all_variants<T: EnumSetType, V>(_: &Option<(T, V)>) -> T::AllVariants {
+        T::ALL_VARIANTS
+    }
+
+    /// Helper function to retrieve the helper used in constant time operations.
+    pub const fn assoc_init_helper<T: EnumSetType, V>(_: &Option<(T, V)>) -> T::ConstInitHelper {
+        T::CONST_INIT_HELPER
+    }
+
+    /// Associates the return type with the enum type.
+    pub const fn assoc_result<T: EnumSetType, V>(
+        _: &Option<(T, V)>,
+        result: T::RecordArray<V>,
+    ) -> EnumRecord<T, V> {
+        EnumRecord { underlying: result }
+    }
+}
+
+/// Creates an [`EnumSet`](crate::EnumSet) literal, which can be used in const contexts.
 ///
 /// The syntax used is `enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same
 /// type, or an error will occur at compile-time.
@@ -276,5 +321,64 @@ macro_rules! enum_set_symmetric_difference {
             };)*
             value
         }
+    };
+}
+
+/// Creates an [`EnumRecord`](crate::EnumRecord) literal from a closure, which can be used in
+/// const contexts.
+///
+/// The macro should be called with a single closure, or the arms of a match expression. If it is
+/// a closure, it is called to generate the value of each variant of the record. If it is the arms
+/// of a match expression, each enum variant is matched against them to generate the value of each
+/// variant of the record.
+///
+/// # Performance
+///
+/// This method is designed for use in const contexts. The code is likely very suboptimal for use
+/// in dynamic code. Use [`EnumRecord::from_fn`](crate::EnumRecord::from_fn) instead in non-const
+/// contexts.
+///
+/// # Examples
+///
+/// ```rust
+/// # use enumset::*;
+/// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C }
+/// const CONST_SET: EnumRecord<Enum, u32> = enum_record! {
+///     Enum::A => 10,
+///     Enum::B => 20,
+///     Enum::C => 30,
+/// };
+/// assert_eq!(CONST_SET[Enum::A], 10);
+/// assert_eq!(CONST_SET[Enum::B], 20);
+/// assert_eq!(CONST_SET[Enum::C], 30);
+/// ```
+#[macro_export]
+macro_rules! enum_record {
+    (|$v:ident$(: $ty:ty)?| $body:expr $(,)?) => {{
+        let ty_assoc = $crate::__internal::record::create_type_marker(|$v $(: $ty)*| $body);
+        let mut record = $crate::__internal::record::assoc_uninit_record(
+            &ty_assoc,
+            unsafe { $crate::__internal::core_export::mem::MaybeUninit::uninit().assume_init() },
+        );
+
+        let mut i = 0;
+        let all_variants = $crate::__internal::record::assoc_all_variants(&ty_assoc);
+        let init_helper = $crate::__internal::record::assoc_init_helper(&ty_assoc);
+        while i < all_variants.len() {
+            let variant = all_variants[i];
+            let $v $(: $ty)* = variant;
+            let result = $body;
+            unsafe {
+                let ptr = record[init_helper.const_to_u32(variant) as usize].as_mut_ptr();
+                ptr.write(result);
+            }
+            i += 1;
+        }
+
+        let result = unsafe { core::mem::transmute(record) };
+        $crate::__internal::record::assoc_result(&ty_assoc, result)
+    }};
+    ($($body:tt)*) => {
+        $crate::enum_record!(|x| match x { $($body)* })
     };
 }

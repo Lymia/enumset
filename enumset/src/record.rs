@@ -69,7 +69,7 @@ impl<const N: usize, V> EnumRecordUnderlying for [V; N] {
 /// `EnumRecord` is not FFI safe.
 #[repr(transparent)]
 pub struct EnumRecord<K: EnumSetType, V> {
-    underlying: K::RecordArray<V>,
+    pub(crate) underlying: K::RecordArray<V>,
 }
 impl<K: EnumSetType, V> EnumRecord<K, V> {
     #[cfg(feature = "alloc")]

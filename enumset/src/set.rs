@@ -179,6 +179,9 @@ impl EnumSetInitHelper {
 
 #[doc(hidden)]
 unsafe impl<T: EnumSetType> EnumSetConstHelper for EnumSet<T> {
+    type AllVariants = ();
+    const ALL_VARIANTS: Self::AllVariants = ();
+
     type ConstInitHelper = EnumSetInitHelper;
     const CONST_INIT_HELPER: Self::ConstInitHelper = EnumSetInitHelper;
 

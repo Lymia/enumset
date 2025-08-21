@@ -55,8 +55,6 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     let typed_enumset = &paths.typed_enumset;
     let core = &paths.core;
     let internal = &paths.internal;
-    let serde = &paths.serde;
-    let is_uninhabited = info.variants.is_empty();
 
     let repr = match info.internal_repr() {
         InternalRepr::U8 => quote! { u8 },
@@ -155,7 +153,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     let impl_basic_traits = if info.no_super_impls {
         quote! {}
     } else {
-        let eq_impl = if is_uninhabited {
+        let eq_impl = if info.variants.is_empty() {
             quote!(#core::unreachable!(concat!(stringify!(#name), " is uninhabited.")))
         } else {
             quote!((*self as u32) == (*other as u32))
@@ -438,6 +436,7 @@ fn create_enum_const_opers(
     let internal = &paths.internal;
     let vis = &info.vis;
 
+    let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
     let value_to_bit = if info.variants.is_empty() {
         quote! { 0 }
     } else if info.uses_lsb_encoding() {
@@ -448,12 +447,22 @@ fn create_enum_const_opers(
         quote! { (value as i64).trailing_zeros() }
     } else {
         let variant_bits: Vec<_> = info.variants.iter().map(|x| x.variant_bit).collect();
-        let variant_names: Vec<_> = info.variants.iter().map(|x| x.name.clone()).collect();
         quote! {
             match value {
                 #(#name::#variant_names => #variant_bits,)*
             }
         }
+    };
+
+    let record_impls = quote! {
+        pub const fn const_to_u32(&self, value: #name) -> u32 {
+            #value_to_bit
+        }
+    };
+    let variant_count = info.variants.len();
+    let all_variants = quote! {
+        type AllVariants = [#name; #variant_count];
+        const ALL_VARIANTS: Self::AllVariants = [#(#name::#variant_names,)*];
     };
 
     let const_impls = match info.internal_repr() {
@@ -466,6 +475,8 @@ fn create_enum_const_opers(
                 #[automatically_derived]
                 #[doc(hidden)]
                 impl __EnumSetInitHelper {
+                    #record_impls
+
                     pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
                         #enumset::EnumSet { __priv_repr: 1 << (#value_to_bit as #repr) }
                     }
@@ -521,6 +532,8 @@ fn create_enum_const_opers(
                 #[automatically_derived]
                 #[doc(hidden)]
                 impl __EnumSetInitHelper {
+                    #record_impls
+
                     pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
                         let mut set = #enumset::EnumSet::<#name> {
                             __priv_repr: #internal::ArrayRepr::<{ #size }>([0; #size]),
@@ -605,6 +618,7 @@ fn create_enum_const_opers(
 
         #[automatically_derived]
         unsafe impl #internal::EnumSetConstHelper for #name {
+            #all_variants
             type ConstInitHelper = __EnumSetInitHelper;
             const CONST_INIT_HELPER: __EnumSetInitHelper = __EnumSetInitHelper;
             type ConstOpHelper = __EnumSetOpHelper;
