@@ -657,7 +657,7 @@ fn create_enum_const_opers(
                 #[doc(hidden)]
                 impl __EnumSetInitHelper {
                     pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
-                        #enumset::EnumSet { __priv_repr: 1 << (#value_to_bit as #repr) }
+                        #internal::set::new(1 << (#value_to_bit as #repr))
                     }
                 }
 
@@ -666,42 +666,34 @@ fn create_enum_const_opers(
                 impl __EnumSetOpHelper {
                     pub const fn const_union(
                         &self,
-                        chain_a: #enumset::EnumSet<#name>,
-                        chain_b: #enumset::EnumSet<#name>,
+                        a: #enumset::EnumSet<#name>,
+                        b: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
-                        #enumset::EnumSet {
-                            __priv_repr: chain_a.__priv_repr | chain_b.__priv_repr,
-                        }
+                        #internal::set::new(#internal::set::get(a) | #internal::set::get(b))
                     }
 
                     pub const fn const_intersection(
                         &self,
-                        chain_a: #enumset::EnumSet<#name>,
-                        chain_b: #enumset::EnumSet<#name>,
+                        a: #enumset::EnumSet<#name>,
+                        b: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
-                        #enumset::EnumSet {
-                            __priv_repr: chain_a.__priv_repr & chain_b.__priv_repr,
-                        }
+                        #internal::set::new(#internal::set::get(a) & #internal::set::get(b))
                     }
 
                     pub const fn const_symmetric_difference(
                         &self,
-                        chain_a: #enumset::EnumSet<#name>,
-                        chain_b: #enumset::EnumSet<#name>,
+                        a: #enumset::EnumSet<#name>,
+                        b: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
-                        #enumset::EnumSet {
-                            __priv_repr: chain_a.__priv_repr ^ chain_b.__priv_repr,
-                        }
+                        #internal::set::new(#internal::set::get(a) ^ #internal::set::get(b))
                     }
 
                     pub const fn const_complement(
                         &self,
-                        chain: #enumset::EnumSet<#name>,
+                        a: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
                         let mut all = #enumset::EnumSet::<#name>::all();
-                        #enumset::EnumSet {
-                            __priv_repr: !chain.__priv_repr & all.__priv_repr,
-                        }
+                        #internal::set::new(!#internal::set::get(a) & #internal::set::get(all))
                     }
                 }
             }
@@ -712,13 +704,11 @@ fn create_enum_const_opers(
                 #[doc(hidden)]
                 impl __EnumSetInitHelper {
                     pub const fn const_only(&self, value: #name) -> #enumset::EnumSet<#name> {
-                        let mut set = #enumset::EnumSet::<#name> {
-                            __priv_repr: #internal::ArrayRepr::<{ #size }>([0; #size]),
-                        };
+                        let mut repr = #internal::ArrayRepr::<{ #size }>([0; #size]);
                         let bit = #value_to_bit;
                         let (idx, bit) = (bit as usize / 64, bit % 64);
-                        set.__priv_repr.0[idx] |= 1u64 << bit;
-                        set
+                        repr.0[idx] |= 1u64 << bit;
+                        #internal::set::new(repr)
                     }
                 }
 
@@ -727,55 +717,61 @@ fn create_enum_const_opers(
                 impl __EnumSetOpHelper {
                     pub const fn const_union(
                         &self,
-                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_a: #enumset::EnumSet<#name>,
                         chain_b: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
+                        let mut a = #internal::set::get(chain_a);
+                        let b = #internal::set::get(chain_b);
                         let mut i = 0;
                         while i < #size {
-                            chain_a.__priv_repr.0[i] |= chain_b.__priv_repr.0[i];
+                            a.0[i] |= b.0[i];
                             i += 1;
                         }
-                        chain_a
+                        #internal::set::new(a)
                     }
 
                     pub const fn const_intersection(
                         &self,
-                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_a: #enumset::EnumSet<#name>,
                         chain_b: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
+                        let mut a = #internal::set::get(chain_a);
+                        let b = #internal::set::get(chain_b);
                         let mut i = 0;
                         while i < #size {
-                            chain_a.__priv_repr.0[i] &= chain_b.__priv_repr.0[i];
+                            a.0[i] &= b.0[i];
                             i += 1;
                         }
-                        chain_a
+                        #internal::set::new(a)
                     }
 
                     pub const fn const_symmetric_difference(
                         &self,
-                        mut chain_a: #enumset::EnumSet<#name>,
+                        chain_a: #enumset::EnumSet<#name>,
                         chain_b: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
+                        let mut a = #internal::set::get(chain_a);
+                        let b = #internal::set::get(chain_b);
                         let mut i = 0;
                         while i < #size {
-                            chain_a.__priv_repr.0[i] ^= chain_b.__priv_repr.0[i];
+                            a.0[i] ^= b.0[i];
                             i += 1;
                         }
-                        chain_a
+                        #internal::set::new(a)
                     }
 
                     pub const fn const_complement(
                         &self,
-                        mut chain: #enumset::EnumSet<#name>,
+                        chain_a: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
-                        let mut all = #enumset::EnumSet::<#name>::all();
+                        let mut a = #internal::set::get(chain_a);
+                        let mut all = #internal::set::get(#enumset::EnumSet::<#name>::all());
                         let mut i = 0;
                         while i < #size {
-                            let new = !chain.__priv_repr.0[i] & all.__priv_repr.0[i];
-                            chain.__priv_repr.0[i] = new;
+                            a.0[i] = !a.0[i] & all.0[i];
                             i += 1;
                         }
-                        chain
+                        #internal::set::new(a)
                     }
                 }
             }

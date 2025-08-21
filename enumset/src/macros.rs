@@ -34,14 +34,36 @@ pub mod __internal {
     /// if serde support is not enabled.
     pub use __if_serde;
 
-    /// Helper macro to retrieve the helper used in constant time operations.
+    pub use crate::macros::set;
+}
+
+/// Helper functions for sets.
+pub mod set {
+    use crate::__internal::EnumSetConstHelper;
+    use crate::{EnumSet, EnumSetType};
+
+    /// Retrieves the helper used in constant time operations.
+    #[inline(always)]
     pub const fn op_helper<T: EnumSetConstHelper>(_: &T) -> T::ConstOpHelper {
         T::CONST_OP_HELPER
     }
 
-    /// Helper macro to retrieve the helper used in constant time conversions.
+    /// Retrieves the helper used in constant time conversions.
+    #[inline(always)]
     pub const fn init_helper<T: EnumSetConstHelper>(_: &T) -> T::ConstInitHelper {
         T::CONST_INIT_HELPER
+    }
+
+    /// Gets the underlying repr from an EnumSet
+    #[inline(always)]
+    pub const fn get<T: EnumSetType>(set: EnumSet<T>) -> T::Repr {
+        set.repr
+    }
+
+    /// Constructs an EnumSet from the underlying repr
+    #[inline(always)]
+    pub const fn new<T: EnumSetType>(set: T::Repr) -> EnumSet<T> {
+        EnumSet { repr: set }
     }
 }
 
@@ -76,7 +98,7 @@ macro_rules! enum_set {
     };
     ($value:path $(|)*) => {
         {
-            $crate::__internal::init_helper(&$value).const_only($value)
+            $crate::__internal::set::init_helper(&$value).const_only($value)
         }
     };
     ($value:path | $($rest:path)|* $(|)*) => {
@@ -105,7 +127,7 @@ macro_rules! enum_set_union {
     };
     ($value:path, $($rest:path),* $(,)?) => {
         {
-            let op_helper = $crate::__internal::op_helper(&$value);
+            let op_helper = $crate::__internal::set::op_helper(&$value);
             let value = $crate::enum_set!($value);
             $(let value = {
                 let new = $crate::enum_set!($rest);
@@ -139,7 +161,7 @@ macro_rules! enum_set_intersection {
     };
     ($value:path, $($rest:path),* $(,)?) => {
         {
-            let op_helper = $crate::__internal::op_helper(&$value);
+            let op_helper = $crate::__internal::set::op_helper(&$value);
             let value = $crate::enum_set!($value);
             $(let value = {
                 let new = $crate::enum_set!($rest);
@@ -166,7 +188,7 @@ macro_rules! enum_set_intersection {
 #[macro_export]
 macro_rules! enum_set_complement {
     ($value:path $(,)?) => {{
-        let op_helper = $crate::__internal::op_helper(&$value);
+        let op_helper = $crate::__internal::set::op_helper(&$value);
         let value = $crate::enum_set!($value);
         op_helper.const_complement(value)
     }};
@@ -195,7 +217,7 @@ macro_rules! enum_set_difference {
     };
     ($value:path, $($rest:path),* $(,)?) => {
         {
-            let op_helper = $crate::__internal::op_helper(&$value);
+            let op_helper = $crate::__internal::set::op_helper(&$value);
             let value = $crate::enum_set!($value);
             $(let value = {
                 let new = $crate::enum_set!($rest);
@@ -229,7 +251,7 @@ macro_rules! enum_set_symmetric_difference {
     };
     ($value:path, $($rest:path),* $(,)?) => {
         {
-            let op_helper = $crate::__internal::op_helper(&$value);
+            let op_helper = $crate::__internal::set::op_helper(&$value);
             let value = $crate::enum_set!($value);
             $(let value = {
                 let new = $crate::enum_set!($rest);
