@@ -79,6 +79,13 @@ pub mod set {
 ///
 /// This macro accepts trailing `|`s to allow easier use in other macros.
 ///
+/// # Performance
+///
+/// This macro is designed for use in const contexts, not for execution as normal code. It may be
+/// significantly slower than normal code outside const contexts.
+///
+/// In normal code, directly use `Type::A | Type::B | Type::C` instead.
+///
 /// # Examples
 ///
 /// ```rust
@@ -148,6 +155,13 @@ macro_rules! mixed_enum_set {
 /// `ENUM_A | ENUM_B | ENUM_C` at compile time. Each variant must be of the same type, or an error
 /// will occur at compile-time.
 ///
+/// # Performance
+///
+/// This macro is designed for use in const contexts, not for execution as normal code. It may be
+/// significantly slower than normal code outside const contexts.
+///
+/// In normal code, directly use the `|` operator instead.
+///
 /// # Examples
 ///
 /// ```rust
@@ -180,6 +194,13 @@ macro_rules! enum_set_union {
 /// of `ENUM_A & ENUM_B & ENUM_C` at compile time. Each variant must be of the same type, or an
 /// error will occur at compile-time.
 ///
+/// # Performance
+///
+/// This macro is designed for use in const contexts, not for execution as normal code. It may be
+/// significantly slower than normal code outside const contexts.
+///
+/// In normal code, directly use the `&` operator instead.
+///
 /// # Examples
 ///
 /// ```rust
@@ -210,6 +231,13 @@ macro_rules! enum_set_intersection {
 
 /// Computes the complement of an enums or constants enumset at compile time.
 ///
+/// # Performance
+///
+/// This macro is designed for use in const contexts, not for execution as normal code. It may be
+/// significantly slower than normal code outside const contexts.
+///
+/// In normal code, directly use the `!` operator instead.
+///
 /// # Examples
 ///
 /// ```rust
@@ -235,6 +263,13 @@ macro_rules! enum_set_complement {
 /// The syntax used is `enum_set_difference!(ENUM_A, ENUM_B, ENUM_C)`, computing the equivalent
 /// of `ENUM_A - ENUM_B - ENUM_C` at compile time. Each variant must be of the same type, or an
 /// error will occur at compile-time.
+///
+/// # Performance
+///
+/// This macro is designed for use in const contexts, not for execution as normal code. It may be
+/// significantly slower than normal code outside const contexts.
+///
+/// In normal code, directly use the `-` operator instead.
 ///
 /// # Examples
 ///
@@ -269,6 +304,13 @@ macro_rules! enum_set_difference {
 /// The syntax used is `enum_set_symmetric_difference!(ENUM_A, ENUM_B, ENUM_C)`, computing the
 /// equivalent of `ENUM_A ^ ENUM_B ^ ENUM_C` at compile time. Each variant must be of the same
 /// type, or an error will occur at compile-time.
+///
+/// # Performance
+///
+/// This macro is designed for use in const contexts, not for execution as normal code. It may be
+/// significantly slower than normal code outside const contexts.
+///
+/// In normal code, directly use the `^` operator instead.
 ///
 /// # Examples
 ///
