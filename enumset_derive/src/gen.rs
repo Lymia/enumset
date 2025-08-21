@@ -141,223 +141,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
     //
     // Implements serde support.
     //
-    let serde_repr = info.serde_repr();
-    let impl_serde_ops = match serde_repr {
-        SerdeRepr::U8 | SerdeRepr::U16 | SerdeRepr::U32 | SerdeRepr::U64 | SerdeRepr::U128 => {
-            let (serialize_repr, from_fn, to_fn) = match serde_repr {
-                SerdeRepr::U8 => (quote! { u8 }, quote! { from_u8 }, quote! { to_u8 }),
-                SerdeRepr::U16 => (quote! { u16 }, quote! { from_u16 }, quote! { to_u16 }),
-                SerdeRepr::U32 => (quote! { u32 }, quote! { from_u32 }, quote! { to_u32 }),
-                SerdeRepr::U64 => (quote! { u64 }, quote! { from_u64 }, quote! { to_u64 }),
-                SerdeRepr::U128 => (quote! { u128 }, quote! { from_u128 }, quote! { to_u128 }),
-                _ => unreachable!(),
-            };
-            let check_unknown = if info.serialize_deny_unknown {
-                quote! {
-                    let all_variants_cast =
-                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&#all_variants);
-                    if value & !all_variants_cast != 0 {
-                        use #serde::de::Error;
-                        return #core::prelude::v1::Err(
-                            D::Error::custom("enumset contains unknown bits")
-                        )
-                    }
-                }
-            } else {
-                quote! {}
-            };
-            quote! {
-                fn serialize<S: #serde::Serializer>(
-                    set: #enumset::EnumSet<#name>, ser: S,
-                ) -> #core::result::Result<S::Ok, S::Error> {
-                    let value =
-                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&set.__priv_repr);
-                    #serde::Serialize::serialize(&value, ser)
-                }
-                fn deserialize<'de, D: #serde::Deserializer<'de>>(
-                    de: D,
-                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
-                    let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
-                    #check_unknown
-                    let value = <#repr as #enumset::__internal::EnumSetTypeRepr>::#from_fn(value);
-                    #core::prelude::v1::Ok(#enumset::EnumSet {
-                        __priv_repr: value & #all_variants,
-                    })
-                }
-            }
-        }
-        SerdeRepr::List => {
-            let expecting_str = format!("a list of {name}");
-            quote! {
-                fn serialize<S: #serde::Serializer>(
-                    set: #enumset::EnumSet<#name>, ser: S,
-                ) -> #core::result::Result<S::Ok, S::Error> {
-                    use #serde::ser::SerializeSeq;
-                    let mut seq = ser.serialize_seq(#core::prelude::v1::Some(set.len()))?;
-                    for bit in set {
-                        seq.serialize_element(&bit)?;
-                    }
-                    seq.end()
-                }
-                fn deserialize<'de, D: #serde::Deserializer<'de>>(
-                    de: D,
-                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
-                    struct Visitor;
-                    impl <'de> #serde::de::Visitor<'de> for Visitor {
-                        type Value = #enumset::EnumSet<#name>;
-                        fn expecting(
-                            &self, formatter: &mut #core::fmt::Formatter,
-                        ) -> #core::fmt::Result {
-                            write!(formatter, #expecting_str)
-                        }
-                        fn visit_seq<A>(
-                            mut self, mut seq: A,
-                        ) -> #core::result::Result<Self::Value, A::Error> where
-                            A: #serde::de::SeqAccess<'de>
-                        {
-                            let mut accum = #enumset::EnumSet::<#name>::new();
-                            while let #core::prelude::v1::Some(val) = seq.next_element::<#name>()? {
-                                accum |= val;
-                            }
-                            #core::prelude::v1::Ok(accum)
-                        }
-                    }
-                    de.deserialize_seq(Visitor)
-                }
-            }
-        }
-        SerdeRepr::Map => {
-            let expecting_str = format!("a map from {name} to bool");
-            quote! {
-                fn serialize<S: #serde::Serializer>(
-                    set: #enumset::EnumSet<#name>, ser: S,
-                ) -> #core::result::Result<S::Ok, S::Error> {
-                    use #serde::ser::SerializeMap;
-                    let mut map = ser.serialize_map(#core::prelude::v1::Some(set.len()))?;
-                    for bit in set {
-                        map.serialize_entry(&bit, &true)?;
-                    }
-                    map.end()
-                }
-                fn deserialize<'de, D: #serde::Deserializer<'de>>(
-                    de: D,
-                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
-                    struct Visitor;
-                    impl <'de> #serde::de::Visitor<'de> for Visitor {
-                        type Value = #enumset::EnumSet<#name>;
-                        fn expecting(
-                            &self, formatter: &mut #core::fmt::Formatter,
-                        ) -> #core::fmt::Result {
-                            write!(formatter, #expecting_str)
-                        }
-                        fn visit_map<A>(
-                            mut self, mut map: A,
-                        ) -> #core::result::Result<Self::Value, A::Error> where
-                            A: #serde::de::MapAccess<'de>
-                        {
-                            let mut accum = #enumset::EnumSet::<#name>::new();
-                            while let #core::prelude::v1::Some((val, is_present)) =
-                                map.next_entry::<#name, bool>()?
-                            {
-                                if is_present {
-                                    accum |= val;
-                                }
-                            }
-                            #core::prelude::v1::Ok(accum)
-                        }
-                    }
-                    de.deserialize_map(Visitor)
-                }
-            }
-        }
-        SerdeRepr::Array => {
-            let preferred_size = quote! {
-                <<#name as #internal::EnumSetTypePrivate>::Repr as #internal::EnumSetTypeRepr>
-                    ::PREFERRED_ARRAY_LEN
-            };
-            let (check_extra, convert_array) = if info.serialize_deny_unknown {
-                (
-                    quote! {
-                        if _val != 0 {
-                        use #serde::de::Error;
-                            return #core::prelude::v1::Err(
-                                A::Error::custom("enumset contains unknown bits")
-                            )
-                        }
-                    },
-                    quote! {
-                        use #serde::de::Error;
-                        match #enumset::EnumSet::<#name>::try_from_array(accum) {
-                            Some(x) => #core::prelude::v1::Ok(x),
-                            None => #core::prelude::v1::Err(
-                                A::Error::custom("enumset contains unknown bits")
-                            ),
-                        }
-                    },
-                )
-            } else {
-                (quote! {}, quote! {
-                    #core::prelude::v1::Ok(#enumset::EnumSet::<#name>::from_array(accum))
-                })
-            };
-            quote! {
-                fn serialize<S: #serde::Serializer>(
-                    set: #enumset::EnumSet<#name>, ser: S,
-                ) -> #core::result::Result<S::Ok, S::Error> {
-                    // read the enum as an array
-                    let array = set.as_array::<{ #preferred_size }>();
-
-                    // find the last non-zero value in the array
-                    let mut end = array.len();
-                    for i in (0..array.len()).rev() {
-                        if array[i] != 0 {
-                            break;
-                        }
-                        end = i + 1;
-                    }
-
-                    // serialize the array
-                    #serde::Serialize::serialize(&array[..end], ser)
-                }
-                fn deserialize<'de, D: #serde::Deserializer<'de>>(
-                    de: D,
-                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
-                    struct Visitor;
-                    impl <'de> #serde::de::Visitor<'de> for Visitor {
-                        type Value = #enumset::EnumSet<#name>;
-                        fn expecting(
-                            &self, formatter: &mut #core::fmt::Formatter,
-                        ) -> #core::fmt::Result {
-                            write!(formatter, "a list of u64")
-                        }
-                        fn visit_seq<A>(
-                            mut self, mut seq: A,
-                        ) -> #core::result::Result<Self::Value, A::Error> where
-                            A: #serde::de::SeqAccess<'de>
-                        {
-                            let mut accum = [0; #preferred_size];
-
-                            let mut i = 0;
-                            while let #core::prelude::v1::Some(val) = seq.next_element::<u64>()? {
-                                accum[i] = val;
-                                i += 1;
-
-                                if i == accum.len() {
-                                    break;
-                                }
-                            }
-                            while let #core::prelude::v1::Some(_val) = seq.next_element::<u64>()? {
-                                #check_extra
-                            }
-
-                            #convert_array
-                        }
-                    }
-                    de.deserialize_seq(Visitor)
-                }
-            }
-        }
-    };
+    let impl_serde_ops = create_serde_opers(&info, &paths, &repr, &all_variants);
 
     //
     // Implement the core conversion function that maps enum variants to bits.
@@ -827,4 +611,236 @@ fn create_enum_const_opers(
             const CONST_OP_HELPER: __EnumSetOpHelper = __EnumSetOpHelper;
         }
     }
+}
+
+fn create_serde_opers(
+    info: &EnumSetInfo,
+    paths: &Paths,
+    repr: &SynTokenStream,
+    all_variants: &SynTokenStream,
+) -> SynTokenStream {
+    let name = &info.name;
+    let enumset = &paths.enumset;
+    let internal = &paths.internal;
+    let serde = &paths.serde;
+    let core = &paths.core;
+
+    let serde_repr = info.serde_repr();
+    let impl_serde_ops = match serde_repr {
+        SerdeRepr::U8 | SerdeRepr::U16 | SerdeRepr::U32 | SerdeRepr::U64 | SerdeRepr::U128 => {
+            let (serialize_repr, from_fn, to_fn) = match serde_repr {
+                SerdeRepr::U8 => (quote! { u8 }, quote! { from_u8 }, quote! { to_u8 }),
+                SerdeRepr::U16 => (quote! { u16 }, quote! { from_u16 }, quote! { to_u16 }),
+                SerdeRepr::U32 => (quote! { u32 }, quote! { from_u32 }, quote! { to_u32 }),
+                SerdeRepr::U64 => (quote! { u64 }, quote! { from_u64 }, quote! { to_u64 }),
+                SerdeRepr::U128 => (quote! { u128 }, quote! { from_u128 }, quote! { to_u128 }),
+                _ => unreachable!(),
+            };
+            let check_unknown = if info.serialize_deny_unknown {
+                quote! {
+                    let all_variants_cast =
+                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&#all_variants);
+                    if value & !all_variants_cast != 0 {
+                        use #serde::de::Error;
+                        return #core::prelude::v1::Err(
+                            D::Error::custom("enumset contains unknown bits")
+                        )
+                    }
+                }
+            } else {
+                quote! {}
+            };
+            quote! {
+                fn serialize<S: #serde::Serializer>(
+                    set: #enumset::EnumSet<#name>, ser: S,
+                ) -> #core::result::Result<S::Ok, S::Error> {
+                    let value =
+                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&set.__priv_repr);
+                    #serde::Serialize::serialize(&value, ser)
+                }
+                fn deserialize<'de, D: #serde::Deserializer<'de>>(
+                    de: D,
+                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
+                    let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
+                    #check_unknown
+                    let value = <#repr as #enumset::__internal::EnumSetTypeRepr>::#from_fn(value);
+                    #core::prelude::v1::Ok(#enumset::EnumSet {
+                        __priv_repr: value & #all_variants,
+                    })
+                }
+            }
+        }
+        SerdeRepr::List => {
+            let expecting_str = format!("a list of {name}");
+            quote! {
+                fn serialize<S: #serde::Serializer>(
+                    set: #enumset::EnumSet<#name>, ser: S,
+                ) -> #core::result::Result<S::Ok, S::Error> {
+                    use #serde::ser::SerializeSeq;
+                    let mut seq = ser.serialize_seq(#core::prelude::v1::Some(set.len()))?;
+                    for bit in set {
+                        seq.serialize_element(&bit)?;
+                    }
+                    seq.end()
+                }
+                fn deserialize<'de, D: #serde::Deserializer<'de>>(
+                    de: D,
+                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
+                    struct Visitor;
+                    impl <'de> #serde::de::Visitor<'de> for Visitor {
+                        type Value = #enumset::EnumSet<#name>;
+                        fn expecting(
+                            &self, formatter: &mut #core::fmt::Formatter,
+                        ) -> #core::fmt::Result {
+                            write!(formatter, #expecting_str)
+                        }
+                        fn visit_seq<A>(
+                            mut self, mut seq: A,
+                        ) -> #core::result::Result<Self::Value, A::Error> where
+                            A: #serde::de::SeqAccess<'de>
+                        {
+                            let mut accum = #enumset::EnumSet::<#name>::new();
+                            while let #core::prelude::v1::Some(val) = seq.next_element::<#name>()? {
+                                accum |= val;
+                            }
+                            #core::prelude::v1::Ok(accum)
+                        }
+                    }
+                    de.deserialize_seq(Visitor)
+                }
+            }
+        }
+        SerdeRepr::Map => {
+            let expecting_str = format!("a map from {name} to bool");
+            quote! {
+                fn serialize<S: #serde::Serializer>(
+                    set: #enumset::EnumSet<#name>, ser: S,
+                ) -> #core::result::Result<S::Ok, S::Error> {
+                    use #serde::ser::SerializeMap;
+                    let mut map = ser.serialize_map(#core::prelude::v1::Some(set.len()))?;
+                    for bit in set {
+                        map.serialize_entry(&bit, &true)?;
+                    }
+                    map.end()
+                }
+                fn deserialize<'de, D: #serde::Deserializer<'de>>(
+                    de: D,
+                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
+                    struct Visitor;
+                    impl <'de> #serde::de::Visitor<'de> for Visitor {
+                        type Value = #enumset::EnumSet<#name>;
+                        fn expecting(
+                            &self, formatter: &mut #core::fmt::Formatter,
+                        ) -> #core::fmt::Result {
+                            write!(formatter, #expecting_str)
+                        }
+                        fn visit_map<A>(
+                            mut self, mut map: A,
+                        ) -> #core::result::Result<Self::Value, A::Error> where
+                            A: #serde::de::MapAccess<'de>
+                        {
+                            let mut accum = #enumset::EnumSet::<#name>::new();
+                            while let #core::prelude::v1::Some((val, is_present)) =
+                                map.next_entry::<#name, bool>()?
+                            {
+                                if is_present {
+                                    accum |= val;
+                                }
+                            }
+                            #core::prelude::v1::Ok(accum)
+                        }
+                    }
+                    de.deserialize_map(Visitor)
+                }
+            }
+        }
+        SerdeRepr::Array => {
+            let preferred_size = quote! {
+                <<#name as #internal::EnumSetTypePrivate>::Repr as #internal::EnumSetTypeRepr>
+                    ::PREFERRED_ARRAY_LEN
+            };
+            let (check_extra, convert_array) = if info.serialize_deny_unknown {
+                (
+                    quote! {
+                        if _val != 0 {
+                        use #serde::de::Error;
+                            return #core::prelude::v1::Err(
+                                A::Error::custom("enumset contains unknown bits")
+                            )
+                        }
+                    },
+                    quote! {
+                        use #serde::de::Error;
+                        match #enumset::EnumSet::<#name>::try_from_array(accum) {
+                            Some(x) => #core::prelude::v1::Ok(x),
+                            None => #core::prelude::v1::Err(
+                                A::Error::custom("enumset contains unknown bits")
+                            ),
+                        }
+                    },
+                )
+            } else {
+                (quote! {}, quote! {
+                    #core::prelude::v1::Ok(#enumset::EnumSet::<#name>::from_array(accum))
+                })
+            };
+            quote! {
+                fn serialize<S: #serde::Serializer>(
+                    set: #enumset::EnumSet<#name>, ser: S,
+                ) -> #core::result::Result<S::Ok, S::Error> {
+                    // read the enum as an array
+                    let array = set.as_array::<{ #preferred_size }>();
+
+                    // find the last non-zero value in the array
+                    let mut end = array.len();
+                    for i in (0..array.len()).rev() {
+                        if array[i] != 0 {
+                            break;
+                        }
+                        end = i + 1;
+                    }
+
+                    // serialize the array
+                    #serde::Serialize::serialize(&array[..end], ser)
+                }
+                fn deserialize<'de, D: #serde::Deserializer<'de>>(
+                    de: D,
+                ) -> #core::result::Result<#enumset::EnumSet<#name>, D::Error> {
+                    struct Visitor;
+                    impl <'de> #serde::de::Visitor<'de> for Visitor {
+                        type Value = #enumset::EnumSet<#name>;
+                        fn expecting(
+                            &self, formatter: &mut #core::fmt::Formatter,
+                        ) -> #core::fmt::Result {
+                            write!(formatter, "a list of u64")
+                        }
+                        fn visit_seq<A>(
+                            mut self, mut seq: A,
+                        ) -> #core::result::Result<Self::Value, A::Error> where
+                            A: #serde::de::SeqAccess<'de>
+                        {
+                            let mut accum = [0; #preferred_size];
+
+                            let mut i = 0;
+                            while let #core::prelude::v1::Some(val) = seq.next_element::<u64>()? {
+                                accum[i] = val;
+                                i += 1;
+
+                                if i == accum.len() {
+                                    break;
+                                }
+                            }
+                            while let #core::prelude::v1::Some(_val) = seq.next_element::<u64>()? {
+                                #check_extra
+                            }
+
+                            #convert_array
+                        }
+                    }
+                    de.deserialize_seq(Visitor)
+                }
+            }
+        }
+    };
+    impl_serde_ops
 }
