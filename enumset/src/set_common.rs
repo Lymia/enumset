@@ -24,23 +24,23 @@ macro_rules! set_common_methods {
         /// Returns the number of elements in this set.
         #[inline(always)]
         pub fn len(&self) -> usize {
-            self.__priv_repr.count_ones() as usize
+            self.repr.count_ones() as usize
         }
         /// Returns `true` if the set contains no elements.
         #[inline(always)]
         pub fn is_empty(&self) -> bool {
-            self.__priv_repr.is_empty()
+            self.repr.is_empty()
         }
         /// Removes all elements from the set.
         #[inline(always)]
         pub fn clear(&mut self) {
-            self.__priv_repr = <$T_Repr>::EMPTY;
+            self.repr = <$T_Repr>::EMPTY;
         }
 
         /// Checks whether this set contains a value.
         #[inline(always)]
         pub fn contains(&self, value: $T) -> bool {
-            self.__priv_repr.has_bit(value.enum_into_u32())
+            self.repr.has_bit(value.enum_into_u32())
         }
 
         /// Adds a value to this set.
@@ -51,14 +51,14 @@ macro_rules! set_common_methods {
         #[inline(always)]
         pub fn insert(&mut self, value: $T) -> bool {
             let contains = !self.contains(value);
-            self.__priv_repr.add_bit(value.enum_into_u32());
+            self.repr.add_bit(value.enum_into_u32());
             contains
         }
         /// Removes a value from this set. Returns whether the value was present in the set.
         #[inline(always)]
         pub fn remove(&mut self, value: $T) -> bool {
             let contains = self.contains(value);
-            self.__priv_repr.remove_bit(value.enum_into_u32());
+            self.repr.remove_bit(value.enum_into_u32());
             contains
         }
 
@@ -73,7 +73,7 @@ macro_rules! set_common_methods {
         #[inline(always)]
         pub fn is_superset(&self, other: impl Into<Self>) -> bool {
             let other = other.into();
-            (*self & other).__priv_repr == other.__priv_repr
+            (*self & other).repr == other.repr
         }
         /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all
         /// the values in `self`.
@@ -85,23 +85,23 @@ macro_rules! set_common_methods {
         /// Returns a set containing any elements present in either set.
         #[inline(always)]
         pub fn union(&self, other: impl Into<Self>) -> Self {
-            Self { __priv_repr: self.__priv_repr | other.into().__priv_repr }
+            Self { repr: self.repr | other.into().repr }
         }
         /// Returns a set containing every element present in both sets.
         #[inline(always)]
         pub fn intersection(&self, other: impl Into<Self>) -> Self {
-            Self { __priv_repr: self.__priv_repr & other.into().__priv_repr }
+            Self { repr: self.repr & other.into().repr }
         }
         /// Returns a set containing element present in `self` but not in `other`.
         #[inline(always)]
         pub fn difference(&self, other: impl Into<Self>) -> Self {
-            Self { __priv_repr: self.__priv_repr.and_not(other.into().__priv_repr) }
+            Self { repr: self.repr.and_not(other.into().repr) }
         }
         /// Returns a set containing every element present in either `self` or `other`, but is not
         /// present in both.
         #[inline(always)]
         pub fn symmetrical_difference(&self, other: impl Into<Self>) -> Self {
-            Self { __priv_repr: self.__priv_repr ^ other.into().__priv_repr }
+            Self { repr: self.repr ^ other.into().repr }
         }
     };
 }
@@ -185,25 +185,25 @@ macro_rules! set_common_impls {
 
         impl<T: $set_trait> PartialEq<T> for $name<T> {
             fn eq(&self, other: &T) -> bool {
-                self.__priv_repr == $name::only(*other).__priv_repr
+                self.repr == $name::only(*other).repr
             }
         }
 
         #[allow(clippy::derived_hash_with_manual_eq)] // This impl exists to change trait bounds only.
         impl<T: $set_trait> Hash for $name<T> {
             fn hash<H: Hasher>(&self, state: &mut H) {
-                self.__priv_repr.hash(state)
+                self.repr.hash(state)
             }
         }
         #[allow(clippy::non_canonical_partial_ord_impl)]
         impl<T: $set_trait> PartialOrd for $name<T> {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                self.__priv_repr.partial_cmp(&other.__priv_repr)
+                self.repr.partial_cmp(&other.repr)
             }
         }
         impl<T: $set_trait> Ord for $name<T> {
             fn cmp(&self, other: &Self) -> Ordering {
-                self.__priv_repr.cmp(&other.__priv_repr)
+                self.repr.cmp(&other.repr)
             }
         }
 
