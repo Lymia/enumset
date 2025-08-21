@@ -119,10 +119,10 @@ pub mod record {
 ///
 /// # Performance
 ///
-/// This macro is designed for use in const contexts, not for execution as normal code. It may be
-/// significantly slower than normal code outside const contexts.
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
 ///
-/// In normal code, directly use `Type::A | Type::B | Type::C` instead.
+/// Directly use `Type::A | Type::B | Type::C` instead in non-const contexts.
 ///
 /// # Examples
 ///
@@ -163,6 +163,13 @@ macro_rules! enum_set {
 ///
 /// This macro accepts trailing `|`s to allow easier use in other macros.
 ///
+/// # Performance
+///
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
+///
+/// Use `MixedEnumSet::from(Type::A | Type::B | Type::C)` instead in non-const contexts.
+///
 /// # Examples
 ///
 /// ```rust
@@ -195,10 +202,10 @@ macro_rules! mixed_enum_set {
 ///
 /// # Performance
 ///
-/// This macro is designed for use in const contexts, not for execution as normal code. It may be
-/// significantly slower than normal code outside const contexts.
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
 ///
-/// In normal code, directly use the `|` operator instead.
+/// Directly use the `|` operator instead in non-const contexts.
 ///
 /// # Examples
 ///
@@ -234,10 +241,10 @@ macro_rules! enum_set_union {
 ///
 /// # Performance
 ///
-/// This macro is designed for use in const contexts, not for execution as normal code. It may be
-/// significantly slower than normal code outside const contexts.
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
 ///
-/// In normal code, directly use the `&` operator instead.
+/// Directly use the `&` operator instead in non-const contexts.
 ///
 /// # Examples
 ///
@@ -271,10 +278,10 @@ macro_rules! enum_set_intersection {
 ///
 /// # Performance
 ///
-/// This macro is designed for use in const contexts, not for execution as normal code. It may be
-/// significantly slower than normal code outside const contexts.
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
 ///
-/// In normal code, directly use the `!` operator instead.
+/// Directly use the `!` operator instead in non-const contexts.
 ///
 /// # Examples
 ///
@@ -304,10 +311,10 @@ macro_rules! enum_set_complement {
 ///
 /// # Performance
 ///
-/// This macro is designed for use in const contexts, not for execution as normal code. It may be
-/// significantly slower than normal code outside const contexts.
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
 ///
-/// In normal code, directly use the `-` operator instead.
+/// Directly use the `-` operator instead in non-const contexts.
 ///
 /// # Examples
 ///
@@ -345,10 +352,10 @@ macro_rules! enum_set_difference {
 ///
 /// # Performance
 ///
-/// This macro is designed for use in const contexts, not for execution as normal code. It may be
-/// significantly slower than normal code outside const contexts.
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
 ///
-/// In normal code, directly use the `^` operator instead.
+/// Directly use the `^` operator instead in non-const contexts.
 ///
 /// # Examples
 ///
@@ -388,9 +395,10 @@ macro_rules! enum_set_symmetric_difference {
 ///
 /// # Performance
 ///
-/// This method is designed for use in const contexts. The code is likely very suboptimal for use
-/// in dynamic code. Use [`EnumRecord::from_fn`](crate::EnumRecord::from_fn) instead in non-const
-/// contexts.
+/// This method is designed for use in const contexts. The code is likely much slower when used
+/// in normal code.
+///
+/// Use [`EnumRecord::from_fn`](crate::EnumRecord::from_fn) instead in non-const contexts.
 ///
 /// # Examples
 ///
