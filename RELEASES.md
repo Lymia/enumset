@@ -1,3 +1,12 @@
+# Unreleased
+
+* Improve the macro code to avoid exposing the internal repr of `EnumSet` as
+  a public field.
+* Fixes combinations of `repr` and `serialize_repr` that previously resulted
+  in errors.
+* Fixed some minor hygiene issues with the procedural macro.
+* Small improvements and clarifications to the documentation.
+
 # Version 1.1.9 (2025-08-17)
 
 * Fixes a bug that causes compilation failures when a crate (such as `defmt`)
