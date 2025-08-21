@@ -58,6 +58,7 @@ pub mod set {
     }
 
     /// Converts an enumset to a MixedEnumSet
+    #[inline(always)]
     pub const fn convert_mixed<T: crate::EnumSetTypeWithRepr>(a: EnumSet<T>) -> MixedEnumSet<T> {
         MixedEnumSet { repr: a.repr }
     }
@@ -82,11 +83,14 @@ pub mod record {
     use core::mem::MaybeUninit;
 
     /// Helper function to construct the initial Option<T>
-    pub const fn create_type_marker<T: EnumSetType, V>(_: fn(T) -> V) -> Option<(T, V)> {
+    #[inline(always)]
+    pub const fn create_type_marker<T: EnumSetType, V>(x: impl Fn(T) -> V) -> Option<(T, V)> {
+        core::mem::forget(x);
         None
     }
 
     /// Helper function to construct an underlying array filled with `MaybeUninit<K>`
+    #[inline(always)]
     pub const fn assoc_uninit_record<T: EnumSetType, V>(
         _: &Option<(T, V)>,
         uninit: T::RecordArray<MaybeUninit<V>>,
@@ -95,16 +99,19 @@ pub mod record {
     }
 
     /// Helper function to return all variants of an enumset type.
+    #[inline(always)]
     pub const fn assoc_all_variants<T: EnumSetType, V>(_: &Option<(T, V)>) -> T::AllVariants {
         T::ALL_VARIANTS
     }
 
     /// Helper function to retrieve the helper used in constant time operations.
+    #[inline(always)]
     pub const fn assoc_init_helper<T: EnumSetType, V>(_: &Option<(T, V)>) -> T::ConstInitHelper {
         T::CONST_INIT_HELPER
     }
 
     /// Associates the return type with the enum type.
+    #[inline(always)]
     pub const fn assoc_result<T: EnumSetType, V>(
         _: &Option<(T, V)>,
         result: T::RecordArray<V>,
