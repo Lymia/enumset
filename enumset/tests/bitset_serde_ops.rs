@@ -208,3 +208,4 @@ tests!(large_enum, serde_test_simple!(LargeEnum, !0));
 tests!(repr_enum, serde_test!(ReprEnum, 16));
 tests!(deny_unknown_enum, serde_test_simple!(DenyUnknownEnum, 16));
 tests!(mixed_enum, serde_test_simple!(MixedEnum, 4));
+tests!(deny_unknown_enum_array, serde_test_simple!(DenyUnknownEnumArray, 16));
