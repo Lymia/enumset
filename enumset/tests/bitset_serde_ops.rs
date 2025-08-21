@@ -2,7 +2,7 @@
 #![deny(warnings)]
 #![allow(dead_code)]
 
-use enumset::*;
+use enumset::{set::*, *};
 use serde_derive::*;
 
 // Test resistance against shadowed types.

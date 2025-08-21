@@ -11,7 +11,7 @@ use crate::EnumSet;
 /// For full documentation on the procedural derive and its options, see
 /// [`#[derive(EnumSetType)]`](derive@crate::EnumSetType).
 ///
-/// [`EnumSet`]: crate::set::EnumSet
+/// [`EnumSet`]: crate::impl_set::EnumSet
 pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate {}
 
 /// An [`EnumSetType`] for which [`EnumSet`]s have a guaranteed in-memory representation.
@@ -24,7 +24,7 @@ pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate {}
 /// is guaranteed to be `Repr`. This guarantee is useful for FFI. See [the `EnumSet` documentation
 /// under “FFI, Safety and `repr`”][crate::set::EnumSet#ffi-safety-and-repr] for an example.
 ///
-/// [`EnumSet`]: crate::set::EnumSet
+/// [`EnumSet`]: crate::impl_set::EnumSet
 pub unsafe trait EnumSetTypeWithRepr:
     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
 {
@@ -44,7 +44,7 @@ pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper + Sized {
     const VARIANT_COUNT: u32;
 
     /// The type used for `EnumRecord`.
-    type RecordArray<V>: crate::record::EnumRecordUnderlying<Value = V>;
+    type RecordArray<V>: crate::impl_record::EnumRecordUnderlying<Value = V>;
 
     /// Converts an enum of this type into its bit position.
     fn enum_into_u32(self) -> u32;

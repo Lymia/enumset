@@ -34,14 +34,16 @@ pub mod __internal {
     /// if serde support is not enabled.
     pub use __if_serde;
 
-    pub use crate::macros::set;
     pub use crate::macros::record;
+    pub use crate::macros::set;
 }
 
 /// Helper functions for sets.
 pub mod set {
+    use crate::EnumSetType;
     use crate::__internal::EnumSetConstHelper;
-    use crate::{EnumSet, EnumSetType, MixedEnumSet};
+    use crate::impl_set::EnumSet;
+    use crate::impl_set_mixed::MixedEnumSet;
 
     /// Retrieves the helper used in constant time operations.
     #[inline(always)]
@@ -75,7 +77,8 @@ pub mod set {
 
 /// Functions for enum record macros.
 pub mod record {
-    use crate::{EnumRecord, EnumSetType};
+    use crate::impl_record::EnumRecord;
+    use crate::EnumSetType;
     use core::mem::MaybeUninit;
 
     /// Helper function to construct the initial Option<T>
@@ -173,7 +176,7 @@ macro_rules! enum_set {
 /// # Examples
 ///
 /// ```rust
-/// # use enumset::*;
+/// # use enumset::{*, set::*};
 /// # #[derive(EnumSetType, Debug)] #[enumset(repr = "u32")] enum Enum { A, B, C }
 /// const CONST_SET: MixedEnumSet<Enum> = mixed_enum_set!(Enum::A | Enum::B);
 /// assert_eq!(CONST_SET, MixedEnumSet::from(Enum::A | Enum::B));
@@ -403,7 +406,7 @@ macro_rules! enum_set_symmetric_difference {
 /// # Examples
 ///
 /// ```rust
-/// # use enumset::*;
+/// # use enumset::{*, record::*};
 /// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C }
 /// const CONST_SET: EnumRecord<Enum, u32> = enum_record! {
 ///     Enum::A => 10,

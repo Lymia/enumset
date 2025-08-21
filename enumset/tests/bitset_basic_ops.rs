@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![deny(warnings)]
 
-use enumset::*;
+use enumset::{set::*, *};
 use std::collections::{BTreeSet, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 

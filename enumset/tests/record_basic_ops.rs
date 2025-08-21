@@ -1,5 +1,5 @@
-use enumset::EnumRecord;
-use enumset_derive::EnumSetType;
+use enumset::record::EnumRecord;
+use enumset::EnumSetType;
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(EnumSetType, Debug)]

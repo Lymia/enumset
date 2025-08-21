@@ -92,18 +92,30 @@ extern crate alloc;
 mod macros;
 
 #[macro_use]
-mod set_common;
+mod impl_set_common;
 
 mod derive;
-mod record;
+mod impl_record;
+mod impl_set;
+mod impl_set_mixed;
 mod repr;
-mod set;
-mod set_mixed;
 mod traits;
 
 pub use crate::derive::EnumSetType;
-pub use crate::macros::__internal;
-pub use crate::record::{EnumRecord, EnumRecordIntoIter, EnumRecordIter, EnumRecordIterMut};
 pub use crate::set::{EnumSet, EnumSetIter};
-pub use crate::set_mixed::{MixedEnumSet, MixedEnumSetIter, MixedValue};
 pub use crate::traits::{EnumSetType, EnumSetTypeWithRepr};
+
+/// Contains the types used for sets of enums.
+pub mod set {
+    pub use crate::impl_set::{EnumSet, EnumSetIter};
+    pub use crate::impl_set_mixed::{MixedEnumSet, MixedEnumSetIter, MixedValue};
+}
+
+/// Contains the types for records with enum keys.
+pub mod record {
+    pub use crate::impl_record::{
+        EnumRecord, EnumRecordIntoIter, EnumRecordIter, EnumRecordIterMut,
+    };
+}
+
+pub use crate::macros::__internal;

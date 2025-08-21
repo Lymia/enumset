@@ -1,6 +1,6 @@
 use crate::repr::EnumSetTypeRepr;
 use crate::traits::{EnumSetType, EnumSetTypePrivate};
-use crate::{EnumSet, EnumSetTypeWithRepr};
+use crate::EnumSetTypeWithRepr;
 use core::cmp::Ordering;
 use core::fmt::{Debug, Display, Formatter};
 use core::hash::{Hash, Hasher};
@@ -9,6 +9,7 @@ use core::ops::{
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Sub, SubAssign,
 };
 
+use crate::impl_set::EnumSet;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
