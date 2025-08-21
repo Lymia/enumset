@@ -84,16 +84,13 @@ impl<T: EnumSetType + defmt::Format> defmt::Format for MixedValue<T> {
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct MixedEnumSet<T: EnumSetTypeWithRepr> {
-    #[doc(hidden)]
-    /// This is public due to the `enum_set!` macro.
-    /// This is **NOT** public API and may change at any time.
-    pub __priv_repr: <T as EnumSetTypePrivate>::Repr,
+    pub(crate) repr: <T as EnumSetTypePrivate>::Repr,
 }
 
 //region MixedEnumSet operations
 impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
-    const EMPTY_REPR: Self = MixedEnumSet { __priv_repr: <T as EnumSetTypePrivate>::Repr::EMPTY };
-    const ALL_REPR: Self = MixedEnumSet { __priv_repr: T::ALL_BITS };
+    const EMPTY_REPR: Self = MixedEnumSet { repr: <T as EnumSetTypePrivate>::Repr::EMPTY };
+    const ALL_REPR: Self = MixedEnumSet { repr: T::ALL_BITS };
 
     /// Creates an empty `MixedEnumSet`.
     #[inline(always)]
@@ -128,7 +125,7 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     /// This method clears any unknown bits already existing in the set.
     #[inline(always)]
     pub fn complement(&self) -> Self {
-        Self { __priv_repr: !self.__priv_repr & T::ALL_BITS }
+        Self { repr: !self.repr & T::ALL_BITS }
     }
 
     /// Returns a set containing all bits not in this set.
@@ -136,25 +133,25 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     /// This method sets any unknown bits not already existing in the set.
     #[inline(always)]
     pub fn full_complement(&self) -> Self {
-        Self { __priv_repr: !self.__priv_repr }
+        Self { repr: !self.repr }
     }
 
     /// Returns the number of elements in this set, excluding unknown bits.
     #[inline(always)]
     pub fn valid_len(&self) -> usize {
-        (self.__priv_repr & T::ALL_BITS).count_ones() as usize
+        (self.repr & T::ALL_BITS).count_ones() as usize
     }
 
     /// Returns whether this bitset contains any bits that do not correspond to a valid variant.
     #[inline(always)]
     pub fn has_unknown_bits(&self) -> bool {
-        !(self.__priv_repr & !T::ALL_BITS).is_empty()
+        !(self.repr & !T::ALL_BITS).is_empty()
     }
 
     /// Checks whether this set contains a specific bit.
     #[inline(always)]
     pub fn has_bit(&self, value: u32) -> bool {
-        self.__priv_repr.has_bit(value)
+        self.repr.has_bit(value)
     }
 
     /// Adds a specific bit to this set.
@@ -165,7 +162,7 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     #[inline(always)]
     pub fn insert_bit(&mut self, value: u32) -> bool {
         let contains = !self.has_bit(value);
-        self.__priv_repr.add_bit(value);
+        self.repr.add_bit(value);
         contains
     }
 
@@ -173,20 +170,20 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     #[inline(always)]
     pub fn remove_bit(&mut self, value: u32) -> bool {
         let contains = self.has_bit(value);
-        self.__priv_repr.remove_bit(value);
+        self.repr.remove_bit(value);
         contains
     }
 
     /// Adds all elements in another set to this one.
     #[inline(always)]
     pub fn insert_all(&mut self, other: impl Into<Self>) {
-        self.__priv_repr = self.__priv_repr | other.into().__priv_repr
+        self.repr = self.repr | other.into().repr
     }
 
     /// Removes all values in another set from this one.
     #[inline(always)]
     pub fn remove_all(&mut self, other: impl Into<Self>) {
-        self.__priv_repr = self.__priv_repr.and_not(other.into().__priv_repr);
+        self.repr = self.repr.and_not(other.into().repr);
     }
 }
 
@@ -194,12 +191,12 @@ set_common_impls!(MixedEnumSet, EnumSetTypeWithRepr);
 
 impl<T: EnumSetTypeWithRepr> PartialEq<MixedEnumSet<T>> for EnumSet<T> {
     fn eq(&self, other: &MixedEnumSet<T>) -> bool {
-        self.__priv_repr == other.__priv_repr
+        self.repr == other.repr
     }
 }
 impl<T: EnumSetTypeWithRepr> PartialEq<EnumSet<T>> for MixedEnumSet<T> {
     fn eq(&self, other: &EnumSet<T>) -> bool {
-        self.__priv_repr == other.__priv_repr
+        self.repr == other.repr
     }
 }
 
@@ -221,7 +218,7 @@ impl<T: EnumSetTypeWithRepr> Serialize for MixedEnumSet<T>
 where <T as EnumSetTypeWithRepr>::Repr: Serialize
 {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.__priv_repr.serialize(serializer)
+        self.repr.serialize(serializer)
     }
 }
 
@@ -230,7 +227,7 @@ impl<'de, T: EnumSetTypeWithRepr> Deserialize<'de> for MixedEnumSet<T>
 where <T as EnumSetTypeWithRepr>::Repr: Deserialize<'de>
 {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        <T as EnumSetTypeWithRepr>::Repr::deserialize(deserializer).map(|x| Self { __priv_repr: x })
+        <T as EnumSetTypeWithRepr>::Repr::deserialize(deserializer).map(|x| Self { repr: x })
     }
 }
 //endregion
@@ -243,13 +240,13 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     /// panic or truncate any bits.
     #[inline(always)]
     pub const fn as_repr(&self) -> <T as EnumSetTypeWithRepr>::Repr {
-        self.__priv_repr
+        self.repr
     }
 
     /// Constructs a bitset from a `T::Repr`.
     #[inline(always)]
     pub fn from_repr(bits: <T as EnumSetTypeWithRepr>::Repr) -> Self {
-        Self { __priv_repr: bits }
+        Self { repr: bits }
     }
 
     /// Constructs a bitset from a `T::Repr`, ignoring invalid variants.
@@ -257,7 +254,7 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     pub fn from_repr_truncated(bits: <T as EnumSetTypeWithRepr>::Repr) -> Self {
         let mask = Self::all().as_repr();
         let bits = bits & mask;
-        MixedEnumSet { __priv_repr: bits }
+        MixedEnumSet { repr: bits }
     }
 
     /// Converts this set into the corresponding [`EnumSet`].
@@ -275,14 +272,14 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
         if self.has_unknown_bits() {
             None
         } else {
-            Some(EnumSet { __priv_repr: self.__priv_repr })
+            Some(EnumSet { repr: self.repr })
         }
     }
 
     /// Converts this set into the corresponding [`EnumSet`], ignoring bits that do not correspond
     /// to a variant.
     pub fn as_enumset_truncate(&self) -> EnumSet<T> {
-        EnumSet { __priv_repr: self.__priv_repr & T::ALL_BITS }
+        EnumSet { repr: self.repr & T::ALL_BITS }
     }
 }
 
@@ -298,7 +295,7 @@ impl<T: EnumSetTypeWithRepr, const N: usize> From<[T; N]> for MixedEnumSet<T> {
 
 impl<T: EnumSetTypeWithRepr> From<EnumSet<T>> for MixedEnumSet<T> {
     fn from(value: EnumSet<T>) -> Self {
-        MixedEnumSet { __priv_repr: value.__priv_repr }
+        MixedEnumSet { repr: value.repr }
     }
 }
 //endregion
@@ -311,7 +308,7 @@ pub struct MixedEnumSetIter<T: EnumSetType> {
 }
 impl<T: EnumSetTypeWithRepr> MixedEnumSetIter<T> {
     fn new(set: MixedEnumSet<T>) -> MixedEnumSetIter<T> {
-        MixedEnumSetIter { iter: set.__priv_repr.iter() }
+        MixedEnumSetIter { iter: set.repr.iter() }
     }
 }
 
