@@ -170,8 +170,9 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
                 fn serialize<S: #serde::Serializer>(
                     set: #enumset::EnumSet<#name>, ser: S,
                 ) -> #core::result::Result<S::Ok, S::Error> {
-                    let value =
-                        <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(&set.__priv_repr);
+                    let value = <#repr as #enumset::__internal::EnumSetTypeRepr>::#to_fn(
+                        &#internal::set::get(set),
+                    );
                     #serde::Serialize::serialize(&value, ser)
                 }
                 fn deserialize<'de, D: #serde::Deserializer<'de>>(
@@ -180,9 +181,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
                     let value = <#serialize_repr as #serde::Deserialize>::deserialize(de)?;
                     #check_unknown
                     let value = <#repr as #enumset::__internal::EnumSetTypeRepr>::#from_fn(value);
-                    #core::prelude::v1::Ok(#enumset::EnumSet {
-                        __priv_repr: value & #all_variants,
-                    })
+                    #core::prelude::v1::Ok(#internal::set::new(value & #all_variants))
                 }
             }
         }
