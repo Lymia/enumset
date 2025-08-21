@@ -1,4 +1,4 @@
-# Unreleased
+# Version 1.1.10 (2025-08-21)
 
 * Improve the macro code to avoid exposing the internal repr of `EnumSet` as
   a public field.
