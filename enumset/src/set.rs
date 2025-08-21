@@ -31,8 +31,8 @@ use serde::{Deserialize, Serialize};
 /// variant with a discriminator of `n` is stored in the `n + 1`th least significant bit
 /// (corresponding to a mask of e.g. `1 << enum as u32`).
 ///
-/// The [`#[enumset(map = "…")]`](derive@crate::EnumSetType#options) attribute can be used to
-/// control this mapping.
+/// The [`#[enumset(map = "…")]`](derive@crate::EnumSetType#mapping-options) attribute can be used
+/// to control this mapping.
 ///
 /// # Array representation
 ///
