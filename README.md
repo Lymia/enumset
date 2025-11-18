@@ -1,4 +1,4 @@
-# enumset
+# enumset -- sets of flags, with each flag as an enum variant
 
 [![Build Status](https://github.com/Lymia/enumset/actions/workflows/test.yml/badge.svg)](https://github.com/Lymia/enumset/actions/workflows/test.yml)
 [![Latest Version](https://img.shields.io/crates/v/enumset.svg)](https://crates.io/crates/enumset)
