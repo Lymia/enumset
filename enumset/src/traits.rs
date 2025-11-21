@@ -5,7 +5,7 @@ use crate::EnumSet;
 
 /// The trait used to define enum types that may be used with [`EnumSet`].
 ///
-/// This trait must be impelmented using `#[derive(EnumSetType)]`, is not public API, and its
+/// This trait must be implemented using `#[derive(EnumSetType)]`, is not public API, and its
 /// internal structure may change at any time with no warning.
 ///
 /// For full documentation on the procedural derive and its options, see
