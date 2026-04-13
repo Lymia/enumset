@@ -23,6 +23,7 @@ pub fn eval_literal(expr: &Expr) -> syn::Result<i64> {
                 Ok(val) => Ok(val),
                 Err(_) => error(expr.span(), "Enum discriminants must fit into `isize`.")?,
             },
+            Lit::Byte(lit_byte) => Ok(lit_byte.value() as i64),
             _ => error(expr.span(), "Expression not supported by enumset.")?,
         },
         Expr::Paren(paren) => eval_literal(&paren.expr),
