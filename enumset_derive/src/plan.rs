@@ -447,15 +447,15 @@ impl EnumSetInfo {
 
     /// Maps the enum variants as a compact set.
     fn map_compact(&mut self) {
-        let mut occupied = BTreeSet::new();
-        for i in 0..self.variants.len() {
-            occupied.insert(i as u32);
-        }
-        let variant_len = self.variants.len();
+        let variant_len = self.variants.len() as u32;
+        let mut occupied = (0..variant_len).collect::<BTreeSet<_>>();
+
         for variant in &mut self.variants {
-            if variant.discriminant > 0 && variant.discriminant < variant_len as i64 {
-                variant.variant_bit = variant.discriminant as u32;
-                occupied.remove(&variant.variant_bit);
+            if variant.discriminant >= 0 && variant.discriminant < variant_len as i64 {
+                let bit = variant.discriminant as u32;
+                if occupied.remove(&bit) {
+                    variant.variant_bit = bit;
+                }
             }
         }
         for variant in &mut self.variants {
