@@ -12,8 +12,9 @@ use crate::EnumSet;
 /// Currently, the following limitations apply to what kinds of enums this macro may be used with:
 ///
 /// * The enum must have no data fields in any variant.
-/// * Variant discriminators must be zero or positive.
-/// * No variant may have a discriminator larger than `0xFFFFFFBF`.
+/// * Explicit variant discriminators must be zero or positive and no larger than
+///   `0xFFFFFFBF`(except when `map = "compact"`).
+/// * Each explicit discriminator must be a literal, not more general const expressions.
 ///
 /// # Additional Impls
 ///
@@ -65,7 +66,7 @@ use crate::EnumSet;
 ///   most significant bit of the enumset. This requires an explicit integer representation or else
 ///   compilation will fail.
 /// * `#[enumset(map = "compact")]` maps each enum variant to an unspecified bit in the set. This
-///   allows the library to use less memory than it may otherwise and allows any discrminator
+///   allows the library to use less memory than it may otherwise and allows any discriminator
 ///   values to be used without issue.
 /// * `#[enumset(map = "mask")]` treats each enum variant's discriminator as a mask rather than a
 ///   bit index. Each discriminant must be a power of two, and may be of arbitrary size.
