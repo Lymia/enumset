@@ -10,13 +10,13 @@ error: Expression not supported by enumset.
 10 |     Variant = !(1 > 2),
    |                 ^^^^^
 
-error: Error while evaluating discriminator.
+error: Error while evaluating discriminant.
   --> tests/compile-fail/const_eval_errors.rs:16:16
    |
 16 |     Variant = (1u64 << 0x100000000u64) + 1,
    |                ^^^^^^^^^^^^^^^^^^^^^^
 
-error: Error while evaluating discriminator.
+error: Error while evaluating discriminant.
   --> tests/compile-fail/const_eval_errors.rs:22:20
    |
 22 |     Variant = 1 + (1u64 >> 0x100000000u64),
@@ -45,6 +45,8 @@ error[E0308]: mismatched types
    |
 10 |     Variant = !(1 > 2),
    |               ^^^^^^^^ expected `isize`, found `bool`
+   |
+   = note: enum variant discriminant can only be of a primitive type compatible with the enum's `repr`
 
 error[E0080]: attempt to shift left by `4294967296_u64`, which would overflow
   --> tests/compile-fail/const_eval_errors.rs:16:15
@@ -63,3 +65,5 @@ error[E0308]: mismatched types
    |
 27 |     Variant = "test",
    |               ^^^^^^ expected `isize`, found `&str`
+   |
+   = note: enum variant discriminant can only be of a primitive type compatible with the enum's `repr`
