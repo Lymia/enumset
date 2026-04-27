@@ -12,9 +12,9 @@ use crate::EnumSet;
 /// Currently, the following limitations apply to what kinds of enums this macro may be used with:
 ///
 /// * The enum must have no data fields in any variant.
-/// * Explicit variant discriminators must be zero or positive and no larger than
+/// * Explicit variant discriminants must be zero or positive and no larger than
 ///   `0xFFFFFFBF`(except when `map = "compact"`).
-/// * Each explicit discriminator must be a literal, not more general const expressions.
+/// * Each explicit discriminant must be a literal, not more general const expressions.
 ///
 /// # Additional Impls
 ///
@@ -60,15 +60,15 @@ use crate::EnumSet;
 ///
 /// The following options exist to control how enum variants are mapped to bits in an `EnumSet`:
 ///
-/// * `#[enumset(map = "lsb")]` maps an enum variant with a discriminator of `n` to the `n + 1`th
+/// * `#[enumset(map = "lsb")]` maps an enum variant with a discriminant of `n` to the `n + 1`th
 ///   least significant bit of the enumset. If no mapping is specified, this is used by default.
-/// * `#[enumset(map = "msb")]` maps an enum variant with a discriminator of `n` to the `n + 1`th
+/// * `#[enumset(map = "msb")]` maps an enum variant with a discriminant of `n` to the `n + 1`th
 ///   most significant bit of the enumset. This requires an explicit integer representation or else
 ///   compilation will fail.
 /// * `#[enumset(map = "compact")]` maps each enum variant to an unspecified bit in the set. This
-///   allows the library to use less memory than it may otherwise and allows any discriminator
+///   allows the library to use less memory than it may otherwise and allows any discriminant
 ///   values to be used without issue.
-/// * `#[enumset(map = "mask")]` treats each enum variant's discriminator as a mask rather than a
+/// * `#[enumset(map = "mask")]` treats each enum variant's discriminant as a mask rather than a
 ///   bit index. Each discriminant must be a power of two, and may be of arbitrary size.
 ///
 /// ## Representation Options

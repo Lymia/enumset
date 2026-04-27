@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 /// An efficient set type for enums.
 ///
 /// It is implemented using a bitset stored using the smallest integer that can fit all bits
-/// in the underlying enum. In general, an enum variant with a discriminator of `n` is stored in
+/// in the underlying enum. In general, an enum variant with a discriminant of `n` is stored in
 /// the nth least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
 ///
 /// # Numeric representation
@@ -27,8 +27,8 @@ use serde::{Deserialize, Serialize};
 /// corresponding bit for a variant is set, it present in the set. Bits that do not correspond to
 /// any variant are always unset.
 ///
-/// By default, each enum variant is stored in a bit corresponding to its discriminator. An enum
-/// variant with a discriminator of `n` is stored in the `n + 1`th least significant bit
+/// By default, each enum variant is stored in a bit corresponding to its discriminant. An enum
+/// variant with a discriminant of `n` is stored in the `n + 1`th least significant bit
 /// (corresponding to a mask of e.g. `1 << enum as u32`).
 ///
 /// The [`#[enumset(map = "…")]`](derive@crate::EnumSetType#mapping-options) attribute can be used

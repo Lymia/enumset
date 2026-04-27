@@ -31,7 +31,7 @@
 ## Enhancements
 
 * Optimizations for sparse bitsets and sets larger than 64 variants.
-* Added basic support for specifying enum discriminators via simple
+* Added basic support for specifying enum discriminants via simple
   expressions like `1 << 30`.
 
 # Version 1.1.7 (2025-07-08)

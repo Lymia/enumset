@@ -39,7 +39,7 @@ pub fn eval_literal(expr: &Expr) -> syn::Result<i64> {
 fn eval_bin(binary: &ExprBinary, op: impl FnOnce(i64, i64) -> Option<i64>) -> syn::Result<i64> {
     let result = op(eval_literal(&binary.left)?, eval_literal(&binary.right)?);
     match result {
-        None => error(binary.span(), "Error while evaluating discriminator."),
+        None => error(binary.span(), "Error while evaluating discriminant."),
         Some(x) => Ok(x),
     }
 }
