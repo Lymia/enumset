@@ -22,6 +22,8 @@ pub trait EnumSetTypeRepr :
     Eq +
     Debug +
     Hash +
+    Send +
+    Sync +
     // Operations used by enumset
     BitAnd<Output = Self> +
     BitOr<Output = Self> +
