@@ -193,6 +193,9 @@ macro_rules! prim {
                     } else if O == 1 {
                         Self::from_u64_opt(v[0])
                     } else {
+                        if $preferred_array_len == 1 && v[1] != 0 {
+                            return None;
+                        }
                         for i in 2..O {
                             if v[i] != 0 {
                                 return None;

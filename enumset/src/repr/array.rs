@@ -257,7 +257,7 @@ pub struct ArrayIter<const N: usize> {
 }
 
 impl<const N: usize> ArrayIter<N> {
-    pub fn new(array: ArrayRepr<N>) -> Self {
+    fn new(array: ArrayRepr<N>) -> Self {
         let mut new = [PrimitiveIter(0); N];
         for i in 0..N {
             new[i] = PrimitiveIter(array.0[i])
