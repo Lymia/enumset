@@ -170,7 +170,10 @@ fn test_constructors_and_helpers() {
     let all = MixedEnumSet::<Enum>::all();
     assert_eq!(all.len(), 8);
     assert!(!all.has_unknown_bits());
-    assert_eq!(all, Enum::A | Enum::B | Enum::C | Enum::D | Enum::E | Enum::F | Enum::G | Enum::H);
+    assert_eq!(
+        all,
+        Enum::A | Enum::B | Enum::C | Enum::D | Enum::E | Enum::F | Enum::G | Enum::H
+    );
 
     assert_eq!(MixedEnumSet::<Enum>::variant_count(), 8);
 
@@ -345,11 +348,7 @@ fn test_from_repr_truncated_clears_unknown() {
 
 #[test]
 fn test_sum() {
-    let parts = [
-        EnumSet::from(Enum::A),
-        EnumSet::from(Enum::B),
-        EnumSet::from(Enum::C),
-    ];
+    let parts = [EnumSet::from(Enum::A), EnumSet::from(Enum::B), EnumSet::from(Enum::C)];
     let sum: MixedEnumSet<Enum> = parts.iter().copied().sum();
     assert_eq!(sum, Enum::A | Enum::B | Enum::C);
 
