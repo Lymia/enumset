@@ -276,7 +276,7 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
         Self::try_from_repr(bits).expect("Bitset contains invalid variants.")
     }
 
-    /// Attempts to constructs a bitset from a `T::Repr`.
+    /// Attempts to construct a bitset from a `T::Repr`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this
     /// method will return `None`.
@@ -334,7 +334,7 @@ macro_rules! conversion_impls {
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "`, this method will panic."]
+            #[doc = "`, this method will return `None`."]
             #[inline(always)]
             pub fn $try_to(&self) -> Option<$underlying> {
                 EnumSetTypeRepr::$to_fn_opt(&self.repr)
@@ -360,7 +360,7 @@ macro_rules! conversion_impls {
                 Self::$try_from(bits).expect("Bitset contains invalid variants.")
             }
 
-            #[doc = "Attempts to constructs a bitset from a `"]
+            #[doc = "Attempts to construct a bitset from a `"]
             #[doc = $underlying_str]
             #[doc = "`.\n\nIf a bit that doesn't correspond to an enum variant is set, this \
                      method will return `None`."]
@@ -453,14 +453,14 @@ impl<T: EnumSetType> EnumSet<T> {
         self.repr.to_u64_array()
     }
 
-    /// Attempts to constructs a bitset from a `[u64; O]`.
+    /// Constructs a bitset from a `[u64; O]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will panic.
     pub fn from_array<const O: usize>(v: [u64; O]) -> Self {
         Self::try_from_array(v).expect("Bitset contains invalid variants.")
     }
 
-    /// Attempts to constructs a bitset from a `[u64; O]`.
+    /// Attempts to construct a bitset from a `[u64; O]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
     pub fn try_from_array<const O: usize>(bits: [u64; O]) -> Option<Self> {
@@ -527,14 +527,14 @@ impl<T: EnumSetType> EnumSet<T> {
         self.repr.to_u64_slice(data)
     }
 
-    /// Attempts to constructs a bitset from a `&[u64]`.
+    /// Constructs a bitset from a `&[u64]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will panic.
     pub fn from_slice(v: &[u64]) -> Self {
         Self::try_from_slice(v).expect("Bitset contains invalid variants.")
     }
 
-    /// Attempts to constructs a bitset from a `&[u64]`.
+    /// Attempts to construct a bitset from a `&[u64]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
     pub fn try_from_slice(bits: &[u64]) -> Option<Self> {
