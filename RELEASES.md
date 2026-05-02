@@ -5,6 +5,11 @@
 * Added `FromIterator` implementations for iterators of borrowed items.
 * Added `EnumSet::bit_index` and `EnumSet::is_bit_valid` methods to query the
   bit associated with an enum variant, or if a bit index is valid.
+* Fixed a bug causing `#![derive(EnumSetType)]` to produce invalid code on
+  big-endian systems.
+* Allowed `EnumSet<T>` to be `Send` and `Sync`. (Thanks @SLUCHABLUB)
+* Allow byte literals such as `b'A'` to be used as variant discriminants.
+  (Thanks @ronnodas)
 
 # Version 1.1.10 (2025-08-21)
 
