@@ -484,12 +484,12 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
             let offset =
                 #core::mem::size_of::<#enum_repr>() - #core::mem::size_of::<#name>();
             let r = r << ((offset as #enum_repr) * 8);
-            (&r as *const #enum_repr as *const u8 as *const #name)
+            *(&r as *const #enum_repr as *const u8 as *const #name)
         };
     };
 
-    let is_zst = info.variants.len() == 1;
     if info.variants.is_empty() {
+        // Uninhabited types have no values.
         quote! {
             fn enum_into_u32(self) -> u32 {
                 #core::panic!(concat!(stringify!(#name), " is uninhabited."))
@@ -498,7 +498,8 @@ fn create_enum_conversions(info: &EnumSetInfo, paths: &Paths) -> SynTokenStream 
                 #core::panic!(concat!(stringify!(#name), " is uninhabited."))
             }
         }
-    } else if is_zst {
+    } else if info.variants.len() == 1 {
+        // Single-variant enums are generally ZSTs in #[repr(Rust)], and can use simpler code.
         let variant = &info.variants[0].name;
         quote! {
             fn enum_into_u32(self) -> u32 {
@@ -695,7 +696,7 @@ fn create_enum_const_opers(
                         &self,
                         a: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
-                        let mut all = #enumset::EnumSet::<#name>::all();
+                        let all = #enumset::EnumSet::<#name>::all();
                         #internal::set::new(!#internal::set::get(a) & #internal::set::get(all))
                     }
                 }
@@ -768,7 +769,7 @@ fn create_enum_const_opers(
                         chain_a: #enumset::EnumSet<#name>,
                     ) -> #enumset::EnumSet<#name> {
                         let mut a = #internal::set::get(chain_a);
-                        let mut all = #internal::set::get(#enumset::EnumSet::<#name>::all());
+                        let all = #internal::set::get(#enumset::EnumSet::<#name>::all());
                         let mut i = 0;
                         while i < #size {
                             a.0[i] = !a.0[i] & all.0[i];
