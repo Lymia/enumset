@@ -115,26 +115,26 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         Self::from_u64(v as u64)
     }
 
-    fn from_u8_opt(v: u8) -> Option<Self> {
+    fn try_from_u8(v: u8) -> Option<Self> {
         Some(Self::from_u8(v))
     }
-    fn from_u16_opt(v: u16) -> Option<Self> {
+    fn try_from_u16(v: u16) -> Option<Self> {
         Some(Self::from_u16(v))
     }
-    fn from_u32_opt(v: u32) -> Option<Self> {
+    fn try_from_u32(v: u32) -> Option<Self> {
         Some(Self::from_u32(v))
     }
-    fn from_u64_opt(v: u64) -> Option<Self> {
+    fn try_from_u64(v: u64) -> Option<Self> {
         Some(Self::from_u64(v))
     }
-    fn from_u128_opt(v: u128) -> Option<Self> {
+    fn try_from_u128(v: u128) -> Option<Self> {
         if N == 1 && (v >> 64) != 0 {
             None
         } else {
             Some(Self::from_u128(v))
         }
     }
-    fn from_usize_opt(v: usize) -> Option<Self> {
+    fn try_from_usize(v: usize) -> Option<Self> {
         Some(Self::from_usize(v))
     }
 
@@ -158,16 +158,16 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         self.to_u64().to_usize()
     }
 
-    fn to_u8_opt(&self) -> Option<u8> {
-        self.to_u64_opt().and_then(|x| x.to_u8_opt())
+    fn try_to_u8(&self) -> Option<u8> {
+        self.try_to_u64().and_then(|x| x.try_to_u8())
     }
-    fn to_u16_opt(&self) -> Option<u16> {
-        self.to_u64_opt().and_then(|x| x.to_u16_opt())
+    fn try_to_u16(&self) -> Option<u16> {
+        self.try_to_u64().and_then(|x| x.try_to_u16())
     }
-    fn to_u32_opt(&self) -> Option<u32> {
-        self.to_u64_opt().and_then(|x| x.to_u32_opt())
+    fn try_to_u32(&self) -> Option<u32> {
+        self.try_to_u64().and_then(|x| x.try_to_u32())
     }
-    fn to_u64_opt(&self) -> Option<u64> {
+    fn try_to_u64(&self) -> Option<u64> {
         for i in 1..N {
             if self.0[i] != 0 {
                 return None;
@@ -175,7 +175,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         }
         Some(self.to_u64())
     }
-    fn to_u128_opt(&self) -> Option<u128> {
+    fn try_to_u128(&self) -> Option<u128> {
         for i in 2..N {
             if self.0[i] != 0 {
                 return None;
@@ -183,8 +183,8 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         }
         Some(self.to_u128())
     }
-    fn to_usize_opt(&self) -> Option<usize> {
-        self.to_u64_opt().and_then(|x| x.to_usize_opt())
+    fn try_to_usize(&self) -> Option<usize> {
+        self.try_to_u64().and_then(|x| x.try_to_usize())
     }
 
     fn to_u64_array<const O: usize>(&self) -> [u64; O] {
@@ -193,7 +193,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         array[..copy_len].copy_from_slice(&self.0[..copy_len]);
         array
     }
-    fn to_u64_array_opt<const O: usize>(&self) -> Option<[u64; O]> {
+    fn try_to_u64_array<const O: usize>(&self) -> Option<[u64; O]> {
         if N > O {
             for i in O..N {
                 if self.0[i] != 0 {
@@ -207,8 +207,8 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
     fn from_u64_array<const O: usize>(v: [u64; O]) -> Self {
         ArrayRepr(ArrayRepr::<O>(v).to_u64_array::<N>())
     }
-    fn from_u64_array_opt<const O: usize>(v: [u64; O]) -> Option<Self> {
-        ArrayRepr::<O>(v).to_u64_array_opt::<N>().map(ArrayRepr)
+    fn try_from_u64_array<const O: usize>(v: [u64; O]) -> Option<Self> {
+        ArrayRepr::<O>(v).try_to_u64_array::<N>().map(ArrayRepr)
     }
 
     fn to_u64_slice(&self, out: &mut [u64]) {
@@ -218,7 +218,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
             out[i] = 0;
         }
     }
-    fn to_u64_slice_opt(&self, out: &mut [u64]) -> Option<()> {
+    fn try_to_u64_slice(&self, out: &mut [u64]) -> Option<()> {
         if N > out.len() {
             for i in out.len()..N {
                 if self.0[i] != 0 {
@@ -236,7 +236,7 @@ impl<const N: usize> EnumSetTypeRepr for ArrayRepr<N> {
         new.0[..copy_len].copy_from_slice(&v[..copy_len]);
         new
     }
-    fn from_u64_slice_opt(v: &[u64]) -> Option<Self> {
+    fn try_from_u64_slice(v: &[u64]) -> Option<Self> {
         if v.len() > N {
             for i in N..v.len() {
                 if v[i] != 0 {

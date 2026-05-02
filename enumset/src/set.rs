@@ -312,7 +312,7 @@ macro_rules! conversion_impls {
     (
         $(for_num!(
             $underlying:ty, $underlying_str:expr,
-            $from_fn:ident $to_fn:ident $from_fn_opt:ident $to_fn_opt:ident,
+            $from_fn:ident $to_fn:ident $try_from_fn:ident $try_to_fn:ident,
             $from:ident $try_from:ident $from_truncated:ident $from_unchecked:ident,
             $to:ident $try_to:ident $to_truncated:ident
         );)*
@@ -337,7 +337,7 @@ macro_rules! conversion_impls {
             #[doc = "`, this method will return `None`."]
             #[inline(always)]
             pub fn $try_to(&self) -> Option<$underlying> {
-                EnumSetTypeRepr::$to_fn_opt(&self.repr)
+                EnumSetTypeRepr::$try_to_fn(&self.repr)
             }
 
             #[doc = "Returns a truncated `"]
@@ -366,7 +366,7 @@ macro_rules! conversion_impls {
                      method will return `None`."]
             #[inline(always)]
             pub fn $try_from(bits: $underlying) -> Option<Self> {
-                let bits = T::Repr::$from_fn_opt(bits);
+                let bits = T::Repr::$try_from_fn(bits);
                 let mask = T::ALL_BITS;
                 bits.and_then(|bits| if bits.and_not(mask).is_empty() {
                     Some(EnumSet { repr: bits })
@@ -403,27 +403,27 @@ macro_rules! conversion_impls {
 }
 conversion_impls! {
     for_num!(u8, "u8",
-             from_u8 to_u8 from_u8_opt to_u8_opt,
+             from_u8 to_u8 try_from_u8 try_to_u8,
              from_u8 try_from_u8 from_u8_truncated from_u8_unchecked,
              as_u8 try_as_u8 as_u8_truncated);
     for_num!(u16, "u16",
-             from_u16 to_u16 from_u16_opt to_u16_opt,
+             from_u16 to_u16 try_from_u16 try_to_u16,
              from_u16 try_from_u16 from_u16_truncated from_u16_unchecked,
              as_u16 try_as_u16 as_u16_truncated);
     for_num!(u32, "u32",
-             from_u32 to_u32 from_u32_opt to_u32_opt,
+             from_u32 to_u32 try_from_u32 try_to_u32,
              from_u32 try_from_u32 from_u32_truncated from_u32_unchecked,
              as_u32 try_as_u32 as_u32_truncated);
     for_num!(u64, "u64",
-             from_u64 to_u64 from_u64_opt to_u64_opt,
+             from_u64 to_u64 try_from_u64 try_to_u64,
              from_u64 try_from_u64 from_u64_truncated from_u64_unchecked,
              as_u64 try_as_u64 as_u64_truncated);
     for_num!(u128, "u128",
-             from_u128 to_u128 from_u128_opt to_u128_opt,
+             from_u128 to_u128 try_from_u128 try_to_u128,
              from_u128 try_from_u128 from_u128_truncated from_u128_unchecked,
              as_u128 try_as_u128 as_u128_truncated);
     for_num!(usize, "usize",
-             from_usize to_usize from_usize_opt to_usize_opt,
+             from_usize to_usize try_from_usize try_to_usize,
              from_usize try_from_usize from_usize_truncated from_usize_unchecked,
              as_usize try_as_usize as_usize_truncated);
 }
@@ -442,7 +442,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// If the underlying bitset will not fit in a `[u64; O]`, this method will instead return
     /// `None`.
     pub fn try_as_array<const O: usize>(&self) -> Option<[u64; O]> {
-        self.repr.to_u64_array_opt()
+        self.repr.try_to_u64_array()
     }
 
     /// Returns an `[u64; O]` representing the elements of this set.
@@ -464,7 +464,7 @@ impl<T: EnumSetType> EnumSet<T> {
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
     pub fn try_from_array<const O: usize>(bits: [u64; O]) -> Option<Self> {
-        let bits = T::Repr::from_u64_array_opt::<O>(bits);
+        let bits = T::Repr::try_from_u64_array::<O>(bits);
         let mask = T::ALL_BITS;
         bits.and_then(|bits| {
             if bits.and_not(mask).is_empty() {
@@ -516,7 +516,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// `None`. Otherwise, it will return `Some(())`.
     #[must_use]
     pub fn try_copy_into_slice(&self, data: &mut [u64]) -> Option<()> {
-        self.repr.to_u64_slice_opt(data)
+        self.repr.try_to_u64_slice(data)
     }
 
     /// Copies the elements of this set into a `&mut [u64]`.
@@ -538,7 +538,7 @@ impl<T: EnumSetType> EnumSet<T> {
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
     pub fn try_from_slice(bits: &[u64]) -> Option<Self> {
-        let bits = T::Repr::from_u64_slice_opt(bits);
+        let bits = T::Repr::try_from_u64_slice(bits);
         let mask = T::ALL_BITS;
         bits.and_then(|bits| {
             if bits.and_not(mask).is_empty() {
