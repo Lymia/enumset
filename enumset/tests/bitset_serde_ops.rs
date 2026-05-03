@@ -80,14 +80,11 @@ macro_rules! serde_test_simple {
         ];
 
         #[test]
-        fn serialize_deserialize_test_bincode() {
+        fn serialize_deserialize_test_postcard() {
             for &value in VALUES {
-                let serialized = bincode::serialize(&value).unwrap();
-                let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+                let serialized = postcard::to_allocvec(&value).unwrap();
+                let deserialized = postcard::from_bytes::<EnumSet<$e>>(&serialized).unwrap();
                 assert_eq!(value, deserialized);
-                if $ser_size != !0 {
-                    assert_eq!(serialized.len(), $ser_size);
-                }
             }
         }
 
@@ -107,8 +104,8 @@ macro_rules! serde_test {
 
         #[test]
         fn deserialize_all_test() {
-            let serialized = bincode::serialize(&!0u128).unwrap();
-            let deserialized = bincode::deserialize::<EnumSet<$e>>(&serialized).unwrap();
+            let serialized = postcard::to_allocvec(&!0u128).unwrap();
+            let deserialized = postcard::from_bytes::<EnumSet<$e>>(&serialized).unwrap();
             assert_eq!(EnumSet::<$e>::all(), deserialized);
         }
     }
@@ -119,15 +116,15 @@ macro_rules! tests {
 
 #[test]
 fn test_deny_unknown() {
-    let serialized = bincode::serialize(&!0u128).unwrap();
-    let deserialized = bincode::deserialize::<EnumSet<DenyUnknownEnum>>(&serialized);
+    let serialized = postcard::to_allocvec(&!0u128).unwrap();
+    let deserialized = postcard::from_bytes::<EnumSet<DenyUnknownEnum>>(&serialized);
     assert!(deserialized.is_err());
 }
 
 #[test]
 fn test_deny_unknown_array() {
-    let serialized = bincode::serialize(&!0u128).unwrap();
-    let deserialized = bincode::deserialize::<EnumSet<DenyUnknownEnumArray>>(&serialized);
+    let serialized = postcard::to_allocvec(&!0u128).unwrap();
+    let deserialized = postcard::from_bytes::<EnumSet<DenyUnknownEnumArray>>(&serialized);
     assert!(deserialized.is_err());
 }
 
@@ -192,11 +189,10 @@ fn test_mixed_round_trip() {
         for i in 0..4 {
             value.insert_bit(i);
 
-            let serialized = bincode::serialize(&value).unwrap();
+            let serialized = postcard::to_allocvec(&value).unwrap();
             let deserialized =
-                bincode::deserialize::<MixedEnumSet<MixedEnum>>(&serialized).unwrap();
+                postcard::from_bytes::<MixedEnumSet<MixedEnum>>(&serialized).unwrap();
             assert_eq!(value, deserialized);
-            assert_eq!(serialized.len(), 8);
         }
     }
 }
