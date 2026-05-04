@@ -20,7 +20,7 @@ std_deprecation_warning = []
 serde2_deprecation_warning = []
 
 [dependencies]
-darling = { version = "0.22", default-features = false } # Held back for MSRV
+darling = { version = "0.21.3", default-features = false } # Held back for MSRV
 syn = "2"
 quote = "1"
 proc-macro2 = "1"
