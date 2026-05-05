@@ -10,8 +10,10 @@
 * Allowed `EnumSet<T>` to be `Send` and `Sync`. (Thanks @SLUCHABLUB)
 * Allow byte literals such as `b'A'` to be used as variant discriminants.
   (Thanks @ronnodas)
-* Minimum required Rust version is now 1.71+ for all use cases due to updates
-  in dependencies.
+* Minimum required Rust version is now 1.71+ due to updates in dependencies.
+* Minimum required Rust version when the `const-proc-macro` feature flag is
+  enabled is now 1.82+. Expect the required version for this feature to be
+  higher than the default configuration in the long-term.
 
 # Version 1.1.10 (2025-08-21)
 

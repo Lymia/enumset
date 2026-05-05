@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use enumset::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // Test resistance against shadowed types.
 type Some = ();
@@ -80,6 +80,7 @@ macro_rules! serde_test_simple {
         ];
 
         #[test]
+        #[cfg(feature = "cfg_test_serde_nonmsrv_formats")]
         fn serialize_deserialize_test_postcard() {
             for &value in VALUES {
                 let serialized = postcard::to_allocvec(&value).unwrap();
@@ -103,6 +104,7 @@ macro_rules! serde_test {
         serde_test_simple!($e, $ser_size);
 
         #[test]
+        #[cfg(feature = "cfg_test_serde_nonmsrv_formats")]
         fn deserialize_all_test() {
             let serialized = postcard::to_allocvec(&!0u128).unwrap();
             let deserialized = postcard::from_bytes::<EnumSet<$e>>(&serialized).unwrap();
@@ -115,6 +117,7 @@ macro_rules! tests {
 }
 
 #[test]
+#[cfg(feature = "cfg_test_serde_nonmsrv_formats")]
 fn test_deny_unknown() {
     let serialized = postcard::to_allocvec(&!0u128).unwrap();
     let deserialized = postcard::from_bytes::<EnumSet<DenyUnknownEnum>>(&serialized);
@@ -122,6 +125,7 @@ fn test_deny_unknown() {
 }
 
 #[test]
+#[cfg(feature = "cfg_test_serde_nonmsrv_formats")]
 fn test_deny_unknown_array() {
     let serialized = postcard::to_allocvec(&!0u128).unwrap();
     let deserialized = postcard::from_bytes::<EnumSet<DenyUnknownEnumArray>>(&serialized);
@@ -189,9 +193,9 @@ fn test_mixed_round_trip() {
         for i in 0..4 {
             value.insert_bit(i);
 
-            let serialized = postcard::to_allocvec(&value).unwrap();
+            let serialized = serde_json::to_string(&value).unwrap();
             let deserialized =
-                postcard::from_bytes::<MixedEnumSet<MixedEnum>>(&serialized).unwrap();
+                serde_json::from_str::<MixedEnumSet<MixedEnum>>(&serialized).unwrap();
             assert_eq!(value, deserialized);
         }
     }

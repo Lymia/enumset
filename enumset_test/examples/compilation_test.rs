@@ -109,11 +109,11 @@ macro_rules! gen_tests {
                 }
             }
 
-            pub fn insert(a: EnumSet<$ty>, b: $ty) -> EnumSet<$ty> {
+            pub(super) fn insert(a: EnumSet<$ty>, b: $ty) -> EnumSet<$ty> {
                 black_box(test_insert(black_box(a), black_box(b)))
             }
 
-            pub fn dump(a: EnumSet<$ty>) {
+            pub(super) fn dump(a: EnumSet<$ty>) {
                 test_dump(black_box(a))
             }
         }
