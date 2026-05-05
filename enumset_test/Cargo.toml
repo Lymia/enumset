@@ -1,0 +1,44 @@
+[package]
+name = "enumset_test"
+version = "1.1.3"
+authors = ["Alissa Rao <aura@aura.moe>"]
+edition = "2021"
+
+description = "DO NOT PUBLISH"
+publish = false
+
+[[bench]]
+name = "basic_benchmark"
+harness = false
+
+[features]
+cfg_bench = ["criterion"]
+cfg_test_alloc = ["enumset/alloc"]
+cfg_test_proc-macro-crate = ["enumset/proc-macro-crate"]
+cfg_test_serde = ["test_serde"]
+cfg_test_serde_formats = ["test_serde_formats"]
+cfg_trybuild = ["test_trybuild"]
+
+test_serde = ["enumset/serde"]
+test_serde_formats = ["test_serde", "postcard", "serde_json"]
+test_trybuild = ["enumset/serde", "anyhow", "defmt", "log", "serde_derive", "tracing", "trybuild"]
+
+[dependencies]
+enumset = { path = "../enumset", features = ["serde"] }
+rustversion = "1"
+serde = { version = "1", features = ["derive"] }
+
+# Benchmark dependencies
+criterion = { version = "0.8.2", optional = true }
+
+# Serde-only dependencies
+postcard = { version = "1", features = ["alloc"], optional = true }
+serde_json = { version = "1", optional = true }
+
+# Trybuild-only dependencies
+anyhow = { version = "1.0", optional = true }
+defmt = { version = "1.0", optional = true }
+log = { version = "0.4", optional = true }
+serde_derive = { version = "1", optional = true }
+tracing = { version = "0.1", optional = true }
+trybuild = { version = "1", optional = true }

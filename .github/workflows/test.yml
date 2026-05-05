@@ -7,38 +7,28 @@ jobs:
     strategy:
       matrix:
         rustver: ["stable", "beta", "nightly"]
-        args:
-        - ""
-        - "--features serde"
-        - "--features alloc"
-        - "--features proc-macro-crate"
-        - "--features serde,alloc,proc-macro-crate"
-        - "--release --features serde,alloc,proc-macro-crate"
+        args_feature_set: [ "", "--features cfg_test_serde_formats" ]
+        args_configuration: [ "", "--features cfg_test_alloc", "--features cfg_test_proc-macro-crate", "--features cfg_test_alloc,cfg_test_proc-macro-crate" ]
+        args_release: [ "", "--release" ]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
     - run: rustup toolchain install ${{ matrix.rustver }}
     - run: rustup override set ${{ matrix.rustver }}
-    - run: cargo test -p enumset ${{ matrix.args }}
+    - run: cargo test -p enumset ${{ matrix.args_release }} ${{ matrix.args_feature_set }} ${{ matrix.args_configuration }}
 
   build_msrv:
     strategy:
       matrix:
-        args: [ "", "--features serde", "--features alloc", "--release --features serde,alloc" ]
+        args_feature_set: [ "", "--features cfg_test_serde" ]
+        args_configuration: [ "", "--features cfg_test_alloc", "--features cfg_test_proc-macro-crate", "--features cfg_test_alloc,cfg_test_proc-macro-crate" ]
+        args_release: [ "", "--release" ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - run: rustup toolchain install 1.71.0
       - run: rustup override set 1.71.0
-      - run: cargo test -p enumset ${{ matrix.args }}
-
-  build_msrv_all_features:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - run: rustup toolchain install 1.71.0
-      - run: rustup override set 1.71.0
-      - run: cargo test -p enumset --features serde,alloc,proc-macro-crate
+      - run: cargo test -p enumset_test ${{ matrix.args_release }} ${{ matrix.args_feature_set }} ${{ matrix.args_configuration }}
 
   test_nightly:
     runs-on: ubuntu-latest
@@ -47,9 +37,10 @@ jobs:
       - run: rustup toolchain install nightly
       - run: rustup override set nightly
       - run: rustup component add clippy
-      - run: cargo test -p enumset_test_nightly
+      - run: cargo test -p enumset_test --features cfg_trybuild
       - run: cargo clippy -p enumset
-      - run: cargo clippy -p enumset_test_nightly
+      - run: cargo clippy -p enumset_test
+      - run: cargo clippy -p enumset_test --features cfg_test_serde
 
   test_build_embedded:
     runs-on: ubuntu-latest

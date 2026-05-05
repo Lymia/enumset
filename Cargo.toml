@@ -2,8 +2,8 @@
 members = [
     "enumset",
     "enumset_derive",
+    "enumset_test",
     "enumset_test_embedded",
-    "enumset_test_nightly",
 ]
 resolver = "2"
 

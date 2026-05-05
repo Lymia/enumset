@@ -1,9 +1,9 @@
-#![cfg(feature = "serde")]
+#![cfg(feature = "test_serde_formats")]
 #![deny(warnings)]
 #![allow(dead_code)]
 
 use enumset::*;
-use serde_derive::*;
+use serde::{Serialize, Deserialize};
 
 // Test resistance against shadowed types.
 type Some = ();
