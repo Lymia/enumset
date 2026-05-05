@@ -10,7 +10,7 @@
 * Allowed `EnumSet<T>` to be `Send` and `Sync`. (Thanks @SLUCHABLUB)
 * Allow byte literals such as `b'A'` to be used as variant discriminants.
   (Thanks @ronnodas)
-* Minimum required Rust version is now 1.69+ for all use cases due to updates
+* Minimum required Rust version is now 1.71+ for all use cases due to updates
   in dependencies.
 
 # Version 1.1.10 (2025-08-21)

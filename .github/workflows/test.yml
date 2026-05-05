@@ -28,16 +28,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: rustup toolchain install 1.69.0
-      - run: rustup override set 1.69.0
+      - run: rustup toolchain install 1.71.0
+      - run: rustup override set 1.71.0
       - run: cargo test -p enumset ${{ matrix.args }}
 
   build_msrv_all_features:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: rustup toolchain install 1.69.0
-      - run: rustup override set 1.69.0
+      - run: rustup toolchain install 1.71.0
+      - run: rustup override set 1.71.0
       - run: cargo test -p enumset --features serde,alloc,proc-macro-crate
 
   test_nightly:
