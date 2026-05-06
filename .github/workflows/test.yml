@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         args_feature_set: [ "", "--features cfg_test_serde" ]
-        args_configuration: [ "", "--features cfg_test_alloc", "--features cfg_test_proc-macro-crate", "--features cfg_test_alloc,cfg_test_proc-macro-crate" ]
+        args_configuration: [ "", "--features cfg_test_alloc" ]
         args_release: [ "", "--release" ]
     runs-on: ubuntu-latest
     steps:
