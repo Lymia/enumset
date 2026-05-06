@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        rustver: ["1.82.0", "stable", "beta", "nightly"]
+        rustver: ["1.85.0", "stable", "beta", "nightly"]
         args_feature_set: [ "", "--features cfg_test_serde_nonmsrv_formats" ]
         args_configuration: [ "", "--features cfg_test_alloc", "--features cfg_test_proc-macro-crate", "--features cfg_test_alloc,cfg_test_proc-macro-crate" ]
         args_release: [ "", "--release" ]
