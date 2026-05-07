@@ -11,9 +11,9 @@
 * Allow byte literals such as `b'A'` to be used as variant discriminants.
   (Thanks @ronnodas)
 * Minimum required Rust version is now 1.71+ due to updates in dependencies.
-* Minimum required Rust version when the `const-proc-macro` feature flag is
-  enabled is now 1.82+. Expect the required version for this feature to be
-  higher than the default configuration in the long-term.
+* Minimum required Rust version when the `proc-macro-crate` feature flag
+  cannot be guaranteed. It uses multiple dependencies without a specified
+  minimum version.
 
 # Version 1.1.10 (2025-08-21)
 
@@ -67,11 +67,11 @@
 * The `EMPTY` and `ALL` consts of `EnumSet<T>` are deprecated in favor of the
   `empty` and `all` functions.
 * The `std` feature flag has been deprecated in favor of the new
-  `const-proc-macro` feature flag. The feature flag was never used for any
+  `proc-macro-crate` feature flag. The feature flag was never used for any
   `std`-specific functionality beyond that crate.
 * Minimum required Rust version is now 1.61+, due to updates in dependencies
   and to allow additional functions to be `const`.
-* Minimum required Rust version when the `std` or `const-proc-macro` feature
+* Minimum required Rust version when the `std` or `proc-macro-crate` feature
   flags are enabled is now 1.69+.
 * Minor fixes to documentation. (Thanks @xnuk)
 
