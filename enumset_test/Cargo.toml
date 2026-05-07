@@ -22,9 +22,9 @@ test_serde = ["enumset/serde", "serde_json"]
 test_serde_formats = ["test_serde", "postcard"]
 
 [dependencies]
-enumset = { path = "../enumset", features = ["serde"] }
+enumset = { workspace = true, features = ["serde"] }
 rustversion = "1"
-serde = { version = "1", features = ["derive"] }
+serde = { workspace = true }
 
 # Benchmark dependencies
 criterion = { version = "0.8.2", optional = true }

@@ -33,5 +33,5 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 enumset_derive = { version = "0.14.0", path = "../enumset_derive" }
-serde = { version = "1", default-features = false, optional = true }
-defmt = { version = "1", optional = true }
+defmt = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }

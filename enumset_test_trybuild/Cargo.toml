@@ -12,9 +12,9 @@ trybuild = "1"
 
 [dev-dependencies]
 anyhow = "1.0"
-defmt = "1.0"
-enumset = { path = "../enumset", features = ["serde"] }
+defmt = { workspace = true }
+enumset = { workspace = true, features = ["serde"] }
 log = "0.4"
-serde = { version = "1", features = ["derive"] }
+serde = { workspace = true }
 serde_derive = "1"
 tracing = "0.1"
