@@ -1,6 +1,6 @@
 #![deny(warnings)]
 
-use enumset::*;
+use enumset::{set::*, *};
 use std::fmt::{Debug, Display, Formatter};
 
 #[derive(EnumSetType, Debug)]
