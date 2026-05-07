@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v5
     - run: rustup toolchain install ${{ matrix.rustver }}
     - run: rustup override set ${{ matrix.rustver }}
-    - run: cargo test -p enumset_test ${{ matrix.args_release }} ${{ matrix.args_feature_set }} ${{ matrix.args_configuration }}
+    - run: cargo test -p enumset -p enumset_test ${{ matrix.args_release }} ${{ matrix.args_feature_set }} ${{ matrix.args_configuration }}
 
   build_msrv:
     strategy:
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: rustup toolchain install 1.71.0
       - run: rustup override set 1.71.0
-      - run: cargo test -p enumset_test ${{ matrix.args_release }} ${{ matrix.args_feature_set }} ${{ matrix.args_configuration }}
+      - run: cargo test -p enumset -p enumset_test ${{ matrix.args_release }} ${{ matrix.args_feature_set }} ${{ matrix.args_configuration }}
 
   test_nightly_trybuild:
     runs-on: ubuntu-latest
