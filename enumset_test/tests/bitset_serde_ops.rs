@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use enumset::{set::*, *};
-use serde_derive::*;
+use serde::{Deserialize, Serialize};
 
 // Test resistance against shadowed types.
 type Some = ();

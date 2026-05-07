@@ -40,10 +40,10 @@ pub mod __internal {
 
 /// Helper functions for sets.
 pub mod set {
-    use crate::EnumSetType;
     use crate::__internal::EnumSetConstHelper;
     use crate::impl_set::EnumSet;
     use crate::impl_set_mixed::MixedEnumSet;
+    use crate::EnumSetType;
 
     /// Retrieves the helper used in constant time operations.
     #[inline(always)]
@@ -183,7 +183,7 @@ macro_rules! enum_set {
 /// # Examples
 ///
 /// ```rust
-/// # use enumset::{*, set::*};
+/// # use enumset::{set::*, *};
 /// # #[derive(EnumSetType, Debug)] #[enumset(repr = "u32")] enum Enum { A, B, C }
 /// const CONST_SET: MixedEnumSet<Enum> = mixed_enum_set!(Enum::A | Enum::B);
 /// assert_eq!(CONST_SET, MixedEnumSet::from(Enum::A | Enum::B));

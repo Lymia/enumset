@@ -1,4 +1,10 @@
-# Version 1.1.11 (2026-05-06)
+# Version 1.1.12 (2026-05-06)
+
+* Corrected the mistaken release of 1.1.11 with an outdated version of the
+  public API for `MixedEnumSet<T>`, where it was at `enumset::MixedEnumSet`
+  instead of `enumset::set::MixedEnumSet` to avoid namespace pollution.
+
+# Version 1.1.11 (2026-05-06) [YANKED]
 
 * Implement a new `MixedEnumSet<T>` type that allows unknown bits to be mixed
   with known enum variants in a single bitset.
