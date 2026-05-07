@@ -1,0 +1,20 @@
+[package]
+name = "enumset_test_trybuild"
+version = "0.0.1"
+authors = ["Alissa Rao <aura@aura.moe>"]
+edition = "2021"
+
+description = "DO NOT PUBLISH"
+publish = false
+
+[dependencies]
+trybuild = "1"
+
+[dev-dependencies]
+anyhow = "1.0"
+defmt = "1.0"
+enumset = { path = "../enumset", features = ["serde"] }
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_derive = "1"
+tracing = "0.1"

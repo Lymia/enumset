@@ -30,18 +30,25 @@ jobs:
       - run: rustup override set 1.71.0
       - run: cargo test -p enumset_test ${{ matrix.args_release }} ${{ matrix.args_feature_set }} ${{ matrix.args_configuration }}
 
-  # TODO: Fix
-  #test_nightly:
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - uses: actions/checkout@v5
-  #    - run: rustup toolchain install nightly
-  #    - run: rustup override set nightly
-  #    - run: rustup component add clippy
-  #    - run: cargo test -p enumset_test --features cfg_trybuild
-  #    - run: cargo clippy -p enumset
-  #    - run: cargo clippy -p enumset_test
-  #    - run: cargo clippy -p enumset_test --features cfg_test_serde
+  test_nightly_trybuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install nightly
+      - run: rustup override set nightly
+      - run: cargo test -p enumset_test_trybuild
+
+  test_nightly_clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install nightly
+      - run: rustup override set nightly
+      - run: rustup component add clippy
+      - run: cargo clippy -p enumset
+      - run: cargo clippy -p enumset --features serde,alloc
+      - run: cargo clippy -p enumset_test
+      - run: cargo clippy -p enumset_test --features cfg_test_serde_nonmsrv_formats,cfg_test_alloc
 
   test_build_embedded:
     runs-on: ubuntu-latest
