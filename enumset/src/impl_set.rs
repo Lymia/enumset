@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// It is implemented using a bitset stored using the smallest integer that can fit all bits
 /// in the underlying enum. In general, an enum variant with a discriminant of `n` is stored in
-/// the nth least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
+/// the `n + 1`th least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
 ///
 /// # Numeric Representation
 ///

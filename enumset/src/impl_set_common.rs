@@ -10,8 +10,8 @@ macro_rules! set_common_methods {
 
         /// Returns the bit a given enum variant is stored in.
         ///
-        /// If this returns `n`, it means the bit is stored in the `n`th least significant bit of the
-        /// underlying integer.
+        /// If this returns `n`, it means the bit is stored in the `n + 1`th least significant bit
+        /// of the underlying integer, corresponding to a mask of `1 << n`.
         pub fn bit_index(t: T) -> u32 {
             T::enum_into_u32(t)
         }
