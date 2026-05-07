@@ -94,12 +94,12 @@ macro_rules! set_common_methods {
         pub fn intersection(&self, other: impl Into<Self>) -> Self {
             Self { repr: self.repr & other.into().repr }
         }
-        /// Returns a set containing element present in `self` but not in `other`.
+        /// Returns a set containing every element present in `self` but not in `other`.
         #[inline(always)]
         pub fn difference(&self, other: impl Into<Self>) -> Self {
             Self { repr: self.repr.and_not(other.into().repr) }
         }
-        /// Returns a set containing every element present in either `self` or `other`, but is not
+        /// Returns a set containing every element present in either `self` or `other`, but not
         /// present in both.
         #[inline(always)]
         pub fn symmetrical_difference(&self, other: impl Into<Self>) -> Self {

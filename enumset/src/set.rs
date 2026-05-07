@@ -18,23 +18,23 @@ use serde::{Deserialize, Serialize};
 /// in the underlying enum. In general, an enum variant with a discriminant of `n` is stored in
 /// the nth least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
 ///
-/// # Numeric representation
+/// # Numeric Representation
 ///
 /// `EnumSet` is internally implemented using integer types, and as such can be easily converted
 /// from and to numbers.
 ///
 /// Each bit of the underlying integer corresponds to at most one particular enum variant. If the
-/// corresponding bit for a variant is set, it present in the set. Bits that do not correspond to
-/// any variant are always unset.
+/// corresponding bit for a variant is set, it is present in the set. Bits that do not correspond
+/// to any variant are always unset.
 ///
 /// By default, each enum variant is stored in a bit corresponding to its discriminant. An enum
 /// variant with a discriminant of `n` is stored in the `n + 1`th least significant bit
-/// (corresponding to a mask of e.g. `1 << enum as u32`).
+/// (corresponding to a mask of, e.g. `1 << enum as u32`).
 ///
 /// The [`#[enumset(map = "…")]`](derive@crate::EnumSetType#mapping-options) attribute can be used
 /// to control this mapping.
 ///
-/// # Array representation
+/// # Array Representation
 ///
 /// Sets with 64 or more variants are instead stored with an underlying array of `u64`s. This is
 /// treated as if it was a single large integer. The `n`th least significant bit of this integer
@@ -429,7 +429,7 @@ conversion_impls! {
 }
 
 impl<T: EnumSetType> EnumSet<T> {
-    /// Returns an `[u64; O]` representing the elements of this set.
+    /// Returns a `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u64; O]`, this method will panic.
     pub fn as_array<const O: usize>(&self) -> [u64; O] {
@@ -437,7 +437,7 @@ impl<T: EnumSetType> EnumSet<T> {
             .expect("Bitset will not fit into this type.")
     }
 
-    /// Returns an `[u64; O]` representing the elements of this set.
+    /// Returns a `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u64; O]`, this method will instead return
     /// `None`.
@@ -445,7 +445,7 @@ impl<T: EnumSetType> EnumSet<T> {
         self.repr.try_to_u64_array()
     }
 
-    /// Returns an `[u64; O]` representing the elements of this set.
+    /// Returns a `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u64; O]`, this method will truncate any bits
     /// that don't fit.

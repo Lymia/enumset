@@ -158,7 +158,7 @@
 # Version 1.0.5 (2021-02-24)
 * Implemented `core::iter::Sum` for `EnumSet<T>`.
 * Properly acknowledge that the minimum required Rust version is actually 1.34+
-  and not 1.31+. An retroactive changelog entry has been added to 1.0.0.
+  and not 1.31+. A retroactive changelog entry has been added to 1.0.0.
 
 # Version 1.0.4 (2021-02-07)
 * Fixes a bug that caused `enumset_derive` to require an import of `EnumSet`
@@ -180,7 +180,7 @@
 
 ## Breaking Changes
 * **[WARNING: Potential silent breaking change]** Changed `EnumSet::insert` to
-  return whether a value was newly  inserted, rather than whether the value
+  return whether a value was newly inserted, rather than whether the value
   already existed in the set. This corresponds better with the behavior of
   `HashSet::insert` and `BTreeSet::insert`.
 * Renamed `to_bits`/`from_bits` to `as_u128`/`from_u128`.
@@ -258,7 +258,7 @@
 * Fixed a major issue that would have prevented `enumset` from being used in
   `#[no_std]` crates.
 * Minimum required version is now 1.30.0+. There should be no more need to
-  bump the minimum Rust version in the forseeable future.
+  bump the minimum Rust version in the foreseeable future.
 
 # Prior versions
 

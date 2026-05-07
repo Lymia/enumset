@@ -74,7 +74,7 @@ impl<T: EnumSetType + defmt::Format> defmt::Format for MixedValue<T> {
 /// # Serialization
 ///
 /// When the `serde` feature is enabled, `MixedEnumSet`s can be serialized and deserialized using
-/// the `serde` crate. It always serialized as a single integer of the underlying repr type.
+/// the `serde` crate. It is always serialized as a single integer of the underlying repr type.
 ///
 /// Unlike `EnumSet`, it ignores all flags given to [`EnumSetType`](derive@crate::EnumSetType).
 ///
@@ -106,7 +106,7 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
         Self::EMPTY_REPR
     }
 
-    /// Returns an `MixedEnumSet` containing all valid variants of the enum.
+    /// Returns a `MixedEnumSet` containing all valid variants of the enum.
     #[inline(always)]
     pub const fn all() -> Self {
         Self::ALL_REPR

@@ -12,8 +12,8 @@
 //! The following cargo features are available for this crate:
 //!
 //! * `serde`: Allows serialization and deserialization of the types in this crate.
-//! * `alloc`: Enables the use of functions that requires an allocator.
-//! * `proc-macro-crate`: Enable the use of the `proc-macro-crate` crate to allow the renaming of
+//! * `alloc`: Enables the use of functions that require an allocator.
+//! * `proc-macro-crate`: Enables the use of the `proc-macro-crate` crate to allow the renaming of
 //!   the `enumset` crate in your user crate. This feature increases the MSRV to 1.69.0
 //!
 //! # Defining enums for use with EnumSet
@@ -73,7 +73,7 @@
 //! assert_eq!(CONST_SET, Enum::A | Enum::B);
 //! ```
 //!
-//! Mutable operations on the [`EnumSet`] otherwise similarly to Rust's builtin sets:
+//! Mutable operations on the [`EnumSet`] otherwise behave similarly to Rust's builtin sets:
 //!
 //! ```rust
 //! # use enumset::*;

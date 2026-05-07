@@ -22,7 +22,7 @@ pub unsafe trait EnumSetType: Copy + Eq + EnumSetTypePrivate {}
 ///
 /// For any type `T` that implements this trait, the in-memory representation of `EnumSet<T>`
 /// is guaranteed to be `Repr`. This guarantee is useful for FFI. See [the `EnumSet` documentation
-/// under “FFI, Safety and `repr`”][crate::set::EnumSet#ffi-safety-and-repr] for an example.
+/// under “FFI, Safety and `repr`”][crate::set::EnumSet#ffi-safety] for an example.
 ///
 /// [`EnumSet`]: crate::set::EnumSet
 pub unsafe trait EnumSetTypeWithRepr:
@@ -49,7 +49,7 @@ pub unsafe trait EnumSetTypePrivate: EnumSetConstHelper + Sized {
     /// Converts a bit position into an enum value.
     unsafe fn enum_from_u32(val: u32) -> Self;
 
-    /// Converts a bit position into an enum value, with an debug_assert.
+    /// Converts a bit position into an enum value, with a debug_assert.
     unsafe fn enum_from_u32_checked(val: u32) -> Self {
         debug_assert!(Self::ALL_BITS.has_bit(val), "Unknown bit retrieved from bitset.");
         Self::enum_from_u32(val)
