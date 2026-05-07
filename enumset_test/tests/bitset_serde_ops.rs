@@ -2,7 +2,7 @@
 #![deny(warnings)]
 #![allow(dead_code)]
 
-use enumset::*;
+use enumset::{set::*, *};
 use serde::{Deserialize, Serialize};
 
 // Test resistance against shadowed types.

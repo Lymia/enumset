@@ -13,7 +13,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       enumset::EnumSet::<T>::all
       enumset::EnumSet::<T>::only
       and $N others
-  --> $WORKSPACE/enumset/src/set.rs
+  --> $WORKSPACE/enumset/src/impl_set.rs
    |
    |     pub const fn new() -> Self {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -27,7 +27,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
    |     set_common_methods!(T, T::Repr);
    |     ------------------------------- in this macro invocation
    |
-  ::: $WORKSPACE/enumset/src/set_common.rs
+  ::: $WORKSPACE/enumset/src/impl_set_common.rs
    |
    |         pub fn only(t: T) -> Self {
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,7 +56,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
       enumset::EnumSet::<T>::all
       enumset::EnumSet::<T>::only
       and $N others
-  --> $WORKSPACE/enumset/src/set.rs
+  --> $WORKSPACE/enumset/src/impl_set.rs
    |
    |     pub const fn new() -> Self {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,7 +70,7 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
    |     set_common_methods!(T, T::Repr);
    |     ------------------------------- in this macro invocation
    |
-  ::: $WORKSPACE/enumset/src/set_common.rs
+  ::: $WORKSPACE/enumset/src/impl_set_common.rs
    |
    |         pub fn only(t: T) -> Self {
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -95,20 +95,20 @@ help: the trait `EnumSetTypeWithRepr` is not implemented for `OkayEnumButCantUse
    |
  4 | enum OkayEnumButCantUseFromRepr {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required by a bound in `enumset::MixedEnumSet`
-  --> $WORKSPACE/enumset/src/set_mixed.rs
+note: required by a bound in `enumset::set::MixedEnumSet`
+  --> $WORKSPACE/enumset/src/impl_set_mixed.rs
    |
    | pub struct MixedEnumSet<T: EnumSetTypeWithRepr> {
    |                            ^^^^^^^^^^^^^^^^^^^ required by this bound in `MixedEnumSet`
 
-error[E0599]: the associated function or constant `from_repr` exists for struct `enumset::MixedEnumSet<OkayEnumButCantUseFromRepr>`, but its trait bounds were not satisfied
+error[E0599]: the associated function or constant `from_repr` exists for struct `enumset::set::MixedEnumSet<OkayEnumButCantUseFromRepr>`, but its trait bounds were not satisfied
   --> tests/compile-fail/explicit_repr.rs:17:49
    |
  4 | enum OkayEnumButCantUseFromRepr {
    | ------------------------------- doesn't satisfy `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
 ...
 17 |     MixedEnumSet::<OkayEnumButCantUseFromRepr>::from_repr(1);
-   |                                                 ^^^^^^^^^ associated function or constant cannot be called on `enumset::MixedEnumSet<OkayEnumButCantUseFromRepr>` due to unsatisfied trait bounds
+   |                                                 ^^^^^^^^^ associated function or constant cannot be called due to unsatisfied trait bounds
    |
    = note: the following trait bounds were not satisfied:
            `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`

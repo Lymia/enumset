@@ -1,4 +1,4 @@
-use enumset::*;
+use enumset::{set::*, *};
 
 #[derive(EnumSetType)]
 enum OkayEnumButCantUseFromRepr {
