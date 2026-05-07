@@ -15,26 +15,26 @@ use serde::{Deserialize, Serialize};
 /// An efficient set type for enums.
 ///
 /// It is implemented using a bitset stored using the smallest integer that can fit all bits
-/// in the underlying enum. In general, an enum variant with a discriminator of `n` is stored in
+/// in the underlying enum. In general, an enum variant with a discriminant of `n` is stored in
 /// the nth least significant bit (corresponding with a mask of, e.g. `1 << enum as u32`).
 ///
-/// # Numeric representation
+/// # Numeric Representation
 ///
 /// `EnumSet` is internally implemented using integer types, and as such can be easily converted
 /// from and to numbers.
 ///
 /// Each bit of the underlying integer corresponds to at most one particular enum variant. If the
-/// corresponding bit for a variant is set, it present in the set. Bits that do not correspond to
-/// any variant are always unset.
+/// corresponding bit for a variant is set, it is present in the set. Bits that do not correspond
+/// to any variant are always unset.
 ///
-/// By default, each enum variant is stored in a bit corresponding to its discriminator. An enum
-/// variant with a discriminator of `n` is stored in the `n + 1`th least significant bit
-/// (corresponding to a mask of e.g. `1 << enum as u32`).
+/// By default, each enum variant is stored in a bit corresponding to its discriminant. An enum
+/// variant with a discriminant of `n` is stored in the `n + 1`th least significant bit
+/// (corresponding to a mask of, e.g. `1 << enum as u32`).
 ///
 /// The [`#[enumset(map = "…")]`](derive@crate::EnumSetType#mapping-options) attribute can be used
 /// to control this mapping.
 ///
-/// # Array representation
+/// # Array Representation
 ///
 /// Sets with 64 or more variants are instead stored with an underlying array of `u64`s. This is
 /// treated as if it was a single large integer. The `n`th least significant bit of this integer
@@ -279,7 +279,7 @@ impl<T: EnumSetType + EnumSetTypeWithRepr> EnumSet<T> {
         Self::try_from_repr(bits).expect("Bitset contains invalid variants.")
     }
 
-    /// Attempts to constructs a bitset from a `T::Repr`.
+    /// Attempts to construct a bitset from a `T::Repr`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this
     /// method will return `None`.
@@ -315,7 +315,7 @@ macro_rules! conversion_impls {
     (
         $(for_num!(
             $underlying:ty, $underlying_str:expr,
-            $from_fn:ident $to_fn:ident $from_fn_opt:ident $to_fn_opt:ident,
+            $from_fn:ident $to_fn:ident $try_from_fn:ident $try_to_fn:ident,
             $from:ident $try_from:ident $from_truncated:ident $from_unchecked:ident,
             $to:ident $try_to:ident $to_truncated:ident
         );)*
@@ -337,10 +337,10 @@ macro_rules! conversion_impls {
             #[doc = "` representing the elements of this set.\n\nIf the underlying bitset will \
                      not fit in a `"]
             #[doc = $underlying_str]
-            #[doc = "`, this method will panic."]
+            #[doc = "`, this method will return `None`."]
             #[inline(always)]
             pub fn $try_to(&self) -> Option<$underlying> {
-                EnumSetTypeRepr::$to_fn_opt(&self.repr)
+                EnumSetTypeRepr::$try_to_fn(&self.repr)
             }
 
             #[doc = "Returns a truncated `"]
@@ -363,13 +363,13 @@ macro_rules! conversion_impls {
                 Self::$try_from(bits).expect("Bitset contains invalid variants.")
             }
 
-            #[doc = "Attempts to constructs a bitset from a `"]
+            #[doc = "Attempts to construct a bitset from a `"]
             #[doc = $underlying_str]
             #[doc = "`.\n\nIf a bit that doesn't correspond to an enum variant is set, this \
                      method will return `None`."]
             #[inline(always)]
             pub fn $try_from(bits: $underlying) -> Option<Self> {
-                let bits = T::Repr::$from_fn_opt(bits);
+                let bits = T::Repr::$try_from_fn(bits);
                 let mask = T::ALL_BITS;
                 bits.and_then(|bits| if bits.and_not(mask).is_empty() {
                     Some(EnumSet { repr: bits })
@@ -406,33 +406,33 @@ macro_rules! conversion_impls {
 }
 conversion_impls! {
     for_num!(u8, "u8",
-             from_u8 to_u8 from_u8_opt to_u8_opt,
+             from_u8 to_u8 try_from_u8 try_to_u8,
              from_u8 try_from_u8 from_u8_truncated from_u8_unchecked,
              as_u8 try_as_u8 as_u8_truncated);
     for_num!(u16, "u16",
-             from_u16 to_u16 from_u16_opt to_u16_opt,
+             from_u16 to_u16 try_from_u16 try_to_u16,
              from_u16 try_from_u16 from_u16_truncated from_u16_unchecked,
              as_u16 try_as_u16 as_u16_truncated);
     for_num!(u32, "u32",
-             from_u32 to_u32 from_u32_opt to_u32_opt,
+             from_u32 to_u32 try_from_u32 try_to_u32,
              from_u32 try_from_u32 from_u32_truncated from_u32_unchecked,
              as_u32 try_as_u32 as_u32_truncated);
     for_num!(u64, "u64",
-             from_u64 to_u64 from_u64_opt to_u64_opt,
+             from_u64 to_u64 try_from_u64 try_to_u64,
              from_u64 try_from_u64 from_u64_truncated from_u64_unchecked,
              as_u64 try_as_u64 as_u64_truncated);
     for_num!(u128, "u128",
-             from_u128 to_u128 from_u128_opt to_u128_opt,
+             from_u128 to_u128 try_from_u128 try_to_u128,
              from_u128 try_from_u128 from_u128_truncated from_u128_unchecked,
              as_u128 try_as_u128 as_u128_truncated);
     for_num!(usize, "usize",
-             from_usize to_usize from_usize_opt to_usize_opt,
+             from_usize to_usize try_from_usize try_to_usize,
              from_usize try_from_usize from_usize_truncated from_usize_unchecked,
              as_usize try_as_usize as_usize_truncated);
 }
 
 impl<T: EnumSetType> EnumSet<T> {
-    /// Returns an `[u64; O]` representing the elements of this set.
+    /// Returns a `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u64; O]`, this method will panic.
     pub fn as_array<const O: usize>(&self) -> [u64; O] {
@@ -440,15 +440,15 @@ impl<T: EnumSetType> EnumSet<T> {
             .expect("Bitset will not fit into this type.")
     }
 
-    /// Returns an `[u64; O]` representing the elements of this set.
+    /// Returns a `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u64; O]`, this method will instead return
     /// `None`.
     pub fn try_as_array<const O: usize>(&self) -> Option<[u64; O]> {
-        self.repr.to_u64_array_opt()
+        self.repr.try_to_u64_array()
     }
 
-    /// Returns an `[u64; O]` representing the elements of this set.
+    /// Returns a `[u64; O]` representing the elements of this set.
     ///
     /// If the underlying bitset will not fit in a `[u64; O]`, this method will truncate any bits
     /// that don't fit.
@@ -456,18 +456,18 @@ impl<T: EnumSetType> EnumSet<T> {
         self.repr.to_u64_array()
     }
 
-    /// Attempts to constructs a bitset from a `[u64; O]`.
+    /// Constructs a bitset from a `[u64; O]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will panic.
     pub fn from_array<const O: usize>(v: [u64; O]) -> Self {
         Self::try_from_array(v).expect("Bitset contains invalid variants.")
     }
 
-    /// Attempts to constructs a bitset from a `[u64; O]`.
+    /// Attempts to construct a bitset from a `[u64; O]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
     pub fn try_from_array<const O: usize>(bits: [u64; O]) -> Option<Self> {
-        let bits = T::Repr::from_u64_array_opt::<O>(bits);
+        let bits = T::Repr::try_from_u64_array::<O>(bits);
         let mask = T::ALL_BITS;
         bits.and_then(|bits| {
             if bits.and_not(mask).is_empty() {
@@ -519,7 +519,7 @@ impl<T: EnumSetType> EnumSet<T> {
     /// `None`. Otherwise, it will return `Some(())`.
     #[must_use]
     pub fn try_copy_into_slice(&self, data: &mut [u64]) -> Option<()> {
-        self.repr.to_u64_slice_opt(data)
+        self.repr.try_to_u64_slice(data)
     }
 
     /// Copies the elements of this set into a `&mut [u64]`.
@@ -530,18 +530,18 @@ impl<T: EnumSetType> EnumSet<T> {
         self.repr.to_u64_slice(data)
     }
 
-    /// Attempts to constructs a bitset from a `&[u64]`.
+    /// Constructs a bitset from a `&[u64]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will panic.
     pub fn from_slice(v: &[u64]) -> Self {
         Self::try_from_slice(v).expect("Bitset contains invalid variants.")
     }
 
-    /// Attempts to constructs a bitset from a `&[u64]`.
+    /// Attempts to construct a bitset from a `&[u64]`.
     ///
     /// If a bit that doesn't correspond to an enum variant is set, this method will return `None`.
     pub fn try_from_slice(bits: &[u64]) -> Option<Self> {
-        let bits = T::Repr::from_u64_slice_opt(bits);
+        let bits = T::Repr::try_from_u64_slice(bits);
         let mask = T::ALL_BITS;
         bits.and_then(|bits| {
             if bits.and_not(mask).is_empty() {

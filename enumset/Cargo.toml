@@ -1,12 +1,12 @@
 [package]
 name = "enumset"
-version = "1.1.10"
+version = "1.1.11"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2021"
 rust-version = "1.83"
 
 description = "A library for creating compact sets of enums."
-keywords = ["enum", "bitset"]
+keywords = ["enum", "bitset", "flags", "bitflags"]
 categories = ["data-structures"]
 
 documentation = "https://docs.rs/enumset/"
@@ -32,12 +32,6 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-enumset_derive = { version = "0.14.0", path = "../enumset_derive" }
-serde = { version = "1", default-features = false, optional = true }
-defmt = { version = "1", optional = true }
-
-[dev-dependencies]
-bincode = { version = "1", features = ["i128"] }
-rustversion = "1.0"
-serde_derive = "1"
-serde_json = "1"
+enumset_derive = { version = "0.15.0", path = "../enumset_derive" }
+defmt = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }

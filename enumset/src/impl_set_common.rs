@@ -50,15 +50,17 @@ macro_rules! set_common_methods {
         /// If the set did have this value present, `false` is returned.
         #[inline(always)]
         pub fn insert(&mut self, value: $T) -> bool {
-            let contains = !self.contains(value);
-            self.repr.add_bit(value.enum_into_u32());
-            contains
+            let bit_value = value.enum_into_u32();
+            let contains = self.repr.has_bit(bit_value);
+            self.repr.add_bit(bit_value);
+            !contains
         }
         /// Removes a value from this set. Returns whether the value was present in the set.
         #[inline(always)]
         pub fn remove(&mut self, value: $T) -> bool {
-            let contains = self.contains(value);
-            self.repr.remove_bit(value.enum_into_u32());
+            let bit_value = value.enum_into_u32();
+            let contains = self.repr.has_bit(bit_value);
+            self.repr.remove_bit(bit_value);
             contains
         }
 
@@ -92,12 +94,12 @@ macro_rules! set_common_methods {
         pub fn intersection(&self, other: impl Into<Self>) -> Self {
             Self { repr: self.repr & other.into().repr }
         }
-        /// Returns a set containing element present in `self` but not in `other`.
+        /// Returns a set containing every element present in `self` but not in `other`.
         #[inline(always)]
         pub fn difference(&self, other: impl Into<Self>) -> Self {
             Self { repr: self.repr.and_not(other.into().repr) }
         }
-        /// Returns a set containing every element present in either `self` or `other`, but is not
+        /// Returns a set containing every element present in either `self` or `other`, but not
         /// present in both.
         #[inline(always)]
         pub fn symmetrical_difference(&self, other: impl Into<Self>) -> Self {

@@ -23,6 +23,7 @@ pub fn eval_literal(expr: &Expr) -> syn::Result<i64> {
                 Ok(val) => Ok(val),
                 Err(_) => error(expr.span(), "Enum discriminants must fit into `isize`.")?,
             },
+            Lit::Byte(lit_byte) => Ok(lit_byte.value() as i64),
             _ => error(expr.span(), "Expression not supported by enumset.")?,
         },
         Expr::Paren(paren) => eval_literal(&paren.expr),
@@ -38,7 +39,7 @@ pub fn eval_literal(expr: &Expr) -> syn::Result<i64> {
 fn eval_bin(binary: &ExprBinary, op: impl FnOnce(i64, i64) -> Option<i64>) -> syn::Result<i64> {
     let result = op(eval_literal(&binary.left)?, eval_literal(&binary.right)?);
     match result {
-        None => error(binary.span(), "Error while evaluating discriminator."),
+        None => error(binary.span(), "Error while evaluating discriminant."),
         Some(x) => Ok(x),
     }
 }

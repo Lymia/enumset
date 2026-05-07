@@ -1,9 +1,9 @@
 [package]
 name = "enumset_derive"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.83"
 
 description = "An internal helper crate for enumset. Not public API."
 
@@ -20,7 +20,7 @@ std_deprecation_warning = []
 serde2_deprecation_warning = []
 
 [dependencies]
-darling = { version = "0.21", default-features = false }
+darling = { version = "0.21.3", default-features = false } # Held back for MSRV
 syn = "2"
 quote = "1"
 proc-macro2 = "1"

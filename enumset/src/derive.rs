@@ -12,8 +12,9 @@ use crate::EnumSet;
 /// Currently, the following limitations apply to what kinds of enums this macro may be used with:
 ///
 /// * The enum must have no data fields in any variant.
-/// * Variant discriminators must be zero or positive.
-/// * No variant may have a discriminator larger than `0xFFFFFFBF`.
+/// * Explicit variant discriminants must be zero or positive and no larger than
+///   `0xFFFFFFBF`(except when `map = "compact"`).
+/// * Each explicit discriminant must be a literal, not more general const expressions.
 ///
 /// # Additional Impls
 ///
@@ -21,7 +22,7 @@ use crate::EnumSet;
 /// other impls that are either required for the macro to work, or make the procedural macro more
 /// ergonomic to use.
 ///
-/// A full list of traits implemented as is follows:
+/// A full list of traits implemented is as follows:
 ///
 /// * [`Copy`], [`Clone`], [`Eq`], [`PartialEq`] implementations are created to allow `EnumSet`
 ///   to function properly. These automatic implementations may be suppressed using
@@ -42,7 +43,7 @@ use crate::EnumSet;
 ///   [`Copy`], [`Clone`], [`Eq`], and [`PartialEq`] must be provided manually. These impls should
 ///   function identically to the automatically derived versions, or unintentional behavior may be
 ///   a result.
-/// * `#[enumset(no_ops)` prevents the procedural macro from implementing any operator traits.
+/// * `#[enumset(no_ops)]` prevents the procedural macro from implementing any operator traits.
 /// * `#[enumset(crate_name = "enumset2")]` may be used to change the name of the `enumset` crate
 ///   used in the generated code. When the `proc-macro-crate` feature is enabled, enumset parses
 ///   `Cargo.toml` to determine the name of the crate, and this flag is unnecessary.
@@ -51,7 +52,7 @@ use crate::EnumSet;
 /// * `#[enumset(repr = "…")]` is used to control the in-memory representation of `EnumSet`s. For
 ///   more information, see the [Representation Options](#representation-options) section.
 ///
-/// Additional feature may be specified when the `serde` feature is enabled. These options are
+/// Additional features may be specified when the `serde` feature is enabled. These options are
 /// ignored when `serde` is not enabled. For more information, see the
 /// [Serialization Options](#serialization-options) section.
 ///
@@ -59,15 +60,15 @@ use crate::EnumSet;
 ///
 /// The following options exist to control how enum variants are mapped to bits in an `EnumSet`:
 ///
-/// * `#[enumset(map = "lsb")]` maps an enum variant with a discriminator of `n` to the `n + 1`th
+/// * `#[enumset(map = "lsb")]` maps an enum variant with a discriminant of `n` to the `n + 1`th
 ///   least significant bit of the enumset. If no mapping is specified, this is used by default.
-/// * `#[enumset(map = "msb")]` maps an enum variant with a discriminator of `n` to the `n + 1`th
+/// * `#[enumset(map = "msb")]` maps an enum variant with a discriminant of `n` to the `n + 1`th
 ///   most significant bit of the enumset. This requires an explicit integer representation or else
 ///   compilation will fail.
 /// * `#[enumset(map = "compact")]` maps each enum variant to an unspecified bit in the set. This
-///   allows the library to use less memory than it may otherwise and allows any discrminator
+///   allows the library to use less memory than it may otherwise and allows any discriminant
 ///   values to be used without issue.
-/// * `#[enumset(map = "mask")]` treats each enum variant's discriminator as a mask rather than a
+/// * `#[enumset(map = "mask")]` treats each enum variant's discriminant as a mask rather than a
 ///   bit index. Each discriminant must be a power of two, and may be of arbitrary size.
 ///
 /// ## Representation Options
@@ -96,9 +97,9 @@ use crate::EnumSet;
 ///   corresponding to the [array representation](EnumSet#array-representation) of the set.
 /// * `#[enumset(serialize_repr = "list")]` causes the set to be serialized as a list of enum
 ///   variants. This requires your enum type implement [`Serialize`] and [`Deserialize`].
-/// * `#[enumset(serialize_repr = "map")]` causes the set to be serialized as map of enum variants
-///   to booleans. The set contains a value if the boolean is `true`. This requires your enum type
-///   implement `Serialize` and `Deserialize`.
+/// * `#[enumset(serialize_repr = "map")]` causes the set to be serialized as a map of enum
+///   variants to booleans. The set contains a value if the boolean is `true`. This requires your
+///   enum type implement `Serialize` and `Deserialize`.
 /// * `#[enumset(serialize_deny_unknown)]` causes the generated deserializer to return an error
 ///   for unknown bits instead of silently ignoring them.
 ///
@@ -107,7 +108,7 @@ use crate::EnumSet;
 ///
 /// # Examples
 ///
-/// Deriving a plain EnumSetType:
+/// Deriving a plain `EnumSetType`:
 ///
 /// ```rust
 /// # use enumset::*;
@@ -117,7 +118,7 @@ use crate::EnumSet;
 /// }
 /// ```
 ///
-/// Deriving a sparse EnumSetType:
+/// Deriving a sparse `EnumSetType`:
 ///
 /// ```rust
 /// # use enumset::*;
@@ -127,7 +128,7 @@ use crate::EnumSet;
 /// }
 /// ```
 ///
-/// Deriving an EnumSetType without adding ops:
+/// Deriving an `EnumSetType` without adding ops:
 ///
 /// ```rust
 /// # use enumset::*;

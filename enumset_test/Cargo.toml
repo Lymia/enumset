@@ -1,0 +1,34 @@
+[package]
+name = "enumset_test"
+version = "0.0.1"
+authors = ["Alissa Rao <aura@aura.moe>"]
+edition = "2021"
+
+description = "DO NOT PUBLISH"
+publish = false
+
+[[bench]]
+name = "basic_benchmark"
+harness = false
+
+[features]
+cfg_bench = ["criterion"]
+cfg_test_alloc = ["enumset/alloc"]
+cfg_test_proc-macro-crate = ["enumset/proc-macro-crate"]
+cfg_test_serde = ["test_serde"]
+cfg_test_serde_nonmsrv_formats = ["test_serde_formats"]
+
+test_serde = ["enumset/serde", "serde_json"]
+test_serde_formats = ["test_serde", "postcard"]
+
+[dependencies]
+enumset = { workspace = true, features = ["serde"] }
+rustversion = "1"
+serde = { workspace = true }
+
+# Benchmark dependencies
+criterion = { version = "0.8.2", optional = true }
+
+# Serde-only dependencies
+postcard = { version = "1", features = ["alloc"], optional = true }
+serde_json = { version = "1", optional = true }

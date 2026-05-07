@@ -204,7 +204,7 @@ macro_rules! mixed_enum_set {
     };
 }
 
-/// Computes the union of multiple enums or constants enumset at compile time.
+/// Computes the union of multiple enum variants or const [`EnumSet`] values at compile time.
 ///
 /// The syntax used is `enum_set_union!(ENUM_A, ENUM_B, ENUM_C)`, computing the equivalent of
 /// `ENUM_A | ENUM_B | ENUM_C` at compile time. Each variant must be of the same type, or an error
@@ -243,7 +243,7 @@ macro_rules! enum_set_union {
     };
 }
 
-/// Computes the intersection of multiple enums or constants enumset at compile time.
+/// Computes the intersection of multiple enum variants or const [`EnumSet`] values at compile time.
 ///
 /// The syntax used is `enum_set_intersection!(ENUM_A, ENUM_B, ENUM_C)`, computing the equivalent
 /// of `ENUM_A & ENUM_B & ENUM_C` at compile time. Each variant must be of the same type, or an
@@ -284,7 +284,7 @@ macro_rules! enum_set_intersection {
     };
 }
 
-/// Computes the complement of an enums or constants enumset at compile time.
+/// Computes the complement of an enum variant or const [`EnumSet`] value at compile time.
 ///
 /// # Performance
 ///
@@ -313,7 +313,7 @@ macro_rules! enum_set_complement {
     }};
 }
 
-/// Computes the difference of multiple enums or constants enumset at compile time.
+/// Computes the difference of multiple enum variants or const [`EnumSet`] values at compile time.
 ///
 /// The syntax used is `enum_set_difference!(ENUM_A, ENUM_B, ENUM_C)`, computing the equivalent
 /// of `ENUM_A - ENUM_B - ENUM_C` at compile time. Each variant must be of the same type, or an
@@ -331,10 +331,10 @@ macro_rules! enum_set_complement {
 /// ```rust
 /// # use enumset::*;
 /// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C, D }
-/// const SET_A: EnumSet<Enum> = enum_set!(Enum::A | Enum::B | Enum::D);
+/// const SET_A: EnumSet<Enum> = EnumSet::all();
 /// const SET_B: EnumSet<Enum> = enum_set!(Enum::B | Enum::C);
-/// const CONST_SET: EnumSet<Enum> = enum_set_symmetric_difference!(SET_A, SET_B);
-/// assert_eq!(CONST_SET, Enum::A | Enum::C | Enum::D);
+/// const CONST_SET: EnumSet<Enum> = enum_set_difference!(SET_A, SET_B);
+/// assert_eq!(CONST_SET, Enum::A | Enum::D);
 /// ```
 #[macro_export]
 macro_rules! enum_set_difference {
@@ -354,7 +354,8 @@ macro_rules! enum_set_difference {
     };
 }
 
-/// Computes the symmetric difference of multiple enums or constants enumset at compile time.
+/// Computes the symmetric difference of multiple enum variants or const [`EnumSet`] values at
+/// compile time.
 ///
 /// The syntax used is `enum_set_symmetric_difference!(ENUM_A, ENUM_B, ENUM_C)`, computing the
 /// equivalent of `ENUM_A ^ ENUM_B ^ ENUM_C` at compile time. Each variant must be of the same
@@ -372,10 +373,10 @@ macro_rules! enum_set_difference {
 /// ```rust
 /// # use enumset::*;
 /// # #[derive(EnumSetType, Debug)] enum Enum { A, B, C, D }
-/// const SET_A: EnumSet<Enum> = EnumSet::all();
+/// const SET_A: EnumSet<Enum> = enum_set!(Enum::A | Enum::B | Enum::D);
 /// const SET_B: EnumSet<Enum> = enum_set!(Enum::B | Enum::C);
-/// const CONST_SET: EnumSet<Enum> = enum_set_difference!(SET_A, SET_B);
-/// assert_eq!(CONST_SET, Enum::A | Enum::D);
+/// const CONST_SET: EnumSet<Enum> = enum_set_symmetric_difference!(SET_A, SET_B);
+/// assert_eq!(CONST_SET, Enum::A | Enum::C | Enum::D);
 /// ```
 #[macro_export]
 macro_rules! enum_set_symmetric_difference {

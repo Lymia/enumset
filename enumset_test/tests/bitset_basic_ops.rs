@@ -197,6 +197,23 @@ pub enum MaskSparseEnum {
     E = 1 << 9, F = 1 << 30, G = 1 << 33, H = 1 << 62,
 }
 
+/// Used to test byte literal discriminants with compact mapping.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+#[repr(u8)]
+pub enum CompactByteEnum {
+    A = b'A', B = b'B', C = b'C',D,E,F,G,H
+}
+
+/// Used to test negative discriminants with compact mapping.
+#[derive(EnumSetType, Debug)]
+#[enumset(map = "compact")]
+#[rustfmt::skip]
+pub enum CompactNegativeEnum {
+    A = -1, B = -2, C = -3, D = 0, E,F,G,H
+}
+
 /// Used to test mixed enumsets.
 #[derive(EnumSetType, Debug)]
 #[enumset(repr = "u64")]
@@ -773,6 +790,8 @@ tests!(compact_edge_i32n, test_enum!(CompactEdgeCaseI32N, 2, ordered));
 tests!(compact_edge_i32p, test_enum!(CompactEdgeCaseI32P, 2, ordered));
 tests!(compact_edge_i64n, test_enum!(CompactEdgeCaseI64N, 2, ordered));
 tests!(compact_edge_i64p, test_enum!(CompactEdgeCaseI64P, 2, ordered));
+tests!(compact_byte_enum, test_enum!(CompactByteEnum, 1));
+tests!(compact_negative_enum, test_enum!(CompactNegativeEnum, 1));
 
 #[derive(EnumSetType, Debug)]
 #[rustfmt::skip]

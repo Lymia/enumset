@@ -1,10 +1,19 @@
-# Unreleased
+# Version 1.1.11 (2026-05-06)
 
 * Implement a new `MixedEnumSet<T>` type that allows unknown bits to be mixed
   with known enum variants in a single bitset.
 * Added `FromIterator` implementations for iterators of borrowed items.
 * Added `EnumSet::bit_index` and `EnumSet::is_bit_valid` methods to query the
   bit associated with an enum variant, or if a bit index is valid.
+* Fixed a bug causing `#![derive(EnumSetType)]` to produce invalid code on
+  big-endian systems.
+* Allowed `EnumSet<T>` to be `Send` and `Sync`. (Thanks @SLUCHABLUB)
+* Allow byte literals such as `b'A'` to be used as variant discriminants.
+  (Thanks @ronnodas)
+* Minimum required Rust version is now 1.71+ due to updates in dependencies.
+* Minimum required Rust version when the `proc-macro-crate` feature flag
+  cannot be guaranteed. It uses multiple dependencies without a specified
+  minimum version.
 
 # Version 1.1.10 (2025-08-21)
 
@@ -31,7 +40,7 @@
 ## Enhancements
 
 * Optimizations for sparse bitsets and sets larger than 64 variants.
-* Added basic support for specifying enum discriminators via simple
+* Added basic support for specifying enum discriminants via simple
   expressions like `1 << 30`.
 
 # Version 1.1.7 (2025-07-08)
@@ -58,11 +67,11 @@
 * The `EMPTY` and `ALL` consts of `EnumSet<T>` are deprecated in favor of the
   `empty` and `all` functions.
 * The `std` feature flag has been deprecated in favor of the new
-  `const-proc-macro` feature flag. The feature flag was never used for any
+  `proc-macro-crate` feature flag. The feature flag was never used for any
   `std`-specific functionality beyond that crate.
 * Minimum required Rust version is now 1.61+, due to updates in dependencies
   and to allow additional functions to be `const`.
-* Minimum required Rust version when the `std` or `const-proc-macro` feature
+* Minimum required Rust version when the `std` or `proc-macro-crate` feature
   flags are enabled is now 1.69+.
 * Minor fixes to documentation. (Thanks @xnuk)
 
@@ -149,7 +158,7 @@
 # Version 1.0.5 (2021-02-24)
 * Implemented `core::iter::Sum` for `EnumSet<T>`.
 * Properly acknowledge that the minimum required Rust version is actually 1.34+
-  and not 1.31+. An retroactive changelog entry has been added to 1.0.0.
+  and not 1.31+. A retroactive changelog entry has been added to 1.0.0.
 
 # Version 1.0.4 (2021-02-07)
 * Fixes a bug that caused `enumset_derive` to require an import of `EnumSet`
@@ -171,7 +180,7 @@
 
 ## Breaking Changes
 * **[WARNING: Potential silent breaking change]** Changed `EnumSet::insert` to
-  return whether a value was newly  inserted, rather than whether the value
+  return whether a value was newly inserted, rather than whether the value
   already existed in the set. This corresponds better with the behavior of
   `HashSet::insert` and `BTreeSet::insert`.
 * Renamed `to_bits`/`from_bits` to `as_u128`/`from_u128`.
@@ -249,7 +258,7 @@
 * Fixed a major issue that would have prevented `enumset` from being used in
   `#[no_std]` crates.
 * Minimum required version is now 1.30.0+. There should be no more need to
-  bump the minimum Rust version in the forseeable future.
+  bump the minimum Rust version in the foreseeable future.
 
 # Prior versions
 

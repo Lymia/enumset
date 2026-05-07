@@ -172,7 +172,7 @@ macro_rules! do_tests {
 
 do_tests!(unboxed, repeat, from_fn, map /* */,);
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "cfg_test_alloc")]
 do_tests!(boxed, repeat_boxed, from_fn_boxed, map_boxed, *);
 
 #[test]

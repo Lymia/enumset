@@ -394,15 +394,14 @@ impl EnumSetInfo {
 
     /// Creates the compacted bit variants.
     fn build_compacted(&mut self) {
-        let mut occupied = BTreeSet::new();
-        for i in 0..self.variants.len() {
-            occupied.insert(i as u32);
-        }
-        let variant_len = self.variants.len();
+        let variant_len = self.variants.len() as u32;
+        let mut occupied = (0..variant_len).collect::<BTreeSet<_>>();
         for variant in &mut self.variants {
-            if variant.discriminant > 0 && variant.discriminant < variant_len as i64 {
-                variant.compact_variant_bit = variant.discriminant as u32;
-                occupied.remove(&variant.compact_variant_bit);
+            if variant.discriminant >= 0 && variant.discriminant < variant_len as i64 {
+                let bit = variant.discriminant as u32;
+                if occupied.remove(&bit) {
+                    variant.compact_variant_bit = bit;
+                }
             }
         }
         for variant in &mut self.variants {
