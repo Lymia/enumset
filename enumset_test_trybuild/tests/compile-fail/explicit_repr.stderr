@@ -24,8 +24,8 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
    |     pub const fn all() -> Self {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-   |     set_common_methods!(T, T::Repr);
-   |     ------------------------------- in this macro invocation
+   |     set_common_methods!(T, T::Repr, Self);
+   |     ------------------------------------- in this macro invocation
    |
   ::: $WORKSPACE/enumset/src/impl_set_common.rs
    |
@@ -67,8 +67,8 @@ note: if you're trying to build a new `enumset::EnumSet<OkayEnumButCantUseFromRe
    |     pub const fn all() -> Self {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-   |     set_common_methods!(T, T::Repr);
-   |     ------------------------------- in this macro invocation
+   |     set_common_methods!(T, T::Repr, Self);
+   |     ------------------------------------- in this macro invocation
    |
   ::: $WORKSPACE/enumset/src/impl_set_common.rs
    |
