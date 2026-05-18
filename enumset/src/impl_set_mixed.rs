@@ -118,7 +118,7 @@ impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
         T::VARIANT_COUNT
     }
 
-    set_common_methods!(T, <T as EnumSetTypePrivate>::Repr);
+    set_common_methods!(T, <T as EnumSetTypePrivate>::Repr, impl Into<Self>);
 
     /// Returns a set containing all enum variants not in this set.
     ///

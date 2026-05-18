@@ -1,5 +1,5 @@
 macro_rules! set_common_methods {
-    ($T:ty, $T_Repr:ty) => {
+    ($T:ty, $T_Repr:ty, $oper_Self:ty) => {
         /// Returns a set containing a single element.
         #[inline(always)]
         pub fn only(t: T) -> Self {
@@ -67,43 +67,49 @@ macro_rules! set_common_methods {
         /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to
         /// checking for an empty intersection.
         #[inline(always)]
-        pub fn is_disjoint(&self, other: impl Into<Self>) -> bool {
-            (*self & other.into()).is_empty()
+        pub fn is_disjoint(&self, other: $oper_Self) -> bool {
+            let other: Self = other.into();
+            (*self & other).is_empty()
         }
         /// Returns `true` if the set is a superset of another, i.e., `self` contains at least all the
         /// values in `other`.
         #[inline(always)]
-        pub fn is_superset(&self, other: impl Into<Self>) -> bool {
-            let other = other.into();
+        pub fn is_superset(&self, other: $oper_Self) -> bool {
+            let other: Self = other.into();
             (*self & other).repr == other.repr
         }
         /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all
         /// the values in `self`.
         #[inline(always)]
-        pub fn is_subset(&self, other: impl Into<Self>) -> bool {
-            other.into().is_superset(*self)
+        pub fn is_subset(&self, other: $oper_Self) -> bool {
+            let other: Self = other.into();
+            other.is_superset(*self)
         }
 
         /// Returns a set containing any elements present in either set.
         #[inline(always)]
-        pub fn union(&self, other: impl Into<Self>) -> Self {
-            Self { repr: self.repr | other.into().repr }
+        pub fn union(&self, other: $oper_Self) -> Self {
+            let other: Self = other.into();
+            Self { repr: self.repr | other.repr }
         }
         /// Returns a set containing every element present in both sets.
         #[inline(always)]
-        pub fn intersection(&self, other: impl Into<Self>) -> Self {
-            Self { repr: self.repr & other.into().repr }
+        pub fn intersection(&self, other: $oper_Self) -> Self {
+            let other: Self = other.into();
+            Self { repr: self.repr & other.repr }
         }
         /// Returns a set containing every element present in `self` but not in `other`.
         #[inline(always)]
-        pub fn difference(&self, other: impl Into<Self>) -> Self {
-            Self { repr: self.repr.and_not(other.into().repr) }
+        pub fn difference(&self, other: $oper_Self) -> Self {
+            let other: Self = other.into();
+            Self { repr: self.repr.and_not(other.repr) }
         }
         /// Returns a set containing every element present in either `self` or `other`, but not
         /// present in both.
         #[inline(always)]
-        pub fn symmetrical_difference(&self, other: impl Into<Self>) -> Self {
-            Self { repr: self.repr ^ other.into().repr }
+        pub fn symmetrical_difference(&self, other: $oper_Self) -> Self {
+            let other: Self = other.into();
+            Self { repr: self.repr ^ other.repr }
         }
     };
 }

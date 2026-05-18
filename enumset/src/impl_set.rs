@@ -142,7 +142,8 @@ impl<T: EnumSetType> EnumSet<T> {
         T::VARIANT_COUNT
     }
 
-    set_common_methods!(T, T::Repr);
+    // SEMVER: On semver major change, make the other parameter into a `impl Into<>`
+    set_common_methods!(T, T::Repr, Self);
 
     /// Returns a set containing all enum variants not in this set.
     #[inline(always)]

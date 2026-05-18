@@ -754,6 +754,13 @@ macro_rules! test_enum {
         fn check_size() {
             assert_eq!(::std::mem::size_of::<EnumSet<$e>>(), $mem_size);
         }
+
+        /// Regression test for a semver breaking change introduced in 1.1.12
+        #[test]
+        fn difference_into() {
+            let test = $e::A | $e::B | $e::C;
+            assert_eq!(test.symmetrical_difference($e::B.into()), $e::A | $e::C);
+        }
     }
 }
 macro_rules! tests {
