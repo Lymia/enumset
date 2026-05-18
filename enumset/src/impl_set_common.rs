@@ -112,16 +112,6 @@ macro_rules! set_common_methods {
             let other: Self = other.into();
             Self { repr: self.repr ^ other.repr }
         }
-
-        /// Returns a set containing every element present in either `self` or `other`, but not
-        /// present in both.
-        ///
-        /// This is a legacy name for this function, and should not be used.
-        #[inline(always)]
-        #[deprecated(since = "1.1.13", note = "use symmetric_difference instead")]
-        pub fn symmetrical_difference(&self, other: $oper_Self) -> Self {
-            self.symmetric_difference(other)
-        }
     };
 }
 

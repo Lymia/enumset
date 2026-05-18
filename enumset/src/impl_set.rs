@@ -220,14 +220,22 @@ impl<T: EnumSetType> EnumSet<T> {
     /// An empty `EnumSet`.
     ///
     /// This is deprecated because [`EnumSet::empty`] is now `const`.
-    #[deprecated = "Use `EnumSet::empty()` instead."]
+    #[deprecated(since = "1.1.4", note = "Use `EnumSet::empty()` instead.")]
     pub const EMPTY: Self = Self::EMPTY_REPR;
 
     /// An `EnumSet` containing all valid variants of the enum.
     ///
     /// This is deprecated because [`EnumSet::all`] is now `const`.
-    #[deprecated = "Use `EnumSet::all()` instead."]
+    #[deprecated(since = "1.1.4", note = "Use `EnumSet::all()` instead.")]
     pub const ALL: Self = Self::ALL_REPR;
+
+    /// Returns a set containing every element present in either `self` or `other`, but not
+    /// present in both.
+    #[inline(always)]
+    #[deprecated(since = "1.1.13", note = "Use `symmetric_difference` instead.")]
+    pub fn symmetrical_difference(&self, other: Self) -> Self {
+        self.symmetric_difference(other)
+    }
 }
 //endregion
 

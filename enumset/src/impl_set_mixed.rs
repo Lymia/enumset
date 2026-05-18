@@ -232,6 +232,19 @@ where <T as EnumSetTypeWithRepr>::Repr: Deserialize<'de>
 }
 //endregion
 
+//region Deprecated functions
+/// This impl contains all outdated or deprecated functions.
+impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
+    /// Returns a set containing every element present in either `self` or `other`, but not
+    /// present in both.
+    #[inline(always)]
+    #[deprecated(since = "1.1.13", note = "Use `symmetric_difference` instead.")]
+    pub fn symmetrical_difference(&self, other: impl Into<Self>) -> Self {
+        self.symmetric_difference(other)
+    }
+}
+//endregion
+
 //region MixedEnumSet conversions
 impl<T: EnumSetTypeWithRepr> MixedEnumSet<T> {
     /// Returns a `T::Repr` representing the elements of this set.
