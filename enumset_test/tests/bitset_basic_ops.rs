@@ -759,7 +759,7 @@ macro_rules! test_enum {
         #[test]
         fn difference_into() {
             let test = $e::A | $e::B | $e::C;
-            assert_eq!(test.symmetrical_difference($e::B.into()), $e::A | $e::C);
+            assert_eq!(test.symmetric_difference($e::B.into()), $e::A | $e::C);
         }
     }
 }

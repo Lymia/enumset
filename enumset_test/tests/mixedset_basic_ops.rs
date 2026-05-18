@@ -248,7 +248,7 @@ fn test_set_algebra() {
     assert_eq!(a.union(b), Enum::A | Enum::B | Enum::C | Enum::D);
     assert_eq!(a.intersection(b), Enum::B | Enum::C);
     assert_eq!(a.difference(b), MixedEnumSet::from(Enum::A));
-    assert_eq!(a.symmetrical_difference(b), Enum::A | Enum::D);
+    assert_eq!(a.symmetric_difference(b), Enum::A | Enum::D);
 
     // operator forms
     assert_eq!(a | b, Enum::A | Enum::B | Enum::C | Enum::D);
