@@ -1,4 +1,11 @@
-# Version 1.1.12 (2026-05-06)
+# Version 1.1.13 (2026-05-18)
+
+* Revert a semver breaking change introduced in 1.1.10 relating to using
+  functions like `EnumSet<T>.symmetric_difference` with `Enum::A.into()`. 
+* Deprecate `EnumSet<T>.symmetrical_difference` in favor of
+  `symmetric_difference`, to better match the standard library sets.
+
+# Version 1.1.12 (2026-05-06) [YANKED]
 
 * Corrected the mistaken release of 1.1.11 with an outdated version of the
   public API for `MixedEnumSet<T>`, where it was at `enumset::MixedEnumSet`
