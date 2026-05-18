@@ -1,6 +1,6 @@
 # Version 1.1.13 (2026-05-18)
 
-* Revert a semver breaking change introduced in 1.1.10 relating to using
+* Revert a semver breaking change introduced in 1.1.12 relating to using
   functions like `EnumSet<T>.symmetric_difference` with `Enum::A.into()`. 
 * Deprecate `EnumSet<T>.symmetrical_difference` in favor of
   `symmetric_difference`, to better match the standard library sets.
