@@ -118,7 +118,8 @@ macro_rules! enum_set {
     };
 }
 
-/// Creates a [`MixedEnumSet`](crate::MixedEnumSet) literal, which can be used in const contexts.
+/// Creates a [`MixedEnumSet`](crate::set::MixedEnumSet) literal, which can be used in const
+/// contexts.
 ///
 /// The syntax used is `mixed_enum_set!(Type::A | Type::B | Type::C)`. Each variant must be of the same
 /// type, or an error will occur at compile-time.
@@ -149,7 +150,8 @@ macro_rules! mixed_enum_set {
     };
 }
 
-/// Computes the union of multiple enum variants or const [`EnumSet`] values at compile time.
+/// Computes the union of multiple enum variants or const [`EnumSet`](crate::EnumSet) values at
+/// compile time.
 ///
 /// The syntax used is `enum_set_union!(ENUM_A, ENUM_B, ENUM_C)`, computing the equivalent of
 /// `ENUM_A | ENUM_B | ENUM_C` at compile time. Each variant must be of the same type, or an error
@@ -188,7 +190,8 @@ macro_rules! enum_set_union {
     };
 }
 
-/// Computes the intersection of multiple enum variants or const [`EnumSet`] values at compile time.
+/// Computes the intersection of multiple enum variants or const [`EnumSet`](crate::EnumSet) values at
+/// compile time.
 ///
 /// The syntax used is `enum_set_intersection!(ENUM_A, ENUM_B, ENUM_C)`, computing the equivalent
 /// of `ENUM_A & ENUM_B & ENUM_C` at compile time. Each variant must be of the same type, or an
@@ -229,7 +232,8 @@ macro_rules! enum_set_intersection {
     };
 }
 
-/// Computes the complement of an enum variant or const [`EnumSet`] value at compile time.
+/// Computes the complement of an enum variant or const [`EnumSet`](crate::EnumSet) values at
+/// compile time.
 ///
 /// # Performance
 ///
@@ -258,7 +262,8 @@ macro_rules! enum_set_complement {
     }};
 }
 
-/// Computes the difference of multiple enum variants or const [`EnumSet`] values at compile time.
+/// Computes the difference of multiple enum variants or const [`EnumSet`](crate::EnumSet) values
+/// at compile time.
 ///
 /// The syntax used is `enum_set_difference!(ENUM_A, ENUM_B, ENUM_C)`, computing the equivalent
 /// of `ENUM_A - ENUM_B - ENUM_C` at compile time. Each variant must be of the same type, or an
@@ -299,8 +304,8 @@ macro_rules! enum_set_difference {
     };
 }
 
-/// Computes the symmetric difference of multiple enum variants or const [`EnumSet`] values at
-/// compile time.
+/// Computes the symmetric difference of multiple enum variants or const
+/// [`EnumSet`](crate::EnumSet) values at compile time.
 ///
 /// The syntax used is `enum_set_symmetric_difference!(ENUM_A, ENUM_B, ENUM_C)`, computing the
 /// equivalent of `ENUM_A ^ ENUM_B ^ ENUM_C` at compile time. Each variant must be of the same
