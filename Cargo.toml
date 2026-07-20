@@ -16,4 +16,4 @@ debug = 1
 [workspace.dependencies]
 defmt = { version = "1" }
 enumset = { version = "1", path = "enumset" }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive"], default-features = false }
