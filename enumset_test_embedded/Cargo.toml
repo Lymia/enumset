@@ -13,7 +13,7 @@ defmt = { workspace = true }
 defmt-semihosting = "0.3.0"
 semihosting = { version = "0.1.20", features = ["stdio"] }
 
-enumset = { workspace = true, features = ["defmt"] }
+enumset = { workspace = true, features = ["defmt", "serde"] }
 
 [build-dependencies]
-enumset = { workspace = true, features = ["serde"] } # Implicit test for mismatching features
+enumset = { workspace = true, features = [] } # Implicit test for mismatching features
