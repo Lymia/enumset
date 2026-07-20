@@ -1,3 +1,8 @@
+# Version 1.1.14 (2026-07-20)
+
+* Fixes building on `#[no_std]` targets with `serde` enabled.
+* Small improvements and clarifications to the documentation.
+
 # Version 1.1.13 (2026-05-18)
 
 * Revert a semver breaking change introduced in 1.1.12 relating to using
