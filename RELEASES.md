@@ -1,3 +1,8 @@
+# Version 1.1.15 (2026-10-23)
+
+* Fixes a compilation issue on recent versions of Rust caused by enum
+  variants named `Output` or `Repr`.
+
 # Version 1.1.14 (2026-07-20)
 
 * Fixes building on `#[no_std]` targets with `serde` enabled.
