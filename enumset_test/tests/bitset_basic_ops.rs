@@ -286,6 +286,14 @@ pub enum CompactEdgeCaseI64P {
     A, B, C, D, E, F, G, H, V = 0x3FFFFFFFFFFFFFFF,
 }
 
+/// Used to test enumsets with ambitious names.
+#[derive(EnumSetType, Debug)]
+#[rustfmt::skip]
+pub enum AmbigiousTest {
+    Output, Repr,
+    A, B, C, D, E, F, G, H,
+}
+
 /// Tests that all variants are properly present when `EnumSet::all` is used.
 macro_rules! test_variants {
     ($enum_name:ident $all_empty_test:ident $($variant:ident,)*) => {
@@ -799,6 +807,7 @@ tests!(compact_edge_i64n, test_enum!(CompactEdgeCaseI64N, 2, ordered));
 tests!(compact_edge_i64p, test_enum!(CompactEdgeCaseI64P, 2, ordered));
 tests!(compact_byte_enum, test_enum!(CompactByteEnum, 1));
 tests!(compact_negative_enum, test_enum!(CompactNegativeEnum, 1));
+tests!(ambigious_test, test_enum!(AmbigiousTest, 2, ordered));
 
 #[derive(EnumSetType, Debug)]
 #[rustfmt::skip]

@@ -51,12 +51,14 @@ error[E0308]: mismatched types
 error[E0080]: attempt to shift left by `4294967296_u64`, which would overflow
   --> tests/compile-fail/const_eval_errors.rs:16:15
    |
+15 | enum BadVariants3 {
 16 |     Variant = (1u64 << 0x100000000u64) + 1,
    |               ^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `BadVariants3::Variant::{constant#0}` failed here
 
 error[E0080]: attempt to shift right by `4294967296_u64`, which would overflow
   --> tests/compile-fail/const_eval_errors.rs:22:19
    |
+21 | enum BadVariants4 {
 22 |     Variant = 1 + (1u64 >> 0x100000000u64),
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `BadVariants4::Variant::{constant#0}` failed here
 

@@ -97,35 +97,35 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
             #[automatically_derived]
             impl<O: Into<#typed_enumset>> #core::ops::Sub<O> for #name {
                 type Output = #typed_enumset;
-                fn sub(self, other: O) -> Self::Output {
+                fn sub(self, other: O) -> #typed_enumset {
                     #enumset::EnumSet::only(self) - other.into()
                 }
             }
             #[automatically_derived]
             impl<O: Into<#typed_enumset>> #core::ops::BitAnd<O> for #name {
                 type Output = #typed_enumset;
-                fn bitand(self, other: O) -> Self::Output {
+                fn bitand(self, other: O) -> #typed_enumset {
                     #enumset::EnumSet::only(self) & other.into()
                 }
             }
             #[automatically_derived]
             impl<O: Into<#typed_enumset>> #core::ops::BitOr<O> for #name {
                 type Output = #typed_enumset;
-                fn bitor(self, other: O) -> Self::Output {
+                fn bitor(self, other: O) -> #typed_enumset {
                     #enumset::EnumSet::only(self) | other.into()
                 }
             }
             #[automatically_derived]
             impl<O: Into<#typed_enumset>> #core::ops::BitXor<O> for #name {
                 type Output = #typed_enumset;
-                fn bitxor(self, other: O) -> Self::Output {
+                fn bitxor(self, other: O) -> #typed_enumset {
                     #enumset::EnumSet::only(self) ^ other.into()
                 }
             }
             #[automatically_derived]
             impl #core::ops::Not for #name {
                 type Output = #typed_enumset;
-                fn not(self) -> Self::Output {
+                fn not(self) -> #typed_enumset {
                     !#enumset::EnumSet::only(self)
                 }
             }
@@ -444,7 +444,7 @@ pub fn generate_code(info: EnumSetInfo) -> SynTokenStream {
             #[automatically_derived]
             unsafe impl #internal::EnumSetTypePrivate for #name {
                 type Repr = #repr;
-                const ALL_BITS: Self::Repr = #all_variants;
+                const ALL_BITS: <Self as #internal::EnumSetTypePrivate>::Repr = #all_variants;
                 const BIT_WIDTH: u32 = #bit_width;
                 const VARIANT_COUNT: u32 = #variant_count;
 
