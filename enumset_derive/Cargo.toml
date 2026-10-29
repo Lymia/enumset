@@ -21,7 +21,7 @@ serde2_deprecation_warning = []
 
 [dependencies]
 darling = { version = "0.21.3", default-features = false } # Held back for MSRV
-syn = "2"
+syn = "3"
 quote = "1"
 proc-macro2 = "1"
 proc-macro-crate = { version = "3", optional = true }
